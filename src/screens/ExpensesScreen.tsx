@@ -531,22 +531,11 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
                 onPress={() => setShowAddModal(true)}
                 style={styles.actionButton}
               />
-              <Button
-                title={syncing ? 'Syncing...' : 'Sync Gmail'}
-                variant="outline"
-                onPress={handleSyncBills}
-                disabled={syncing}
-                style={styles.actionButton}
-              />
             </View>
 
-            {syncStatus && (
-              <Text style={styles.syncStatus}>
-                {syncStatus.configured
-                  ? `Last sync: ${syncStatus.lastSync ? new Date(syncStatus.lastSync).toLocaleString() : 'Never'}`
-                  : 'Gmail not configured - use web admin to connect'}
-              </Text>
-            )}
+            <Text style={styles.syncStatus}>
+              Bills are automatically synced from email
+            </Text>
 
             {bills.length === 0 ? (
               <Card style={styles.emptyCard}>

@@ -14,7 +14,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fortyseven.admin"
+      "bundleIdentifier": "com.fortyseven.admin",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -28,7 +31,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "47-admin"
+        "projectId": "23400fc2-ec4d-4aa4-9f73-06f713f6a054"
       }
     }
   }
