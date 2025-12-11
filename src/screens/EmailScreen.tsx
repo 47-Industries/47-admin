@@ -116,6 +116,19 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
     fetchEmails()
   }
 
+  // Helper to extract string content from potentially nested response
+  const extractContent = (data: any): string => {
+    if (!data) return ''
+    if (typeof data === 'string') return data
+    if (typeof data.content === 'string') return data.content
+    if (typeof data.content?.content === 'string') return data.content.content
+    if (typeof data.htmlContent === 'string') return data.htmlContent
+    if (typeof data.textContent === 'string') return data.textContent
+    if (typeof data.body === 'string') return data.body
+    // Last resort - stringify
+    return typeof data === 'object' ? JSON.stringify(data) : String(data)
+  }
+
   const openEmail = async (email: EmailMessage) => {
     setSelectedEmail(email)
     setShowEmailDetail(true)
@@ -123,7 +136,8 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
 
     try {
       const data = await api.getEmail(email.messageId || email.id, selectedMailbox !== 'all' ? selectedMailbox : undefined)
-      setSelectedEmail({ ...email, content: data.content })
+      const contentText = extractContent(data)
+      setSelectedEmail({ ...email, content: contentText })
     } catch (error: any) {
       console.error('Failed to load email:', error)
       if (error.message?.includes('not connected')) {
@@ -376,7 +390,11 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
                       <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
                     ) : (
                       <Text style={styles.bodyText}>
-                        {selectedEmail.content || selectedEmail.body || selectedEmail.snippet}
+                        {typeof selectedEmail.content === 'string'
+                          ? selectedEmail.content
+                          : typeof selectedEmail.body === 'string'
+                            ? selectedEmail.body
+                            : selectedEmail.snippet || ''}
                       </Text>
                     )}
                   </View>
