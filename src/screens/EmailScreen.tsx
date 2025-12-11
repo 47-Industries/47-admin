@@ -372,23 +372,25 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
               </View>
             </View>
 
-            <ScrollView style={styles.emailDetail}>
+            <View style={styles.emailDetail}>
               {selectedEmail && (
                 <>
-                  <Text style={styles.detailSubject}>{selectedEmail.subject || '(No Subject)'}</Text>
-                  <View style={styles.detailMeta}>
-                    <View style={styles.detailFrom}>
-                      <View style={styles.avatar}>
-                        <Text style={styles.avatarText}>
-                          {(selectedEmail.from?.name || selectedEmail.from?.address || 'U').charAt(0).toUpperCase()}
-                        </Text>
+                  <View style={styles.emailDetailHeader}>
+                    <Text style={styles.detailSubject}>{selectedEmail.subject || '(No Subject)'}</Text>
+                    <View style={styles.detailMeta}>
+                      <View style={styles.detailFrom}>
+                        <View style={styles.avatar}>
+                          <Text style={styles.avatarText}>
+                            {(selectedEmail.from?.name || selectedEmail.from?.address || 'U').charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                        <View style={styles.fromInfo}>
+                          <Text style={styles.fromName}>{selectedEmail.from?.name || selectedEmail.from?.address}</Text>
+                          <Text style={styles.fromEmail}>{selectedEmail.from?.address}</Text>
+                        </View>
                       </View>
-                      <View style={styles.fromInfo}>
-                        <Text style={styles.fromName}>{selectedEmail.from?.name || selectedEmail.from?.address}</Text>
-                        <Text style={styles.fromEmail}>{selectedEmail.from?.address}</Text>
-                      </View>
+                      <Text style={styles.detailDate}>{formatDate(selectedEmail.date)}</Text>
                     </View>
-                    <Text style={styles.detailDate}>{formatDate(selectedEmail.date)}</Text>
                   </View>
                   <View style={styles.detailBody}>
                     {loadingContent ? (
@@ -401,25 +403,43 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
                             <!DOCTYPE html>
                             <html>
                               <head>
-                                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+                                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
                                 <style>
+                                  * {
+                                    box-sizing: border-box;
+                                    max-width: 100% !important;
+                                  }
+                                  html, body {
+                                    width: 100% !important;
+                                    margin: 0 !important;
+                                    padding: 0 !important;
+                                    overflow-x: hidden !important;
+                                  }
                                   body {
                                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                                    font-size: 16px;
-                                    line-height: 1.5;
+                                    font-size: 15px;
+                                    line-height: 1.6;
                                     color: #e4e4e7;
                                     background-color: #18181b;
-                                    padding: 0;
-                                    margin: 0;
-                                    word-wrap: break-word;
+                                    padding: 12px !important;
+                                    word-wrap: break-word !important;
+                                    word-break: break-word !important;
+                                    overflow-wrap: break-word !important;
                                   }
-                                  a { color: #3b82f6; }
-                                  img { max-width: 100%; height: auto; }
+                                  a { color: #3b82f6; word-break: break-all; }
+                                  img {
+                                    max-width: 100% !important;
+                                    height: auto !important;
+                                    display: block;
+                                  }
                                   pre, code {
                                     background: #27272a;
                                     padding: 8px;
                                     border-radius: 4px;
                                     overflow-x: auto;
+                                    white-space: pre-wrap !important;
+                                    word-wrap: break-word !important;
+                                    max-width: 100% !important;
                                   }
                                   blockquote {
                                     border-left: 3px solid #3b82f6;
@@ -427,8 +447,29 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
                                     padding-left: 15px;
                                     color: #a1a1aa;
                                   }
-                                  table { border-collapse: collapse; width: 100%; }
-                                  td, th { border: 1px solid #3f3f46; padding: 8px; }
+                                  table {
+                                    border-collapse: collapse;
+                                    width: 100% !important;
+                                    max-width: 100% !important;
+                                    table-layout: fixed !important;
+                                    overflow: hidden;
+                                  }
+                                  td, th {
+                                    border: 1px solid #3f3f46;
+                                    padding: 8px;
+                                    word-wrap: break-word !important;
+                                    overflow: hidden;
+                                  }
+                                  div, p, span, td, th, li {
+                                    max-width: 100% !important;
+                                    overflow-wrap: break-word !important;
+                                    word-wrap: break-word !important;
+                                  }
+                                  /* Force any fixed-width elements to be responsive */
+                                  [width], [style*="width"] {
+                                    width: auto !important;
+                                    max-width: 100% !important;
+                                  }
                                 </style>
                               </head>
                               <body>
@@ -443,14 +484,20 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
                         }}
                         style={styles.webView}
                         scrollEnabled={true}
-                        showsVerticalScrollIndicator={false}
+                        showsVerticalScrollIndicator={true}
+                        showsHorizontalScrollIndicator={false}
                         scalesPageToFit={false}
+                        nestedScrollEnabled={true}
+                        javaScriptEnabled={true}
+                        domStorageEnabled={true}
+                        startInLoadingState={true}
+                        renderLoading={() => <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />}
                       />
                     )}
                   </View>
                 </>
               )}
-            </ScrollView>
+            </View>
           </View>
         </View>
       </Modal>
@@ -801,20 +848,22 @@ const styles = StyleSheet.create({
   },
   emailDetail: {
     flex: 1,
+  },
+  emailDetailHeader: {
     padding: spacing.lg,
+    paddingBottom: spacing.md,
   },
   detailSubject: {
-    fontSize: fontSize.xl,
+    fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
     color: colors.text,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   detailMeta: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: spacing.lg,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
