@@ -1,18 +1,17 @@
-import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Modal, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native'
+import React, { useEffect, useState, useCallback } from 'react'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Modal, TextInput, Alert, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
-import { Badge } from '../components/Badge'
-import { Button } from '../components/Button'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
-interface EmailFolder {
-  id: string
-  name: string
-  path: string
-  unreadCount?: number
-}
+// Hardcoded folders like web app
+const FOLDERS = [
+  { id: 'inbox', label: 'Inbox', icon: 'mail' },
+  { id: 'sent', label: 'Sent', icon: 'paper-plane' },
+  { id: 'drafts', label: 'Drafts', icon: 'document-text' },
+  { id: 'trash', label: 'Trash', icon: 'trash' },
+]
 
 interface EmailMessage {
   id: string
@@ -27,73 +26,90 @@ interface EmailMessage {
 }
 
 interface Mailbox {
-  accountId: string
+  id: string
+  label: string
   email: string
-  displayName?: string
 }
 
 export default function EmailScreen({ navigation, hideHeader }: { navigation: any; hideHeader?: boolean }) {
-  const [folders, setFolders] = useState<EmailFolder[]>([])
+  const [isConnected, setIsConnected] = useState(true)
   const [mailboxes, setMailboxes] = useState<Mailbox[]>([])
   const [selectedFolder, setSelectedFolder] = useState<string>('inbox')
-  const [selectedMailbox, setSelectedMailbox] = useState<string>('')
+  const [selectedMailbox, setSelectedMailbox] = useState<string>('all')
   const [emails, setEmails] = useState<EmailMessage[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [showCompose, setShowCompose] = useState(false)
   const [showEmailDetail, setShowEmailDetail] = useState(false)
   const [selectedEmail, setSelectedEmail] = useState<any>(null)
+  const [loadingContent, setLoadingContent] = useState(false)
+
+  // Compose state
+  const [composeFrom, setComposeFrom] = useState('')
   const [composeTo, setComposeTo] = useState('')
+  const [composeCc, setComposeCc] = useState('')
   const [composeSubject, setComposeSubject] = useState('')
   const [composeBody, setComposeBody] = useState('')
   const [sending, setSending] = useState(false)
-  const [needsAuth, setNeedsAuth] = useState(false)
+  const [showFromPicker, setShowFromPicker] = useState(false)
 
-  const fetchFolders = async () => {
+  // Fetch mailboxes/accounts (includes group emails)
+  const fetchAccounts = useCallback(async () => {
     try {
-      const data = await api.getEmailFolders()
-      setFolders(data.folders || [])
-      setMailboxes(data.mailboxes || [])
-      if (data.mailboxes?.length > 0 && !selectedMailbox) {
-        setSelectedMailbox(data.mailboxes[0].accountId)
-      }
-    } catch (error) {
-      console.error('Failed to fetch folders:', error)
-    }
-  }
+      const data = await api.getEmailAccounts()
+      const accounts = data.mailboxes || []
+      setMailboxes(accounts)
+      setIsConnected(true)
 
-  const fetchEmails = async () => {
-    if (!selectedFolder) return
+      // Set default from address
+      if (accounts.length > 0 && !composeFrom) {
+        setComposeFrom(accounts[0].email)
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch accounts:', error)
+      if (error.message?.includes('not connected') || error.message?.includes('needsAuth')) {
+        setIsConnected(false)
+      }
+    }
+  }, [composeFrom])
+
+  // Fetch emails
+  const fetchEmails = useCallback(async () => {
     try {
       const data = await api.getEmails({
         folderId: selectedFolder,
-        accountId: selectedMailbox || undefined,
+        accountId: selectedMailbox !== 'all' ? selectedMailbox : undefined,
       })
       setEmails(data.emails || [])
-      setNeedsAuth(false)
+      setIsConnected(true)
     } catch (error: any) {
       console.error('Failed to fetch emails:', error)
-      // Check if email service needs authentication
-      if (error.message?.includes('not connected') || error.message?.includes('Unauthorized')) {
-        setNeedsAuth(true)
+      if (error.message?.includes('not connected') || error.message?.includes('needsAuth')) {
+        setIsConnected(false)
       }
       setEmails([])
     } finally {
       setLoading(false)
       setRefreshing(false)
     }
-  }
-
-  useEffect(() => {
-    fetchFolders()
-  }, [])
-
-  useEffect(() => {
-    if (selectedFolder) {
-      setLoading(true)
-      fetchEmails()
-    }
   }, [selectedFolder, selectedMailbox])
+
+  useEffect(() => {
+    fetchAccounts()
+  }, [fetchAccounts])
+
+  useEffect(() => {
+    setLoading(true)
+    fetchEmails()
+  }, [fetchEmails])
+
+  // Auto-refresh every 30 seconds like web app
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchEmails()
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [fetchEmails])
 
   const onRefresh = () => {
     setRefreshing(true)
@@ -101,18 +117,20 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
   }
 
   const openEmail = async (email: EmailMessage) => {
+    setSelectedEmail(email)
+    setShowEmailDetail(true)
+    setLoadingContent(true)
+
     try {
-      const data = await api.getEmail(email.messageId || email.id, selectedMailbox)
-      // Combine the email metadata with the content
+      const data = await api.getEmail(email.messageId || email.id, selectedMailbox !== 'all' ? selectedMailbox : undefined)
       setSelectedEmail({ ...email, content: data.content })
-      setShowEmailDetail(true)
     } catch (error: any) {
       console.error('Failed to load email:', error)
       if (error.message?.includes('not connected')) {
         Alert.alert('Email Not Connected', 'Connect your email in the web admin to view email content.')
-      } else {
-        Alert.alert('Error', 'Failed to load email content')
       }
+    } finally {
+      setLoadingContent(false)
     }
   }
 
@@ -125,20 +143,30 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
     setSending(true)
     try {
       await api.sendEmail({
+        from: composeFrom,
         to: composeTo,
+        cc: composeCc || undefined,
         subject: composeSubject,
         body: composeBody,
-        accountId: selectedMailbox || undefined,
       })
       setShowCompose(false)
-      setComposeTo('')
-      setComposeSubject('')
-      setComposeBody('')
+      resetComposeForm()
       Alert.alert('Success', 'Email sent successfully')
+      fetchEmails() // Refresh to show sent email
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to send email')
     } finally {
       setSending(false)
+    }
+  }
+
+  const resetComposeForm = () => {
+    setComposeTo('')
+    setComposeCc('')
+    setComposeSubject('')
+    setComposeBody('')
+    if (mailboxes.length > 0) {
+      setComposeFrom(mailboxes[0].email)
     }
   }
 
@@ -153,26 +181,11 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
-  const getFolderIcon = (folderName: string | undefined | null) => {
-    if (!folderName) return 'folder'
-    const lower = folderName.toLowerCase()
-    if (lower.includes('inbox')) return 'mail'
-    if (lower.includes('sent')) return 'paper-plane'
-    if (lower.includes('draft')) return 'document-text'
-    if (lower.includes('trash') || lower.includes('deleted')) return 'trash'
-    if (lower.includes('spam') || lower.includes('junk')) return 'warning'
-    if (lower.includes('archive')) return 'archive'
-    return 'folder'
-  }
-
-  const defaultFolders = [
-    { id: 'inbox', name: 'Inbox', path: 'inbox' },
-    { id: 'sent', name: 'Sent', path: 'sent' },
-    { id: 'drafts', name: 'Drafts', path: 'drafts' },
-    { id: 'trash', name: 'Trash', path: 'trash' },
+  // Get all mailboxes with "All Inboxes" option
+  const allMailboxOptions = [
+    { id: 'all', label: 'All Inboxes', email: '' },
+    ...mailboxes,
   ]
-
-  const displayFolders = folders.length > 0 ? folders : defaultFolders
 
   const renderEmail = ({ item }: { item: EmailMessage }) => (
     <TouchableOpacity onPress={() => openEmail(item)} activeOpacity={0.7}>
@@ -181,7 +194,7 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
           <View style={styles.emailFrom}>
             {!item.isRead && <View style={styles.unreadDot} />}
             <Text style={[styles.fromText, !item.isRead && styles.unreadText]} numberOfLines={1}>
-              {item.from.name || item.from.address}
+              {item.from?.name || item.from?.address || 'Unknown'}
             </Text>
           </View>
           <Text style={styles.dateText}>{formatDate(item.date)}</Text>
@@ -198,6 +211,32 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
       </Card>
     </TouchableOpacity>
   )
+
+  if (!isConnected) {
+    return (
+      <View style={styles.container}>
+        {!hideHeader && (
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={styles.title}>Email</Text>
+            <View style={{ width: 40 }} />
+          </View>
+        )}
+        <View style={styles.notConnected}>
+          <Ionicons name="mail-unread-outline" size={64} color={colors.warning} />
+          <Text style={styles.notConnectedTitle}>Email Not Connected</Text>
+          <Text style={styles.notConnectedText}>
+            Connect your Zoho Mail account in the web admin to access your emails here.
+          </Text>
+          <TouchableOpacity style={styles.connectButton} onPress={() => fetchAccounts()}>
+            <Text style={styles.connectButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    )
+  }
 
   return (
     <View style={styles.container}>
@@ -221,64 +260,46 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
         </View>
       )}
 
-      {/* Mailbox Selector */}
-      {mailboxes.length > 1 && (
-        <View style={styles.mailboxSelector}>
-          <FlatList
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={mailboxes}
-            keyExtractor={(item) => item.accountId}
-            contentContainerStyle={styles.mailboxList}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[styles.mailboxBtn, selectedMailbox === item.accountId && styles.mailboxBtnActive]}
-                onPress={() => setSelectedMailbox(item.accountId)}
+      {/* Mailbox Selector - includes All Inboxes + group emails */}
+      <View style={styles.mailboxSelector}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.mailboxList}>
+          {allMailboxOptions.map((mailbox) => (
+            <TouchableOpacity
+              key={mailbox.id}
+              style={[styles.mailboxBtn, selectedMailbox === mailbox.id && styles.mailboxBtnActive]}
+              onPress={() => setSelectedMailbox(mailbox.id)}
+            >
+              <Text
+                style={[styles.mailboxText, selectedMailbox === mailbox.id && styles.mailboxTextActive]}
+                numberOfLines={1}
               >
-                <Text
-                  style={[styles.mailboxText, selectedMailbox === item.accountId && styles.mailboxTextActive]}
-                  numberOfLines={1}
-                >
-                  {item.displayName || item.email}
-                </Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      )}
+                {mailbox.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
-      {/* Folder Tabs */}
+      {/* Folder Tabs - hardcoded like web app */}
       <View style={styles.folderTabs}>
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={displayFolders}
-          keyExtractor={(item, index) => item.id || item.path || `folder-${index}`}
-          contentContainerStyle={styles.folderList}
-          renderItem={({ item }) => {
-            const folder = item as EmailFolder
-            return (
-              <TouchableOpacity
-                style={[styles.folderTab, selectedFolder === folder.id && styles.folderTabActive]}
-                onPress={() => setSelectedFolder(folder.id)}
-              >
-                <Ionicons
-                  name={getFolderIcon(folder.name) as any}
-                  size={16}
-                  color={selectedFolder === folder.id ? colors.text : colors.textMuted}
-                />
-                <Text style={[styles.folderText, selectedFolder === folder.id && styles.folderTextActive]}>
-                  {folder.name}
-                </Text>
-                {folder.unreadCount && folder.unreadCount > 0 && (
-                  <View style={styles.unreadBadge}>
-                    <Text style={styles.unreadBadgeText}>{folder.unreadCount}</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            )
-          }}
-        />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.folderList}>
+          {FOLDERS.map((folder) => (
+            <TouchableOpacity
+              key={folder.id}
+              style={[styles.folderTab, selectedFolder === folder.id && styles.folderTabActive]}
+              onPress={() => setSelectedFolder(folder.id)}
+            >
+              <Ionicons
+                name={folder.icon as any}
+                size={16}
+                color={selectedFolder === folder.id ? colors.text : colors.textMuted}
+              />
+              <Text style={[styles.folderText, selectedFolder === folder.id && styles.folderTextActive]}>
+                {folder.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
       {/* Email List */}
@@ -293,22 +314,14 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
         ListEmptyComponent={
           !loading ? (
             <View style={styles.empty}>
-              {needsAuth ? (
-                <>
-                  <Ionicons name="mail-unread-outline" size={48} color={colors.warning} />
-                  <Text style={styles.emptyText}>Email Not Connected</Text>
-                  <Text style={styles.emptySubtext}>
-                    Connect your email account in the web admin to view emails here.
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <Ionicons name="mail-outline" size={48} color={colors.textMuted} />
-                  <Text style={styles.emptyText}>No emails in this folder</Text>
-                </>
-              )}
+              <Ionicons name="mail-outline" size={48} color={colors.textMuted} />
+              <Text style={styles.emptyText}>No emails in {selectedFolder}</Text>
             </View>
-          ) : null
+          ) : (
+            <View style={styles.loading}>
+              <ActivityIndicator color={colors.primary} />
+            </View>
+          )
         }
       />
 
@@ -321,7 +334,17 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
                 <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
               <View style={styles.modalActions}>
-                <TouchableOpacity style={styles.modalAction}>
+                <TouchableOpacity
+                  style={styles.modalAction}
+                  onPress={() => {
+                    if (selectedEmail) {
+                      setShowEmailDetail(false)
+                      setComposeTo(selectedEmail.from?.address || '')
+                      setComposeSubject(`Re: ${selectedEmail.subject || ''}`)
+                      setShowCompose(true)
+                    }
+                  }}
+                >
                   <Ionicons name="arrow-undo-outline" size={20} color={colors.primary} />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.modalAction}>
@@ -330,28 +353,36 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
               </View>
             </View>
 
-            {selectedEmail && (
-              <View style={styles.emailDetail}>
-                <Text style={styles.detailSubject}>{selectedEmail.subject || '(No Subject)'}</Text>
-                <View style={styles.detailMeta}>
-                  <View style={styles.detailFrom}>
-                    <View style={styles.avatar}>
-                      <Text style={styles.avatarText}>
-                        {(selectedEmail.from?.name || selectedEmail.from?.address || 'U').charAt(0).toUpperCase()}
-                      </Text>
+            <ScrollView style={styles.emailDetail}>
+              {selectedEmail && (
+                <>
+                  <Text style={styles.detailSubject}>{selectedEmail.subject || '(No Subject)'}</Text>
+                  <View style={styles.detailMeta}>
+                    <View style={styles.detailFrom}>
+                      <View style={styles.avatar}>
+                        <Text style={styles.avatarText}>
+                          {(selectedEmail.from?.name || selectedEmail.from?.address || 'U').charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                      <View style={styles.fromInfo}>
+                        <Text style={styles.fromName}>{selectedEmail.from?.name || selectedEmail.from?.address}</Text>
+                        <Text style={styles.fromEmail}>{selectedEmail.from?.address}</Text>
+                      </View>
                     </View>
-                    <View style={styles.fromInfo}>
-                      <Text style={styles.fromName}>{selectedEmail.from?.name || selectedEmail.from?.address}</Text>
-                      <Text style={styles.fromEmail}>{selectedEmail.from?.address}</Text>
-                    </View>
+                    <Text style={styles.detailDate}>{formatDate(selectedEmail.date)}</Text>
                   </View>
-                  <Text style={styles.detailDate}>{formatDate(selectedEmail.date)}</Text>
-                </View>
-                <View style={styles.detailBody}>
-                  <Text style={styles.bodyText}>{selectedEmail.content || selectedEmail.body || selectedEmail.snippet}</Text>
-                </View>
-              </View>
-            )}
+                  <View style={styles.detailBody}>
+                    {loadingContent ? (
+                      <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
+                    ) : (
+                      <Text style={styles.bodyText}>
+                        {selectedEmail.content || selectedEmail.body || selectedEmail.snippet}
+                      </Text>
+                    )}
+                  </View>
+                </>
+              )}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -364,7 +395,7 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
         >
           <View style={styles.composeContent}>
             <View style={styles.composeHeader}>
-              <TouchableOpacity onPress={() => setShowCompose(false)}>
+              <TouchableOpacity onPress={() => { setShowCompose(false); resetComposeForm(); }}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
               <Text style={styles.composeTitle}>New Email</Text>
@@ -375,6 +406,13 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
               </TouchableOpacity>
             </View>
 
+            {/* From Address Selector */}
+            <TouchableOpacity style={styles.composeField} onPress={() => setShowFromPicker(true)}>
+              <Text style={styles.fieldLabel}>From:</Text>
+              <Text style={styles.fromValue} numberOfLines={1}>{composeFrom || 'Select...'}</Text>
+              <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
+            </TouchableOpacity>
+
             <View style={styles.composeField}>
               <Text style={styles.fieldLabel}>To:</Text>
               <TextInput
@@ -382,6 +420,19 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
                 value={composeTo}
                 onChangeText={setComposeTo}
                 placeholder="recipient@example.com"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+
+            <View style={styles.composeField}>
+              <Text style={styles.fieldLabel}>Cc:</Text>
+              <TextInput
+                style={styles.fieldInput}
+                value={composeCc}
+                onChangeText={setComposeCc}
+                placeholder="cc@example.com"
                 placeholderTextColor={colors.textMuted}
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -412,6 +463,37 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
             </View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* From Address Picker Modal */}
+      <Modal visible={showFromPicker} animationType="fade" transparent>
+        <TouchableOpacity
+          style={styles.pickerOverlay}
+          activeOpacity={1}
+          onPress={() => setShowFromPicker(false)}
+        >
+          <View style={styles.pickerContent}>
+            <Text style={styles.pickerTitle}>Select From Address</Text>
+            {mailboxes.map((mailbox) => (
+              <TouchableOpacity
+                key={mailbox.id}
+                style={[styles.pickerOption, composeFrom === mailbox.email && styles.pickerOptionActive]}
+                onPress={() => {
+                  setComposeFrom(mailbox.email)
+                  setShowFromPicker(false)
+                }}
+              >
+                <Text style={[styles.pickerOptionText, composeFrom === mailbox.email && styles.pickerOptionTextActive]}>
+                  {mailbox.label}
+                </Text>
+                <Text style={styles.pickerOptionEmail}>{mailbox.email}</Text>
+                {composeFrom === mailbox.email && (
+                  <Ionicons name="checkmark" size={20} color={colors.primary} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
       </Modal>
     </View>
   )
@@ -463,6 +545,37 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: fontWeight.medium,
   },
+  notConnected: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
+  },
+  notConnectedTitle: {
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  notConnectedText: {
+    fontSize: fontSize.md,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  connectButton: {
+    marginTop: spacing.xl,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+  },
+  connectButtonText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+  },
   mailboxSelector: {
     marginBottom: spacing.sm,
   },
@@ -477,6 +590,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+    marginRight: spacing.sm,
   },
   mailboxBtnActive: {
     backgroundColor: colors.primary,
@@ -507,6 +621,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+    marginRight: spacing.sm,
   },
   folderTabActive: {
     backgroundColor: colors.primary,
@@ -519,18 +634,6 @@ const styles = StyleSheet.create({
   },
   folderTextActive: {
     color: colors.text,
-  },
-  unreadBadge: {
-    backgroundColor: colors.error,
-    borderRadius: 10,
-    paddingHorizontal: spacing.xs,
-    minWidth: 18,
-    alignItems: 'center',
-  },
-  unreadBadgeText: {
-    fontSize: fontSize.xs,
-    color: colors.text,
-    fontWeight: fontWeight.semibold,
   },
   list: {
     paddingHorizontal: spacing.lg,
@@ -599,12 +702,8 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: spacing.md,
   },
-  emptySubtext: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-    marginTop: spacing.sm,
-    textAlign: 'center',
-    paddingHorizontal: spacing.xl,
+  loading: {
+    paddingVertical: spacing.xxxl,
   },
   modalOverlay: {
     flex: 1,
@@ -744,6 +843,11 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.text,
   },
+  fromValue: {
+    flex: 1,
+    fontSize: fontSize.md,
+    color: colors.text,
+  },
   composeBody: {
     flex: 1,
     padding: spacing.lg,
@@ -753,5 +857,51 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.text,
     lineHeight: 24,
+  },
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  pickerContent: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    width: '100%',
+    maxWidth: 400,
+  },
+  pickerTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+    marginBottom: spacing.lg,
+    textAlign: 'center',
+  },
+  pickerOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.xs,
+  },
+  pickerOptionActive: {
+    backgroundColor: colors.surfaceHover,
+  },
+  pickerOptionText: {
+    flex: 1,
+    fontSize: fontSize.md,
+    color: colors.text,
+    fontWeight: fontWeight.medium,
+  },
+  pickerOptionTextActive: {
+    color: colors.primary,
+  },
+  pickerOptionEmail: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    marginRight: spacing.sm,
   },
 })

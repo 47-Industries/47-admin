@@ -472,6 +472,10 @@ class ApiService {
   }
 
   // Email (Zoho integration)
+  async getEmailAccounts() {
+    return this.request<{ mailboxes: { id: string; label: string; email: string }[] }>('/admin/email/accounts')
+  }
+
   async getEmailFolders() {
     return this.request<{ folders: any[]; mailboxes: any[] }>('/admin/email/folders')
   }
@@ -491,10 +495,17 @@ class ApiService {
     return this.request<{ content: any }>(`/admin/email/${messageId}?${searchParams}`)
   }
 
-  async sendEmail(data: { to: string; subject: string; body: string; accountId?: string }) {
+  async sendEmail(data: { from: string; to: string; cc?: string; subject: string; body: string }) {
     return this.request<{ success: boolean }>('/admin/email/send', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        from: data.from,
+        to: data.to,
+        cc: data.cc,
+        subject: data.subject,
+        content: data.body,
+        isHtml: false,
+      }),
     })
   }
 }
