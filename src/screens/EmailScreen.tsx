@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Modal, TextInput, Alert, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Modal, TextInput, Alert, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, useWindowDimensions } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { WebView } from 'react-native-webview'
 import { Card } from '../components/Card'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
@@ -389,13 +390,58 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
                     {loadingContent ? (
                       <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
                     ) : (
-                      <Text style={styles.bodyText}>
-                        {typeof selectedEmail.content === 'string'
-                          ? selectedEmail.content
-                          : typeof selectedEmail.body === 'string'
-                            ? selectedEmail.body
-                            : selectedEmail.snippet || ''}
-                      </Text>
+                      <WebView
+                        originWhitelist={['*']}
+                        source={{
+                          html: `
+                            <!DOCTYPE html>
+                            <html>
+                              <head>
+                                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+                                <style>
+                                  body {
+                                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                                    font-size: 16px;
+                                    line-height: 1.5;
+                                    color: #e4e4e7;
+                                    background-color: #18181b;
+                                    padding: 0;
+                                    margin: 0;
+                                    word-wrap: break-word;
+                                  }
+                                  a { color: #3b82f6; }
+                                  img { max-width: 100%; height: auto; }
+                                  pre, code {
+                                    background: #27272a;
+                                    padding: 8px;
+                                    border-radius: 4px;
+                                    overflow-x: auto;
+                                  }
+                                  blockquote {
+                                    border-left: 3px solid #3b82f6;
+                                    margin: 10px 0;
+                                    padding-left: 15px;
+                                    color: #a1a1aa;
+                                  }
+                                  table { border-collapse: collapse; width: 100%; }
+                                  td, th { border: 1px solid #3f3f46; padding: 8px; }
+                                </style>
+                              </head>
+                              <body>
+                                ${typeof selectedEmail.content === 'string'
+                                  ? selectedEmail.content
+                                  : typeof selectedEmail.body === 'string'
+                                    ? selectedEmail.body
+                                    : `<p>${selectedEmail.snippet || ''}</p>`}
+                              </body>
+                            </html>
+                          `,
+                        }}
+                        style={styles.webView}
+                        scrollEnabled={true}
+                        showsVerticalScrollIndicator={false}
+                        scalesPageToFit={false}
+                      />
                     )}
                   </View>
                 </>
@@ -805,11 +851,11 @@ const styles = StyleSheet.create({
   },
   detailBody: {
     flex: 1,
+    minHeight: 300,
   },
-  bodyText: {
-    fontSize: fontSize.md,
-    color: colors.text,
-    lineHeight: 24,
+  webView: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
   composeContent: {
     flex: 1,
