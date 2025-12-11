@@ -117,12 +117,16 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
     fetchEmails()
   }
 
-  // Helper to extract string content from potentially nested response
+  // Helper to extract HTML content from API response
+  // API returns { content: "..." } or { content: { content: "..." } }
   const extractContent = (data: any): string => {
     if (!data) return ''
     if (typeof data === 'string') return data
+    // Check nested content.content first (Zoho format)
+    if (data.content?.content && typeof data.content.content === 'string') {
+      return data.content.content
+    }
     if (typeof data.content === 'string') return data.content
-    if (typeof data.content?.content === 'string') return data.content.content
     if (typeof data.htmlContent === 'string') return data.htmlContent
     if (typeof data.textContent === 'string') return data.textContent
     if (typeof data.body === 'string') return data.body
