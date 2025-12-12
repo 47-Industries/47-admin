@@ -338,6 +338,49 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
     )
   }
 
+  const handleMarkAsPersonal = async (bill: Bill) => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          title: 'Mark as Personal',
+          message: 'This will remove the bill and block similar bills in the future. What should be blocked?',
+          options: ['Cancel', `Block vendor: ${bill.vendor}`, 'Block by email sender', 'Block by subject'],
+          cancelButtonIndex: 0,
+          destructiveButtonIndex: 1,
+        },
+        async (buttonIndex) => {
+          if (buttonIndex === 0) return
+          const blockTypes: ('vendor' | 'sender' | 'subject')[] = ['vendor', 'sender', 'subject']
+          const blockType = blockTypes[buttonIndex - 1]
+          await executeMarkAsPersonal(bill.id, blockType)
+        }
+      )
+    } else {
+      Alert.alert(
+        'Mark as Personal',
+        'This will remove the bill and block similar bills in the future. What should be blocked?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: `Block vendor: ${bill.vendor}`, onPress: () => executeMarkAsPersonal(bill.id, 'vendor'), style: 'destructive' },
+          { text: 'Block by email sender', onPress: () => executeMarkAsPersonal(bill.id, 'sender') },
+          { text: 'Block by subject', onPress: () => executeMarkAsPersonal(bill.id, 'subject') },
+        ]
+      )
+    }
+  }
+
+  const executeMarkAsPersonal = async (billId: string, blockType: 'vendor' | 'sender' | 'subject') => {
+    try {
+      const result = await api.markBillAsPersonal(billId, { blockType })
+      setShowBillDetailModal(false)
+      setSelectedBill(null)
+      fetchData()
+      Alert.alert('Success', result.message || 'Bill marked as personal and blocked for future')
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to mark bill as personal')
+    }
+  }
+
   const openBillDetail = async (bill: Bill) => {
     try {
       const billData = await api.getBill(bill.id)
@@ -823,16 +866,23 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
 
                 <View style={styles.modalButtons}>
                   <Button
-                    title="Delete Bill"
+                    title="Personal"
+                    variant="outline"
+                    onPress={() => handleMarkAsPersonal(selectedBill)}
+                    style={{ flex: 1, borderColor: colors.warning }}
+                    textStyle={{ color: colors.warning }}
+                  />
+                  <Button
+                    title="Delete"
                     variant="outline"
                     onPress={() => handleDeleteBill(selectedBill.id)}
-                    style={{ flex: 1, borderColor: colors.error }}
+                    style={{ flex: 1, marginLeft: spacing.sm, borderColor: colors.error }}
                     textStyle={{ color: colors.error }}
                   />
                   <Button
                     title="Close"
                     onPress={() => setShowBillDetailModal(false)}
-                    style={{ flex: 1, marginLeft: spacing.md }}
+                    style={{ flex: 1, marginLeft: spacing.sm }}
                   />
                 </View>
               </>

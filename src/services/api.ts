@@ -292,6 +292,13 @@ class ApiService {
     })
   }
 
+  async markBillAsPersonal(id: string, options?: { blockType?: 'vendor' | 'sender' | 'subject'; reason?: string }) {
+    return this.request<{ success: boolean; message: string; blocked: { pattern: string; patternType: string; reason: string } }>(`/admin/bills/${id}/personal`, {
+      method: 'POST',
+      body: JSON.stringify(options || {}),
+    })
+  }
+
   async scanBillImage(base64: string) {
     return this.request<{
       vendor?: string
