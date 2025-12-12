@@ -292,6 +292,18 @@ class ApiService {
     })
   }
 
+  async scanBillImage(base64: string) {
+    return this.request<{
+      vendor?: string
+      amount?: number
+      vendorType?: string
+      dueDate?: string
+    }>('/admin/bills/scan', {
+      method: 'POST',
+      body: JSON.stringify({ image: base64 }),
+    })
+  }
+
   async getFounders() {
     return this.request<{ founders: any[] }>('/admin/founders')
   }

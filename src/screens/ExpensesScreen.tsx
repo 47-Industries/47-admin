@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Alert, Modal, TextInput, FlatList, ActionSheetIOS, Platform } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Alert, Modal, TextInput, FlatList, ActionSheetIOS, Platform, Image, ActivityIndicator } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import * as ImagePicker from 'expo-image-picker'
 import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
@@ -93,6 +94,8 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null)
   const [newBill, setNewBill] = useState({ vendor: '', amount: '', vendorType: 'OTHER', dueDate: '' })
   const [submitting, setSubmitting] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [scanning, setScanning] = useState(false)
 
   const user = useAuthStore((state) => state.user)
   const isFounder = user?.isFounder || false
@@ -187,12 +190,100 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
       })
       setShowAddModal(false)
       setNewBill({ vendor: '', amount: '', vendorType: 'OTHER', dueDate: '' })
+      setSelectedImage(null)
       fetchData()
       Alert.alert('Success', 'Bill created and split among founders')
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to create bill')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please allow access to your photos to upload bill screenshots')
+      return
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,
+      quality: 0.8,
+      base64: true,
+    })
+
+    if (!result.canceled && result.assets[0]) {
+      setSelectedImage(result.assets[0].uri)
+      scanBillFromImage(result.assets[0].base64 || '')
+    }
+  }
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync()
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please allow camera access to take bill photos')
+      return
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: false,
+      quality: 0.8,
+      base64: true,
+    })
+
+    if (!result.canceled && result.assets[0]) {
+      setSelectedImage(result.assets[0].uri)
+      scanBillFromImage(result.assets[0].base64 || '')
+    }
+  }
+
+  const scanBillFromImage = async (base64: string) => {
+    setScanning(true)
+    try {
+      const result = await api.scanBillImage(base64)
+      if (result.vendor || result.amount) {
+        setNewBill({
+          vendor: result.vendor || '',
+          amount: result.amount?.toString() || '',
+          vendorType: result.vendorType || 'OTHER',
+          dueDate: result.dueDate || ''
+        })
+        Alert.alert('Bill Detected', `Found: ${result.vendor || 'Unknown'} - $${result.amount || '0'}`)
+      } else {
+        Alert.alert('No Bill Found', 'Could not detect bill details from the image. Please enter manually.')
+      }
+    } catch (error: any) {
+      console.error('Scan error:', error)
+      Alert.alert('Scan Failed', 'Could not analyze the image. Please enter bill details manually.')
+    } finally {
+      setScanning(false)
+    }
+  }
+
+  const showImageOptions = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Take Photo', 'Choose from Library'],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) takePhoto()
+          if (buttonIndex === 2) pickImage()
+        }
+      )
+    } else {
+      Alert.alert(
+        'Add Bill Screenshot',
+        'How would you like to add the image?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Take Photo', onPress: takePhoto },
+          { text: 'Choose from Library', onPress: pickImage },
+        ]
+      )
     }
   }
 
@@ -579,15 +670,38 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
 
       {/* Add Bill Modal */}
       <Modal visible={showAddModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
+        <ScrollView contentContainerStyle={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Bill</Text>
-              <TouchableOpacity onPress={() => setShowAddModal(false)}>
+              <TouchableOpacity onPress={() => { setShowAddModal(false); setSelectedImage(null); }}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
             <Text style={styles.modalSubtitle}>Split equally among {founders.length || '?'} founders</Text>
+
+            {/* Screenshot Upload */}
+            <TouchableOpacity style={styles.imageUploadButton} onPress={showImageOptions} disabled={scanning}>
+              {scanning ? (
+                <View style={styles.scanningContainer}>
+                  <ActivityIndicator color={colors.primary} />
+                  <Text style={styles.scanningText}>Scanning bill...</Text>
+                </View>
+              ) : selectedImage ? (
+                <View style={styles.selectedImageContainer}>
+                  <Image source={{ uri: selectedImage }} style={styles.selectedImage} />
+                  <View style={styles.imageOverlay}>
+                    <Ionicons name="checkmark-circle" size={32} color={colors.success} />
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.uploadPlaceholder}>
+                  <Ionicons name="camera" size={32} color={colors.primary} />
+                  <Text style={styles.uploadText}>Upload Bill Screenshot</Text>
+                  <Text style={styles.uploadSubtext}>Auto-detect vendor & amount</Text>
+                </View>
+              )}
+            </TouchableOpacity>
 
             <Text style={styles.inputLabel}>Vendor</Text>
             <TextInput
@@ -629,11 +743,11 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
             />
 
             <View style={styles.modalButtons}>
-              <Button title="Cancel" variant="outline" onPress={() => setShowAddModal(false)} style={{ flex: 1 }} />
+              <Button title="Cancel" variant="outline" onPress={() => { setShowAddModal(false); setSelectedImage(null); }} style={{ flex: 1 }} />
               <Button title="Create" onPress={handleAddBill} loading={submitting} style={{ flex: 1, marginLeft: spacing.md }} />
             </View>
           </View>
-        </View>
+        </ScrollView>
       </Modal>
 
       {/* Bill Detail Modal */}
@@ -1178,5 +1292,59 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     paddingVertical: spacing.lg,
+  },
+  // Image upload styles
+  imageUploadButton: {
+    borderWidth: 2,
+    borderColor: colors.borderLight,
+    borderStyle: 'dashed',
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.lg,
+    overflow: 'hidden',
+  },
+  uploadPlaceholder: {
+    padding: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uploadText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.primary,
+    marginTop: spacing.sm,
+  },
+  uploadSubtext: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: spacing.xs,
+  },
+  selectedImageContainer: {
+    position: 'relative',
+    height: 150,
+  },
+  selectedImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scanningContainer: {
+    padding: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scanningText: {
+    fontSize: fontSize.sm,
+    color: colors.primary,
+    marginTop: spacing.sm,
   },
 })
