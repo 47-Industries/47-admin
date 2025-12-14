@@ -236,16 +236,138 @@ class ApiService {
     })
   }
 
-  // Expenses/Bills
-  async getExpensesSummary() {
+  // Expenses/Bills (v2 - new model)
+  async getExpensesSummary(period?: string) {
+    const searchParams = new URLSearchParams()
+    if (period) searchParams.set('period', period)
     return this.request<{
-      summary: any[]
+      period: string
+      founderCount: number
+      bills: {
+        pending: any[]
+        paid: any[]
+        overdue: any[]
+        all: any[]
+      }
+      founderBalances: any[]
+      totalOutstanding: number
+      totals: {
+        pending: number
+        paid: number
+        overdue: number
+        monthlyTotal: number
+      }
       upcomingBills: any[]
-      overdueBills: any[]
-      globalTotals: any
-    }>('/admin/expenses-summary')
+      upcomingCount: number
+    }>(`/admin/expenses-summary-v2?${searchParams}`)
   }
 
+  async getBillInstances(params?: { page?: number; status?: string; period?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.period) searchParams.set('period', params.period)
+    return this.request<{ instances: any[]; total: number }>(`/admin/bill-instances?${searchParams}`)
+  }
+
+  async getBillInstance(id: string) {
+    return this.request<{ instance: any }>(`/admin/bill-instances/${id}`)
+  }
+
+  async createBillInstance(data: { vendor: string; vendorType: string; amount: number; dueDate?: string; recurringBillId?: string }) {
+    return this.request<{ instance: any }>('/admin/bill-instances', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateBillInstance(id: string, data: any) {
+    return this.request<{ instance: any }>(`/admin/bill-instances/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteBillInstance(id: string) {
+    return this.request<{ success: boolean }>(`/admin/bill-instances/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async markFounderPaymentPaid(billInstanceId: string, userId: string) {
+    return this.request<{ payment: any; success: boolean }>(`/admin/bill-instances/${billInstanceId}/founder-payments`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, status: 'PAID' }),
+    })
+  }
+
+  async getFounderPayments(billInstanceId: string) {
+    return this.request<{ payments: any[] }>(`/admin/bill-instances/${billInstanceId}/founder-payments`)
+  }
+
+  // Recurring bills
+  async getRecurringBills() {
+    return this.request<{ recurringBills: any[] }>('/admin/recurring-bills')
+  }
+
+  async getRecurringBill(id: string) {
+    return this.request<{ recurringBill: any }>(`/admin/recurring-bills/${id}`)
+  }
+
+  async createRecurringBill(data: {
+    name: string
+    vendor: string
+    amountType: 'FIXED' | 'VARIABLE'
+    fixedAmount?: number
+    frequency: string
+    dueDay: number
+    emailPatterns?: string[]
+    paymentMethod?: string
+    vendorType: string
+  }) {
+    return this.request<{ recurringBill: any }>('/admin/recurring-bills', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateRecurringBill(id: string, data: any) {
+    return this.request<{ recurringBill: any }>(`/admin/recurring-bills/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteRecurringBill(id: string) {
+    return this.request<{ success: boolean }>(`/admin/recurring-bills/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // Bill scanning (manual trigger)
+  async triggerBillScan() {
+    return this.request<{ success: boolean; results: any }>('/cron/scan-bills', {
+      method: 'POST',
+    })
+  }
+
+  async scanBillImage(base64: string) {
+    return this.request<{
+      vendor?: string
+      amount?: number
+      vendorType?: string
+      dueDate?: string
+    }>('/admin/bills/scan', {
+      method: 'POST',
+      body: JSON.stringify({ image: base64 }),
+    })
+  }
+
+  async getFounders() {
+    return this.request<{ founders: any[] }>('/admin/founders')
+  }
+
+  // Legacy endpoints (for compatibility during migration)
   async getBills(params?: { page?: number; status?: string }) {
     const searchParams = new URLSearchParams()
     if (params?.page) searchParams.set('page', params.page.toString())
@@ -271,48 +393,10 @@ class ApiService {
     })
   }
 
-  async syncBills() {
-    return this.request<{ success: boolean; created: number }>('/admin/bills/sync', {
-      method: 'POST',
-    })
-  }
-
-  async getSyncStatus() {
-    return this.request<{
-      configured: boolean
-      accountEmail: string | null
-      lastSync: string | null
-      authUrl: string | null
-    }>('/admin/bills/sync')
-  }
-
   async deleteBill(id: string) {
     return this.request<{ success: boolean }>(`/admin/bills/${id}`, {
       method: 'DELETE',
     })
-  }
-
-  async markBillAsPersonal(id: string, options?: { blockType?: 'vendor' | 'sender' | 'subject'; reason?: string }) {
-    return this.request<{ success: boolean; message: string; blocked: { pattern: string; patternType: string; reason: string } }>(`/admin/bills/${id}/personal`, {
-      method: 'POST',
-      body: JSON.stringify(options || {}),
-    })
-  }
-
-  async scanBillImage(base64: string) {
-    return this.request<{
-      vendor?: string
-      amount?: number
-      vendorType?: string
-      dueDate?: string
-    }>('/admin/bills/scan', {
-      method: 'POST',
-      body: JSON.stringify({ image: base64 }),
-    })
-  }
-
-  async getFounders() {
-    return this.request<{ founders: any[] }>('/admin/founders')
   }
 
   // Analytics

@@ -24,6 +24,7 @@ import EmailScreen from '../screens/EmailScreen'
 import BlogScreen from '../screens/BlogScreen'
 import ReportsScreen from '../screens/ReportsScreen'
 import ServicePackageDetailScreen from '../screens/ServicePackageDetailScreen'
+import { RecurringBillsScreen } from '../screens/RecurringBillsScreen'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
 // 5 tabs with real content, not lists
@@ -67,7 +68,7 @@ export default function AuthenticatedApp() {
   const getParentTab = (screenName: string): TabName | null => {
     const orderScreens = ['OrderDetail', 'Returns', 'Products', 'ProductDetail']
     const serviceScreens = ['ServicePackageDetail', 'CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'PortfolioDetail']
-    const businessScreens = ['Expenses', 'Reports']
+    const businessScreens = ['Expenses', 'Reports', 'RecurringBills']
     const toolsScreens = ['Users', 'UserDetail', 'Email', 'Blog', 'Settings']
 
     if (orderScreens.includes(screenName)) return 'Orders'
@@ -114,6 +115,8 @@ export default function AuthenticatedApp() {
           return <BlogScreen navigation={navigation} />
         case 'Reports':
           return <ReportsScreen navigation={navigation} />
+        case 'RecurringBills':
+          return <RecurringBillsScreen navigation={navigation} />
       }
     }
 

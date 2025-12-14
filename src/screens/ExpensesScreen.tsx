@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Alert, Modal, TextInput, FlatList, ActionSheetIOS, Platform, Image, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Alert, Modal, TextInput, ActionSheetIOS, Platform, Image, ActivityIndicator } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
 import { Card } from '../components/Card'
@@ -14,21 +14,18 @@ interface Founder {
   name: string | null
   email: string | null
   image?: string
-  pendingAmount?: number
-  pendingCount?: number
-  paidAmount?: number
-  paidCount?: number
 }
 
-interface FounderSummary {
+interface FounderBalance {
   founder: Founder
-  pending: { count: number; amount: number }
-  paid: { count: number; amount: number }
-  totalOwed: number
-  totalPaid: number
+  pendingAmount: number
+  pendingCount: number
+  paidAmount: number
+  paidCount: number
+  owesFor: string[]
 }
 
-interface BillPayment {
+interface FounderPayment {
   id: string
   amount: number
   status: string
@@ -36,62 +33,65 @@ interface BillPayment {
   user: { id: string; name: string | null; email: string }
 }
 
-interface Bill {
+interface BillInstance {
   id: string
   vendor: string
   vendorType: string
   amount: number
   dueDate: string | null
+  period: string | null
   status: string
-  emailSubject?: string | null
-  createdAt: string
-  payments: BillPayment[]
-  founderCount?: number
-  perPersonAmount: number
-}
-
-interface GlobalTotals {
-  totalPending: number
-  totalPaid: number
-  upcomingBillsCount: number
-  overdueBillsCount: number
+  paidDate: string | null
+  paidVia: string | null
   founderCount: number
+  perPersonAmount: number
+  recurringBill?: { name: string; paymentMethod: string | null }
+  founderPayments?: FounderPayment[]
 }
 
-interface SyncStatus {
-  configured: boolean
-  accountEmail: string | null
-  lastSync: string | null
-  authUrl: string | null
+interface ExpensesSummary {
+  period: string
+  founderCount: number
+  bills: {
+    pending: BillInstance[]
+    paid: BillInstance[]
+    overdue: BillInstance[]
+    all: BillInstance[]
+  }
+  founderBalances: FounderBalance[]
+  totalOutstanding: number
+  totals: {
+    pending: number
+    paid: number
+    overdue: number
+    monthlyTotal: number
+  }
+  upcomingBills: BillInstance[]
+  upcomingCount: number
 }
 
 const VENDOR_TYPES = [
-  { value: 'UTILITY', label: 'Utility (Electric, Water, Gas)' },
+  { value: 'RENT', label: 'Rent' },
+  { value: 'UTILITY', label: 'Utility' },
   { value: 'CREDIT_CARD', label: 'Credit Card' },
   { value: 'SUBSCRIPTION', label: 'Subscription' },
-  { value: 'BANK_ALERT', label: 'Bank Alert' },
+  { value: 'TRANSFER', label: 'Transfer' },
   { value: 'OTHER', label: 'Other' }
 ]
 
-type TabKey = 'summary' | 'bills' | 'founders'
+type TabKey = 'monthly' | 'balances'
 
 export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hideHeader?: boolean }) {
-  const [activeTab, setActiveTab] = useState<TabKey>('summary')
-  const [summary, setSummary] = useState<FounderSummary[]>([])
-  const [globalTotals, setGlobalTotals] = useState<GlobalTotals | null>(null)
-  const [upcomingBills, setUpcomingBills] = useState<Bill[]>([])
-  const [overdueBills, setOverdueBills] = useState<Bill[]>([])
-  const [bills, setBills] = useState<Bill[]>([])
-  const [founders, setFounders] = useState<Founder[]>([])
-  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null)
+  const [activeTab, setActiveTab] = useState<TabKey>('monthly')
+  const [summary, setSummary] = useState<ExpensesSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [syncing, setSyncing] = useState(false)
+  const [currentPeriod, setCurrentPeriod] = useState(() => new Date().toISOString().slice(0, 7))
 
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false)
   const [showBillDetailModal, setShowBillDetailModal] = useState(false)
-  const [selectedBill, setSelectedBill] = useState<Bill | null>(null)
+  const [selectedBill, setSelectedBill] = useState<BillInstance | null>(null)
   const [newBill, setNewBill] = useState({ vendor: '', amount: '', vendorType: 'OTHER', dueDate: '' })
   const [submitting, setSubmitting] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
@@ -102,24 +102,8 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
 
   const fetchData = async () => {
     try {
-      if (activeTab === 'summary') {
-        const data = await api.getExpensesSummary()
-        setSummary(data.summary || [])
-        setGlobalTotals(data.globalTotals || null)
-        setUpcomingBills(data.upcomingBills || [])
-        setOverdueBills(data.overdueBills || [])
-      } else if (activeTab === 'bills') {
-        const [billsData, syncData] = await Promise.all([
-          api.getBills(),
-          api.getSyncStatus().catch(() => null)
-        ])
-        setBills(billsData.bills || [])
-        setFounders(billsData.founders || [])
-        if (syncData) setSyncStatus(syncData)
-      } else if (activeTab === 'founders') {
-        const data = await api.getFounders()
-        setFounders(data.founders || [])
-      }
+      const data = await api.getExpensesSummary(currentPeriod)
+      setSummary(data)
     } catch (error) {
       console.error('Failed to fetch expenses:', error)
     } finally {
@@ -131,7 +115,7 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
   useEffect(() => {
     setLoading(true)
     fetchData()
-  }, [activeTab])
+  }, [currentPeriod])
 
   const onRefresh = () => {
     setRefreshing(true)
@@ -144,7 +128,13 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '-'
-    return new Date(dateStr).toLocaleDateString()
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
+  const formatPeriod = (period: string) => {
+    const [year, month] = period.split('-')
+    const date = new Date(parseInt(year), parseInt(month) - 1)
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
   }
 
   const getDaysUntilDue = (dueDate: string | null) => {
@@ -153,25 +143,15 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
     return days
   }
 
-  const handleSyncBills = async () => {
-    setSyncing(true)
-    try {
-      const result = await api.syncBills()
-      Alert.alert('Success', `Synced: ${result.created || 0} new bills found`)
-      fetchData()
-    } catch (error: any) {
-      if (error.needsAuth && error.authUrl) {
-        Alert.alert(
-          'Gmail Not Connected',
-          'You need to connect Gmail to sync bills. Please use the web admin to connect Gmail.',
-          [{ text: 'OK' }]
-        )
-      } else {
-        Alert.alert('Error', error.message || 'Failed to sync bills')
-      }
-    } finally {
-      setSyncing(false)
+  const navigatePeriod = (direction: 'prev' | 'next') => {
+    const [year, month] = currentPeriod.split('-').map(Number)
+    const date = new Date(year, month - 1)
+    if (direction === 'prev') {
+      date.setMonth(date.getMonth() - 1)
+    } else {
+      date.setMonth(date.getMonth() + 1)
     }
+    setCurrentPeriod(date.toISOString().slice(0, 7))
   }
 
   const handleAddBill = async () => {
@@ -182,7 +162,7 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
 
     setSubmitting(true)
     try {
-      await api.createBill({
+      await api.createBillInstance({
         vendor: newBill.vendor,
         vendorType: newBill.vendorType,
         amount: parseFloat(newBill.amount),
@@ -297,12 +277,11 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
           text: 'Confirm',
           onPress: async () => {
             try {
-              await api.markPaymentPaid(billId, userId)
+              await api.markFounderPaymentPaid(billId, userId)
               fetchData()
               if (selectedBill) {
-                // Refresh bill detail if modal is open
-                const billData = await api.getBill(billId)
-                setSelectedBill(billData.bill)
+                const billData = await api.getBillInstance(billId)
+                setSelectedBill({ ...billData.instance, founderCount: summary?.founderCount || 0, perPersonAmount: billData.instance.amount / (summary?.founderCount || 1) })
               }
             } catch (error: any) {
               Alert.alert('Error', error.message || 'Failed to update payment')
@@ -324,7 +303,7 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
           style: 'destructive',
           onPress: async () => {
             try {
-              await api.deleteBill(billId)
+              await api.deleteBillInstance(billId)
               setShowBillDetailModal(false)
               setSelectedBill(null)
               fetchData()
@@ -338,53 +317,39 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
     )
   }
 
-  const handleMarkAsPersonal = async (bill: Bill) => {
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
+  const handleMarkBillPaid = async (bill: BillInstance) => {
+    Alert.alert(
+      'Mark Bill as Paid',
+      `Mark ${bill.vendor} as fully paid?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
         {
-          title: 'Mark as Personal',
-          message: 'This will remove the bill and block similar bills in the future. What should be blocked?',
-          options: ['Cancel', `Block vendor: ${bill.vendor}`, 'Block by email sender', 'Block by subject'],
-          cancelButtonIndex: 0,
-          destructiveButtonIndex: 1,
+          text: 'Confirm',
+          onPress: async () => {
+            try {
+              await api.updateBillInstance(bill.id, { status: 'PAID', paidDate: new Date().toISOString() })
+              fetchData()
+              setShowBillDetailModal(false)
+              setSelectedBill(null)
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to mark bill as paid')
+            }
+          },
         },
-        async (buttonIndex) => {
-          if (buttonIndex === 0) return
-          const blockTypes: ('vendor' | 'sender' | 'subject')[] = ['vendor', 'sender', 'subject']
-          const blockType = blockTypes[buttonIndex - 1]
-          await executeMarkAsPersonal(bill.id, blockType)
-        }
-      )
-    } else {
-      Alert.alert(
-        'Mark as Personal',
-        'This will remove the bill and block similar bills in the future. What should be blocked?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: `Block vendor: ${bill.vendor}`, onPress: () => executeMarkAsPersonal(bill.id, 'vendor'), style: 'destructive' },
-          { text: 'Block by email sender', onPress: () => executeMarkAsPersonal(bill.id, 'sender') },
-          { text: 'Block by subject', onPress: () => executeMarkAsPersonal(bill.id, 'subject') },
-        ]
-      )
-    }
+      ]
+    )
   }
 
-  const executeMarkAsPersonal = async (billId: string, blockType: 'vendor' | 'sender' | 'subject') => {
+  const openBillDetail = async (bill: BillInstance) => {
     try {
-      const result = await api.markBillAsPersonal(billId, { blockType })
-      setShowBillDetailModal(false)
-      setSelectedBill(null)
-      fetchData()
-      Alert.alert('Success', result.message || 'Bill marked as personal and blocked for future')
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to mark bill as personal')
-    }
-  }
-
-  const openBillDetail = async (bill: Bill) => {
-    try {
-      const billData = await api.getBill(bill.id)
-      setSelectedBill(billData.bill)
+      const billData = await api.getBillInstance(bill.id)
+      const payments = await api.getFounderPayments(bill.id)
+      setSelectedBill({
+        ...billData.instance,
+        founderCount: summary?.founderCount || 0,
+        perPersonAmount: billData.instance.amount / (summary?.founderCount || 1),
+        founderPayments: payments.payments
+      })
       setShowBillDetailModal(true)
     } catch (error: any) {
       Alert.alert('Error', 'Failed to load bill details')
@@ -405,7 +370,6 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
         }
       )
     } else {
-      // For Android, we'll use a simple alert with options
       Alert.alert(
         'Select Vendor Type',
         '',
@@ -436,105 +400,81 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
     </TouchableOpacity>
   )
 
-  const renderBillCard = (bill: Bill, showPayments = true) => {
+  const renderBillRow = (bill: BillInstance) => {
     const days = getDaysUntilDue(bill.dueDate)
-    const isOverdue = days !== null && days < 0
+    const isOverdue = bill.status === 'OVERDUE' || (days !== null && days < 0 && bill.status === 'PENDING')
+    const isPaid = bill.status === 'PAID'
 
     return (
       <TouchableOpacity
         key={bill.id}
         onPress={() => openBillDetail(bill)}
         activeOpacity={0.7}
+        style={styles.billRow}
       >
-        <Card style={[styles.billCard, isOverdue && styles.billCardOverdue]}>
-          <View style={styles.billHeader}>
-            <View style={styles.billInfo}>
-              <Text style={styles.billVendor}>{bill.vendor}</Text>
-              <Text style={styles.billType}>{getVendorTypeLabel(bill.vendorType)}</Text>
-            </View>
-            <Badge
-              text={bill.status}
-              variant={bill.status === 'PAID' ? 'success' : bill.status === 'OVERDUE' ? 'error' : 'warning'}
-            />
-          </View>
-          <View style={styles.billAmounts}>
-            <View>
-              <Text style={styles.billLabel}>Total</Text>
-              <Text style={styles.billAmount}>{formatCurrency(Number(bill.amount))}</Text>
-            </View>
-            <View>
-              <Text style={styles.billLabel}>Per Person</Text>
-              <Text style={[styles.billAmount, { color: isOverdue ? colors.error : colors.primary }]}>
-                {formatCurrency(bill.perPersonAmount)}
-              </Text>
-            </View>
-            {bill.dueDate && (
-              <View>
-                <Text style={styles.billLabel}>Due</Text>
-                <Text style={[styles.billDate, isOverdue && { color: colors.error }]}>
-                  {formatDate(bill.dueDate)}
-                  {days !== null && (
-                    <Text style={styles.daysText}> ({days}d)</Text>
-                  )}
-                </Text>
-              </View>
-            )}
-          </View>
-          {showPayments && bill.payments && bill.payments.length > 0 && (
-            <View style={styles.payments}>
-              <Text style={styles.paymentsLabel}>Payments</Text>
-              <View style={styles.paymentsList}>
-                {bill.payments.map((p) => (
-                  <TouchableOpacity
-                    key={p.id}
-                    style={[styles.paymentBadge, p.status === 'PAID' ? styles.paymentPaid : styles.paymentPending]}
-                    onPress={() => p.status !== 'PAID' && handleMarkPaid(bill.id, p.user.id, p.user.name || p.user.email)}
-                    disabled={p.status === 'PAID'}
-                  >
-                    <Text style={[styles.paymentText, p.status === 'PAID' ? styles.paymentTextPaid : styles.paymentTextPending]}>
-                      {(p.user.name || p.user.email || '').split(' ')[0]}: {p.status === 'PAID' ? 'Paid' : formatCurrency(Number(p.amount))}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
+        <View style={styles.billRowLeft}>
+          <Text style={[styles.billVendor, isPaid && styles.billVendorPaid]}>{bill.vendor}</Text>
+          {bill.recurringBill?.paymentMethod && (
+            <Text style={styles.billPaymentMethod}>{bill.recurringBill.paymentMethod}</Text>
           )}
-        </Card>
+        </View>
+        <View style={styles.billRowRight}>
+          <Text style={[styles.billAmount, isPaid && styles.billAmountPaid]}>{formatCurrency(Number(bill.amount))}</Text>
+          {isPaid ? (
+            <View style={styles.paidIndicator}>
+              <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+              <Text style={styles.paidText}>Paid {bill.paidDate ? formatDate(bill.paidDate) : ''}</Text>
+            </View>
+          ) : (
+            <Text style={[styles.billDueDate, isOverdue && styles.billDueDateOverdue]}>
+              Due {bill.dueDate ? formatDate(bill.dueDate) : '-'}
+            </Text>
+          )}
+        </View>
       </TouchableOpacity>
     )
   }
 
-  const renderFounderCard = (founder: Founder) => (
-    <Card key={founder.id} style={styles.founderCard}>
-      <View style={styles.founderHeader}>
-        <View style={styles.founderAvatar}>
-          <Text style={styles.founderAvatarText}>
-            {(founder.name || founder.email || '?').charAt(0).toUpperCase()}
-          </Text>
+  const renderBalanceCard = (balance: FounderBalance) => {
+    const isSettled = balance.pendingAmount === 0
+
+    return (
+      <Card key={balance.founder.id} style={styles.balanceCard}>
+        <View style={styles.balanceHeader}>
+          <View style={styles.founderAvatar}>
+            <Text style={styles.founderAvatarText}>
+              {(balance.founder.name || balance.founder.email || '?').charAt(0).toUpperCase()}
+            </Text>
+          </View>
+          <View style={styles.founderInfo}>
+            <Text style={styles.founderName}>{balance.founder.name || balance.founder.email}</Text>
+            {isSettled ? (
+              <View style={styles.settledBadge}>
+                <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+                <Text style={styles.settledText}>All caught up</Text>
+              </View>
+            ) : (
+              <Text style={styles.outstandingAmount}>{formatCurrency(balance.pendingAmount)}</Text>
+            )}
+          </View>
         </View>
-        <View style={styles.founderInfo}>
-          <Text style={styles.founderName}>{founder.name || founder.email || 'Unknown'}</Text>
-          <Text style={styles.founderEmail}>{founder.email}</Text>
-        </View>
+        {!isSettled && balance.owesFor.length > 0 && (
+          <View style={styles.owesForContainer}>
+            <Text style={styles.owesForLabel}>Pending:</Text>
+            <Text style={styles.owesForList}>{balance.owesFor.join(', ')}</Text>
+          </View>
+        )}
+      </Card>
+    )
+  }
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
-      <View style={styles.founderStats}>
-        <View style={[styles.founderStatBox, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}>
-          <Text style={styles.founderStatLabel}>Pending</Text>
-          <Text style={[styles.founderStatValue, { color: colors.error }]}>
-            {formatCurrency(founder.pendingAmount || 0)}
-          </Text>
-          <Text style={styles.founderStatCount}>{founder.pendingCount || 0} bills</Text>
-        </View>
-        <View style={[styles.founderStatBox, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
-          <Text style={styles.founderStatLabel}>Paid</Text>
-          <Text style={[styles.founderStatValue, { color: colors.success }]}>
-            {formatCurrency(founder.paidAmount || 0)}
-          </Text>
-          <Text style={styles.founderStatCount}>{founder.paidCount || 0} bills</Text>
-        </View>
-      </View>
-    </Card>
-  )
+    )
+  }
 
   return (
     <View style={styles.container}>
@@ -544,166 +484,131 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={styles.title}>Expenses</Text>
-          {activeTab === 'bills' && (
-            <TouchableOpacity style={styles.addButton} onPress={() => setShowAddModal(true)}>
-              <Ionicons name="add" size={24} color={colors.text} />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('RecurringBills')}>
+            <Ionicons name="repeat" size={20} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.addButton} onPress={() => setShowAddModal(true)}>
+            <Ionicons name="add" size={24} color={colors.text} />
+          </TouchableOpacity>
         </View>
       )}
 
       {/* Tabs */}
       <View style={styles.tabs}>
-        <TabButton title="Summary" tabKey="summary" icon="stats-chart" />
-        <TabButton title="Bills" tabKey="bills" icon="receipt" />
-        <TabButton title="Founders" tabKey="founders" icon="people" />
+        <TabButton title="Monthly Bills" tabKey="monthly" icon="calendar" />
+        <TabButton title="Balances" tabKey="balances" icon="people" />
       </View>
 
       <ScrollView
         style={styles.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
-        {/* Summary Tab */}
-        {activeTab === 'summary' && (
+        {/* Monthly Bills Tab */}
+        {activeTab === 'monthly' && summary && (
           <>
-            {/* Global Stats */}
-            {globalTotals && (
-              <>
-                <View style={styles.statsRow}>
-                  <Card style={styles.statCard}>
-                    <Text style={styles.statLabel}>Total Pending</Text>
-                    <Text style={[styles.statValue, { color: colors.error }]}>{formatCurrency(globalTotals.totalPending)}</Text>
-                  </Card>
-                  <Card style={styles.statCard}>
-                    <Text style={styles.statLabel}>Founders</Text>
-                    <Text style={[styles.statValue, { color: colors.primary }]}>{globalTotals.founderCount}</Text>
-                    <Text style={styles.statSubtext}>splitting bills</Text>
-                  </Card>
-                </View>
-                <View style={styles.statsRow}>
-                  <Card style={[styles.statCard, globalTotals.overdueBillsCount > 0 && { borderColor: colors.error }]}>
-                    <Text style={styles.statLabel}>Overdue</Text>
-                    <Text style={[styles.statValue, { color: globalTotals.overdueBillsCount > 0 ? colors.error : colors.success }]}>
-                      {globalTotals.overdueBillsCount}
-                    </Text>
-                  </Card>
-                  <Card style={styles.statCard}>
-                    <Text style={styles.statLabel}>Due in 7 days</Text>
-                    <Text style={[styles.statValue, { color: colors.warning }]}>{globalTotals.upcomingBillsCount}</Text>
-                  </Card>
-                </View>
-              </>
-            )}
-
-            {/* Founder Balances */}
-            <Text style={styles.sectionTitle}>Founder Balances</Text>
-            {summary.length === 0 ? (
-              <Card style={styles.emptyCard}>
-                <Ionicons name="people-outline" size={48} color={colors.textMuted} />
-                <Text style={styles.emptyText}>No founders configured</Text>
-                <Text style={styles.emptySubtext}>Mark users as founders in the Users section</Text>
-              </Card>
-            ) : (
-              summary.map((s) => (
-                <Card key={s.founder.id} style={styles.balanceCard}>
-                  <View style={styles.balanceHeader}>
-                    <View style={styles.founderAvatar}>
-                      <Text style={styles.founderAvatarText}>
-                        {(s.founder.name || s.founder.email || '?').charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                    <View style={styles.founderInfo}>
-                      <Text style={styles.founderName}>{s.founder.name || s.founder.email}</Text>
-                      <Text style={styles.founderEmail}>{s.founder.email}</Text>
-                    </View>
-                    <Badge
-                      text={s.totalOwed > 0 ? `Owes ${formatCurrency(s.totalOwed)}` : 'Settled'}
-                      variant={s.totalOwed > 0 ? 'error' : 'success'}
-                    />
-                  </View>
-                  {isFounder && (
-                    <View style={styles.balanceStats}>
-                      <View style={styles.balanceStat}>
-                        <Text style={styles.balanceStatLabel}>Pending:</Text>
-                        <Text style={styles.balanceStatValue}>{s.pending.count} bills ({formatCurrency(s.pending.amount)})</Text>
-                      </View>
-                      <View style={styles.balanceStat}>
-                        <Text style={styles.balanceStatLabel}>Paid:</Text>
-                        <Text style={styles.balanceStatValue}>{s.paid.count} bills ({formatCurrency(s.paid.amount)})</Text>
-                      </View>
-                    </View>
-                  )}
-                </Card>
-              ))
-            )}
-
-            {/* Overdue Bills */}
-            {overdueBills.length > 0 && (
-              <>
-                <Text style={[styles.sectionTitle, { color: colors.error }]}>Overdue Bills</Text>
-                {overdueBills.map((bill) => renderBillCard(bill as Bill, false))}
-              </>
-            )}
-
-            {/* Upcoming Bills */}
-            {upcomingBills.length > 0 && (
-              <>
-                <Text style={styles.sectionTitle}>Upcoming Bills (7 days)</Text>
-                {upcomingBills.map((bill) => renderBillCard(bill as Bill, false))}
-              </>
-            )}
-          </>
-        )}
-
-        {/* Bills Tab */}
-        {activeTab === 'bills' && (
-          <>
-            {/* Actions Row */}
-            <View style={styles.actionsRow}>
-              <Button
-                title="Add Bill"
-                onPress={() => setShowAddModal(true)}
-                style={styles.actionButton}
-              />
+            {/* Period Navigator */}
+            <View style={styles.periodNav}>
+              <TouchableOpacity onPress={() => navigatePeriod('prev')} style={styles.periodButton}>
+                <Ionicons name="chevron-back" size={20} color={colors.text} />
+              </TouchableOpacity>
+              <Text style={styles.periodText}>{formatPeriod(currentPeriod)}</Text>
+              <TouchableOpacity onPress={() => navigatePeriod('next')} style={styles.periodButton}>
+                <Ionicons name="chevron-forward" size={20} color={colors.text} />
+              </TouchableOpacity>
             </View>
 
-            <Text style={styles.syncStatus}>
-              Bills are automatically synced from email
-            </Text>
+            {/* Monthly Summary Stats */}
+            <View style={styles.summaryStats}>
+              <View style={styles.summaryStatItem}>
+                <Text style={styles.summaryStatLabel}>Monthly Total</Text>
+                <Text style={styles.summaryStatValue}>{formatCurrency(summary.totals.monthlyTotal)}</Text>
+              </View>
+              <View style={styles.summaryStatDivider} />
+              <View style={styles.summaryStatItem}>
+                <Text style={styles.summaryStatLabel}>Pending</Text>
+                <Text style={[styles.summaryStatValue, { color: colors.warning }]}>{formatCurrency(summary.totals.pending)}</Text>
+              </View>
+              <View style={styles.summaryStatDivider} />
+              <View style={styles.summaryStatItem}>
+                <Text style={styles.summaryStatLabel}>Paid</Text>
+                <Text style={[styles.summaryStatValue, { color: colors.success }]}>{formatCurrency(summary.totals.paid)}</Text>
+              </View>
+            </View>
 
-            {bills.length === 0 ? (
-              <Card style={styles.emptyCard}>
-                <Ionicons name="receipt-outline" size={48} color={colors.textMuted} />
-                <Text style={styles.emptyText}>No bills yet</Text>
-                <Text style={styles.emptySubtext}>Add manually or sync from Gmail</Text>
-                <Button
-                  title="Add Bill"
-                  onPress={() => setShowAddModal(true)}
-                  style={{ marginTop: spacing.md }}
-                />
-              </Card>
-            ) : (
-              bills.map((bill) => renderBillCard(bill))
+            {/* Bills List */}
+            <Card style={styles.billsCard}>
+              {summary.bills.all.length === 0 ? (
+                <View style={styles.emptyBills}>
+                  <Ionicons name="receipt-outline" size={48} color={colors.textMuted} />
+                  <Text style={styles.emptyBillsText}>No bills for {formatPeriod(currentPeriod)}</Text>
+                </View>
+              ) : (
+                <>
+                  {summary.bills.overdue.length > 0 && (
+                    <>
+                      <Text style={[styles.billsSection, { color: colors.error }]}>Overdue</Text>
+                      {summary.bills.overdue.map(renderBillRow)}
+                    </>
+                  )}
+                  {summary.bills.pending.filter(b => !summary.bills.overdue.find(o => o.id === b.id)).length > 0 && (
+                    <>
+                      <Text style={styles.billsSection}>Pending</Text>
+                      {summary.bills.pending.filter(b => !summary.bills.overdue.find(o => o.id === b.id)).map(renderBillRow)}
+                    </>
+                  )}
+                  {summary.bills.paid.length > 0 && (
+                    <>
+                      <Text style={styles.billsSection}>Paid</Text>
+                      {summary.bills.paid.map(renderBillRow)}
+                    </>
+                  )}
+                </>
+              )}
+            </Card>
+
+            {/* Upcoming Bills */}
+            {summary.upcomingBills.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Due in Next 7 Days</Text>
+                <Card style={styles.billsCard}>
+                  {summary.upcomingBills.map(renderBillRow)}
+                </Card>
+              </>
             )}
           </>
         )}
 
-        {/* Founders Tab */}
-        {activeTab === 'founders' && (
+        {/* Balances Tab */}
+        {activeTab === 'balances' && summary && (
           <>
-            <Text style={styles.foundersInfo}>
-              Founders are users marked with the isFounder flag. All bills are automatically split equally among founders.
-              To add or remove founders, edit users in the Users section.
-            </Text>
+            {/* Quick Actions */}
+            <TouchableOpacity
+              style={styles.manageRecurringButton}
+              onPress={() => navigation.navigate('RecurringBills')}
+            >
+              <Ionicons name="repeat" size={18} color={colors.primary} />
+              <Text style={styles.manageRecurringText}>Manage Recurring Bills</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
 
-            {founders.length === 0 ? (
+            {/* Outstanding Total */}
+            <Card style={styles.outstandingCard}>
+              <Text style={styles.outstandingLabel}>Total Outstanding</Text>
+              <Text style={styles.outstandingValue}>{formatCurrency(summary.totalOutstanding)}</Text>
+              <Text style={styles.outstandingSubtext}>
+                Split among {summary.founderCount} founder{summary.founderCount !== 1 ? 's' : ''}
+              </Text>
+            </Card>
+
+            {/* Founder Balances */}
+            <Text style={styles.sectionTitle}>Outstanding Balances</Text>
+            {summary.founderBalances.length === 0 ? (
               <Card style={styles.emptyCard}>
                 <Ionicons name="people-outline" size={48} color={colors.textMuted} />
                 <Text style={styles.emptyText}>No founders configured</Text>
-                <Text style={styles.emptySubtext}>Mark users as founders in the Users section</Text>
               </Card>
             ) : (
-              founders.map((founder) => renderFounderCard(founder))
+              summary.founderBalances.map(renderBalanceCard)
             )}
           </>
         )}
@@ -721,7 +626,7 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
                 <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
-            <Text style={styles.modalSubtitle}>Split equally among {founders.length || '?'} founders</Text>
+            <Text style={styles.modalSubtitle}>Split equally among {summary?.founderCount || '?'} founders</Text>
 
             {/* Screenshot Upload */}
             <TouchableOpacity style={styles.imageUploadButton} onPress={showImageOptions} disabled={scanning}>
@@ -770,9 +675,9 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
               onChangeText={(text) => setNewBill({ ...newBill, amount: text })}
               keyboardType="decimal-pad"
             />
-            {newBill.amount && founders.length > 0 && (
+            {newBill.amount && summary && summary.founderCount > 0 && (
               <Text style={styles.splitPreview}>
-                Per person: {formatCurrency(parseFloat(newBill.amount || '0') / founders.length)}
+                Per person: {formatCurrency(parseFloat(newBill.amount || '0') / summary.founderCount)}
               </Text>
             )}
 
@@ -834,9 +739,16 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
                   />
                 </View>
 
-                <Text style={[styles.inputLabel, { marginTop: spacing.lg }]}>Payments</Text>
-                {selectedBill.payments && selectedBill.payments.length > 0 ? (
-                  selectedBill.payments.map((p) => (
+                {selectedBill.paidVia && (
+                  <View style={styles.billDetailRow}>
+                    <Text style={styles.billDetailLabel}>Paid Via</Text>
+                    <Text style={styles.billDetailValue}>{selectedBill.paidVia}</Text>
+                  </View>
+                )}
+
+                <Text style={[styles.inputLabel, { marginTop: spacing.lg }]}>Founder Payments</Text>
+                {selectedBill.founderPayments && selectedBill.founderPayments.length > 0 ? (
+                  selectedBill.founderPayments.map((p) => (
                     <View key={p.id} style={styles.paymentRow}>
                       <View style={styles.paymentUserInfo}>
                         <View style={styles.paymentAvatar}>
@@ -865,18 +777,20 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
                 )}
 
                 <View style={styles.modalButtons}>
-                  <Button
-                    title="Personal"
-                    variant="outline"
-                    onPress={() => handleMarkAsPersonal(selectedBill)}
-                    style={{ flex: 1, borderColor: colors.warning }}
-                    textStyle={{ color: colors.warning }}
-                  />
+                  {selectedBill.status !== 'PAID' && (
+                    <Button
+                      title="Mark Paid"
+                      variant="outline"
+                      onPress={() => handleMarkBillPaid(selectedBill)}
+                      style={{ flex: 1, borderColor: colors.success }}
+                      textStyle={{ color: colors.success }}
+                    />
+                  )}
                   <Button
                     title="Delete"
                     variant="outline"
                     onPress={() => handleDeleteBill(selectedBill.id)}
-                    style={{ flex: 1, marginLeft: spacing.sm, borderColor: colors.error }}
+                    style={{ flex: 1, marginLeft: selectedBill.status !== 'PAID' ? spacing.sm : 0, borderColor: colors.error }}
                     textStyle={{ color: colors.error }}
                   />
                   <Button
@@ -899,6 +813,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -914,6 +832,15 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
     color: colors.text,
+  },
+  headerButton: {
+    width: 36,
+    height: 36,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
   },
   addButton: {
     width: 40,
@@ -953,29 +880,125 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.lg,
   },
-  statsRow: {
+  // Period Navigator
+  periodNav: {
     flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
   },
-  statCard: {
+  periodButton: {
+    padding: spacing.sm,
+  },
+  periodText: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+    marginHorizontal: spacing.lg,
+  },
+  // Summary Stats
+  summaryStats: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  summaryStatItem: {
     flex: 1,
-    padding: spacing.lg,
+    alignItems: 'center',
   },
-  statLabel: {
-    fontSize: fontSize.sm,
+  summaryStatDivider: {
+    width: 1,
+    backgroundColor: colors.border,
+  },
+  summaryStatLabel: {
+    fontSize: fontSize.xs,
     color: colors.textMuted,
     marginBottom: spacing.xs,
   },
-  statValue: {
-    fontSize: fontSize.xxl,
+  summaryStatValue: {
+    fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
     color: colors.text,
   },
-  statSubtext: {
+  // Bills Card
+  billsCard: {
+    padding: 0,
+    overflow: 'hidden',
+  },
+  billsSection: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    color: colors.textMuted,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  billRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  billRowLeft: {
+    flex: 1,
+  },
+  billRowRight: {
+    alignItems: 'flex-end',
+  },
+  billVendor: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.text,
+  },
+  billVendorPaid: {
+    color: colors.textMuted,
+  },
+  billPaymentMethod: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: spacing.xs,
+    marginTop: 2,
+  },
+  billAmount: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+  },
+  billAmountPaid: {
+    color: colors.textMuted,
+  },
+  billDueDate: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  billDueDateOverdue: {
+    color: colors.error,
+  },
+  paidIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  paidText: {
+    fontSize: fontSize.xs,
+    color: colors.success,
+    marginLeft: 4,
+  },
+  emptyBills: {
+    alignItems: 'center',
+    padding: spacing.xxxl,
+  },
+  emptyBillsText: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    marginTop: spacing.md,
   },
   sectionTitle: {
     fontSize: fontSize.lg,
@@ -984,56 +1007,48 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     marginBottom: spacing.md,
   },
-  emptyCard: {
+  // Manage Recurring Button
+  manageRecurringButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.xxxl,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
   },
-  emptyText: {
-    color: colors.textMuted,
+  manageRecurringText: {
+    flex: 1,
     fontSize: fontSize.md,
-    marginTop: spacing.md,
+    color: colors.text,
+    marginLeft: spacing.sm,
   },
-  emptySubtext: {
-    color: colors.textMuted,
+  // Outstanding Card
+  outstandingCard: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+  },
+  outstandingLabel: {
     fontSize: fontSize.sm,
+    color: colors.textMuted,
+    marginBottom: spacing.xs,
+  },
+  outstandingValue: {
+    fontSize: fontSize.xxxl,
+    fontWeight: fontWeight.bold,
+    color: colors.error,
+  },
+  outstandingSubtext: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
     marginTop: spacing.xs,
   },
-  // Founder balance cards
+  // Balance Cards
   balanceCard: {
     marginBottom: spacing.md,
   },
   balanceHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  balanceStats: {
-    marginTop: spacing.md,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  balanceStat: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xs,
-  },
-  balanceStatLabel: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-  },
-  balanceStatValue: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-  },
-  // Founder cards (tab)
-  founderCard: {
-    marginBottom: spacing.md,
-    padding: spacing.lg,
-  },
-  founderHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.md,
   },
   founderAvatar: {
     width: 44,
@@ -1057,137 +1072,45 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.semibold,
     color: colors.text,
   },
-  founderEmail: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-  },
-  founderStats: {
+  settledBadge: {
     flexDirection: 'row',
-    gap: spacing.md,
+    alignItems: 'center',
+    marginTop: 4,
   },
-  founderStatBox: {
-    flex: 1,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
+  settledText: {
+    fontSize: fontSize.sm,
+    color: colors.success,
+    marginLeft: 4,
   },
-  founderStatLabel: {
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
-    marginBottom: spacing.xs,
-  },
-  founderStatValue: {
+  outstandingAmount: {
     fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
-  },
-  founderStatCount: {
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-  },
-  foundersInfo: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-    marginBottom: spacing.lg,
-    lineHeight: 20,
-  },
-  // Bill cards
-  billCard: {
-    marginBottom: spacing.md,
-  },
-  billCardOverdue: {
-    borderColor: colors.error,
-  },
-  billHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.md,
-  },
-  billInfo: {
-    flex: 1,
-  },
-  billVendor: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
-    color: colors.text,
-  },
-  billType: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
+    color: colors.error,
     marginTop: 2,
   },
-  billAmounts: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  billLabel: {
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
-    marginBottom: spacing.xs,
-  },
-  billAmount: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
-    color: colors.text,
-  },
-  billDate: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-  },
-  daysText: {
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
-  },
-  payments: {
+  owesForContainer: {
     marginTop: spacing.md,
     paddingTop: spacing.md,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  paymentsLabel: {
+  owesForLabel: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginBottom: spacing.sm,
+    marginBottom: 4,
   },
-  paymentsList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
+  owesForList: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
   },
-  paymentBadge: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: borderRadius.sm,
+  emptyCard: {
+    alignItems: 'center',
+    padding: spacing.xxxl,
   },
-  paymentPaid: {
-    backgroundColor: colors.successBg,
-  },
-  paymentPending: {
-    backgroundColor: 'rgba(59, 130, 246, 0.2)',
-  },
-  paymentText: {
-    fontSize: fontSize.xs,
-  },
-  paymentTextPaid: {
-    color: colors.success,
-  },
-  paymentTextPending: {
-    color: colors.primary,
-  },
-  // Actions
-  actionsRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  actionButton: {
-    flex: 1,
-  },
-  syncStatus: {
-    fontSize: fontSize.xs,
+  emptyText: {
     color: colors.textMuted,
-    marginBottom: spacing.lg,
-    textAlign: 'center',
+    fontSize: fontSize.md,
+    marginTop: spacing.md,
   },
   // Modal styles
   modalOverlay: {
