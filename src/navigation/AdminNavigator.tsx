@@ -167,7 +167,7 @@ export default function AdminNavigator() {
 
     switch (activeTab) {
       case 'Home':
-        return <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}><DashboardScreen navigation={navigation} /></SafeAreaView>
+        return <DashboardScreen navigation={navigation} />
       case 'Sales':
         return <SalesTabScreen navigation={navigation} />
       case 'Business':
@@ -177,7 +177,7 @@ export default function AdminNavigator() {
       case 'Account':
         return <AccountTabScreen navigation={navigation} />
       default:
-        return <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}><DashboardScreen navigation={navigation} /></SafeAreaView>
+        return <DashboardScreen navigation={navigation} />
     }
   }
 
