@@ -329,10 +329,10 @@ function SalesTabScreen({ navigation }: { navigation: any }) {
   )
 }
 
-// Business Tab - Services (Inquiries, 3D Prints, Packages) and Finance (Expenses, Reports, Analytics)
-type BusinessCategory = 'services' | 'finance'
+// Business Tab - Services, Finance, and Analytics as top-level categories
+type BusinessCategory = 'services' | 'finance' | 'analytics'
 type ServiceSection = 'inquiries' | '3dprint' | 'packages'
-type FinanceSection = 'expenses' | 'reports' | 'analytics'
+type FinanceSection = 'expenses' | 'reports'
 
 function BusinessTabScreen({ navigation }: { navigation: any }) {
   const [category, setCategory] = useState<BusinessCategory>('services')
@@ -342,6 +342,7 @@ function BusinessTabScreen({ navigation }: { navigation: any }) {
   const categoryConfig: Record<BusinessCategory, { icon: string; label: string }> = {
     services: { icon: 'construct-outline', label: 'Services' },
     finance: { icon: 'wallet-outline', label: 'Finance' },
+    analytics: { icon: 'analytics-outline', label: 'Analytics' },
   }
 
   return (
@@ -407,12 +408,6 @@ function BusinessTabScreen({ navigation }: { navigation: any }) {
             >
               <Text style={[styles.segmentText, financeSection === 'reports' && styles.segmentTextActive]}>Reports</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.segment, financeSection === 'analytics' && styles.segmentActive]}
-              onPress={() => setFinanceSection('analytics')}
-            >
-              <Text style={[styles.segmentText, financeSection === 'analytics' && styles.segmentTextActive]}>Analytics</Text>
-            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -425,7 +420,8 @@ function BusinessTabScreen({ navigation }: { navigation: any }) {
 
         {category === 'finance' && financeSection === 'expenses' && <ExpensesScreen navigation={navigation} hideHeader />}
         {category === 'finance' && financeSection === 'reports' && <ReportsScreen navigation={navigation} hideHeader />}
-        {category === 'finance' && financeSection === 'analytics' && <AnalyticsScreen navigation={navigation} hideHeader />}
+
+        {category === 'analytics' && <AnalyticsScreen navigation={navigation} hideHeader />}
       </View>
     </SafeAreaView>
   )
