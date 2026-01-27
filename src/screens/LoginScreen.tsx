@@ -10,15 +10,16 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '../store/auth'
-import { PortalCard } from '../components/PortalCard'
+import { api } from '../services/api'
 import { colors, portalColors, spacing, borderRadius, fontSize, fontWeight } from '../theme'
-import { PortalType } from '../types'
+import { PortalType, PortalAccess } from '../types'
 
-type ScreenState = 'portal_selection' | 'login'
+type ScreenState = 'login' | 'portal_selection'
 
 interface PortalInfo {
   type: PortalType
@@ -55,25 +56,21 @@ const portals: PortalInfo[] = [
 ]
 
 export function LoginScreen() {
-  const [screenState, setScreenState] = useState<ScreenState>('portal_selection')
-  const [selectedPortal, setSelectedPortal] = useState<PortalType | null>(null)
+  const [screenState, setScreenState] = useState<ScreenState>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+
+  // Temporary storage for login response before portal selection
+  const [pendingLoginData, setPendingLoginData] = useState<{
+    token: string
+    user: any
+    portalAccess: PortalAccess
+  } | null>(null)
+
   const login = useAuthStore((state) => state.login)
-
-  const handlePortalSelect = (portalType: PortalType) => {
-    setSelectedPortal(portalType)
-    setScreenState('login')
-  }
-
-  const handleBack = () => {
-    setScreenState('portal_selection')
-    setSelectedPortal(null)
-    setEmail('')
-    setPassword('')
-  }
+  const setUserDirectly = useAuthStore((state) => state.setUser)
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -81,14 +78,42 @@ export function LoginScreen() {
       return
     }
 
-    if (!selectedPortal) {
-      Alert.alert('Error', 'Please select a portal')
-      return
-    }
-
     setLoading(true)
     try {
-      await login(email, password, selectedPortal)
+      // First, authenticate and get user data to check portal access
+      const response = await api.login(email, password)
+      const user = response.user
+
+      // Derive portal access from user associations
+      const access: PortalAccess = response.portalAccess || {
+        admin: user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
+        partner: !!user.partnerId,
+        client: !!user.clientId,
+        affiliate: !!user.affiliateId,
+      }
+
+      // Count available portals
+      const availablePortals = (Object.keys(access) as PortalType[]).filter(
+        (key) => access[key]
+      )
+
+      if (availablePortals.length === 0) {
+        Alert.alert('Access Denied', 'You do not have access to any portals.')
+        return
+      }
+
+      if (availablePortals.length === 1) {
+        // Only one portal - go directly to it
+        await login(email, password, availablePortals[0])
+      } else {
+        // Multiple portals - show selection screen
+        setPendingLoginData({
+          token: response.token,
+          user,
+          portalAccess: access,
+        })
+        setScreenState('portal_selection')
+      }
     } catch (error: any) {
       Alert.alert('Login Failed', error.message || 'Invalid credentials')
     } finally {
@@ -96,11 +121,29 @@ export function LoginScreen() {
     }
   }
 
-  const getPortalInfo = () => portals.find((p) => p.type === selectedPortal)
-  const portalInfo = getPortalInfo()
-  const accentColor = selectedPortal ? portalColors[selectedPortal] : colors.primary
+  const handlePortalSelect = async (portalType: PortalType) => {
+    if (!pendingLoginData) return
 
+    setLoading(true)
+    try {
+      // Complete login with selected portal
+      await login(email, password, portalType)
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to access portal')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getAvailablePortals = () => {
+    if (!pendingLoginData) return []
+    return portals.filter((p) => pendingLoginData.portalAccess[p.type])
+  }
+
+  // Portal Selection Screen
   if (screenState === 'portal_selection') {
+    const availablePortals = getAvailablePortals()
+
     return (
       <SafeAreaView style={styles.container}>
         <ScrollView
@@ -109,34 +152,65 @@ export function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <Image
-              source={require('../../assets/logo.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-            <Text style={styles.welcomeTitle}>Welcome to 47 Industries</Text>
-            <Text style={styles.welcomeSubtitle}>Select your portal to continue</Text>
+            <View style={styles.checkCircle}>
+              <Ionicons name="checkmark" size={32} color={colors.success} />
+            </View>
+            <Text style={styles.welcomeTitle}>Welcome back!</Text>
+            <Text style={styles.welcomeSubtitle}>
+              {pendingLoginData?.user?.name || 'User'}
+            </Text>
+            <Text style={styles.selectText}>Select a portal to continue</Text>
           </View>
 
           <View style={styles.portalList}>
-            {portals.map((portal) => (
-              <PortalCard
+            {availablePortals.map((portal) => (
+              <TouchableOpacity
                 key={portal.type}
-                type={portal.type}
-                title={portal.title}
-                description={portal.description}
-                icon={portal.icon}
+                style={styles.portalCard}
                 onPress={() => handlePortalSelect(portal.type)}
-              />
+                activeOpacity={0.7}
+                disabled={loading}
+              >
+                <View style={[styles.portalIconContainer, { backgroundColor: `${portalColors[portal.type]}20` }]}>
+                  <Ionicons
+                    name={portal.icon}
+                    size={28}
+                    color={portalColors[portal.type]}
+                  />
+                </View>
+                <View style={styles.portalInfo}>
+                  <Text style={styles.portalTitle}>{portal.title}</Text>
+                  <Text style={styles.portalDescription}>{portal.description}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+              </TouchableOpacity>
             ))}
           </View>
 
-          <Text style={styles.footer}>47 Industries</Text>
+          {loading && (
+            <View style={styles.loadingOverlay}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={styles.signOutLink}
+            onPress={() => {
+              setPendingLoginData(null)
+              setScreenState('login')
+              setEmail('')
+              setPassword('')
+            }}
+          >
+            <Ionicons name="arrow-back" size={16} color={colors.textMuted} />
+            <Text style={styles.signOutText}>Sign in with different account</Text>
+          </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
     )
   }
 
+  // Login Screen
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -149,22 +223,19 @@ export function LoginScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Back Button */}
-          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </TouchableOpacity>
-
           <View style={styles.loginHeader}>
-            <View style={[styles.portalIcon, { backgroundColor: `${accentColor}20` }]}>
-              <Ionicons
-                name={portalInfo?.icon || 'log-in-outline'}
-                size={32}
-                color={accentColor}
-              />
-            </View>
-            <Text style={styles.loginTitle}>{portalInfo?.title || 'Sign In'}</Text>
-            <Text style={styles.loginSubtitle}>
-              Enter your credentials to access your account
+            <Image
+              source={require('../../assets/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={styles.appName}>47 Industries</Text>
+            <Text style={styles.tagline}>Business Management Platform</Text>
+          </View>
+
+          <View style={styles.descriptionBox}>
+            <Text style={styles.descriptionText}>
+              Access your admin dashboard, partner portal, client projects, or affiliate program - all in one place.
             </Text>
           </View>
 
@@ -187,6 +258,7 @@ export function LoginScreen() {
                   autoCapitalize="none"
                   autoCorrect={false}
                   keyboardType="email-address"
+                  editable={!loading}
                 />
               </View>
             </View>
@@ -207,6 +279,7 @@ export function LoginScreen() {
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
+                  editable={!loading}
                 />
                 <TouchableOpacity
                   onPress={() => setShowPassword(!showPassword)}
@@ -224,14 +297,16 @@ export function LoginScreen() {
             <TouchableOpacity
               style={[
                 styles.loginButton,
-                { backgroundColor: accentColor },
                 loading && styles.buttonDisabled,
               ]}
               onPress={handleLogin}
               disabled={loading}
             >
               {loading ? (
-                <Text style={styles.buttonText}>Signing in...</Text>
+                <>
+                  <ActivityIndicator size="small" color={colors.text} />
+                  <Text style={styles.buttonText}>Signing in...</Text>
+                </>
               ) : (
                 <>
                   <Ionicons name="log-in-outline" size={20} color={colors.text} />
@@ -241,7 +316,20 @@ export function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.footer}>47 Industries</Text>
+          <View style={styles.footerInfo}>
+            <View style={styles.featureRow}>
+              <Ionicons name="shield-checkmark" size={16} color={colors.textMuted} />
+              <Text style={styles.featureText}>Admin</Text>
+              <Ionicons name="people" size={16} color={colors.textMuted} />
+              <Text style={styles.featureText}>Partner</Text>
+              <Ionicons name="briefcase" size={16} color={colors.textMuted} />
+              <Text style={styles.featureText}>Client</Text>
+              <Ionicons name="gift" size={16} color={colors.textMuted} />
+              <Text style={styles.featureText}>Affiliate</Text>
+            </View>
+          </View>
+
+          <Text style={styles.footer}>47 Industries v1.0.0</Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -258,73 +346,47 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: spacing.xxl,
+    padding: spacing.xl,
   },
   keyboardView: {
     flex: 1,
   },
-  header: {
+  loginHeader: {
     alignItems: 'center',
-    marginBottom: spacing.xxxl,
     marginTop: spacing.xl,
+    marginBottom: spacing.xl,
   },
   logo: {
     width: 80,
     height: 80,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
-  welcomeTitle: {
-    fontSize: fontSize.xxl,
+  appName: {
+    fontSize: fontSize.xxxl,
     fontWeight: fontWeight.bold,
     color: colors.text,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
-  welcomeSubtitle: {
+  tagline: {
     fontSize: fontSize.md,
     color: colors.textMuted,
   },
-  portalList: {
-    marginBottom: spacing.xxxl,
+  descriptionBox: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  footer: {
-    textAlign: 'center',
-    color: colors.textMuted,
+  descriptionText: {
     fontSize: fontSize.sm,
-    marginTop: 'auto',
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-    marginLeft: -spacing.sm,
-  },
-  loginHeader: {
-    alignItems: 'center',
-    marginBottom: spacing.xxxl,
-  },
-  portalIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: borderRadius.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-  },
-  loginTitle: {
-    fontSize: fontSize.xxl,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  loginSubtitle: {
-    fontSize: fontSize.md,
-    color: colors.textMuted,
+    color: colors.textSecondary,
     textAlign: 'center',
+    lineHeight: 22,
   },
   form: {
-    marginBottom: spacing.xxxl,
+    marginBottom: spacing.xl,
   },
   inputGroup: {
     marginBottom: spacing.lg,
@@ -362,14 +424,123 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.lg,
     borderRadius: borderRadius.md,
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
+    backgroundColor: colors.primary,
   },
   buttonDisabled: {
-    opacity: 0.5,
+    opacity: 0.6,
   },
   buttonText: {
     color: colors.text,
     fontSize: fontSize.lg,
     fontWeight: fontWeight.semibold,
+  },
+  footerInfo: {
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  featureText: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginRight: spacing.sm,
+  },
+  footer: {
+    textAlign: 'center',
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    marginTop: 'auto',
+  },
+  // Portal Selection Screen Styles
+  header: {
+    alignItems: 'center',
+    marginBottom: spacing.xxl,
+    marginTop: spacing.xl,
+  },
+  checkCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: `${colors.success}20`,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
+  welcomeTitle: {
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  welcomeSubtitle: {
+    fontSize: fontSize.lg,
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
+  },
+  selectText: {
+    fontSize: fontSize.md,
+    color: colors.textMuted,
+  },
+  portalList: {
+    marginBottom: spacing.xl,
+  },
+  portalCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  portalIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  portalInfo: {
+    flex: 1,
+  },
+  portalTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  portalDescription: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: borderRadius.lg,
+  },
+  signOutLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+  },
+  signOutText: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
   },
 })
