@@ -88,73 +88,80 @@ export default function AdminNavigator() {
 
   const renderScreen = () => {
     if (currentScreen) {
+      // Wrapper for stacked screens to handle iOS notch
+      const ScreenWrapper = ({ children }: { children: React.ReactNode }) => (
+        <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}>
+          {children}
+        </SafeAreaView>
+      )
+
       switch (currentScreen.name) {
         case 'OrderDetail':
-          return <OrderDetailScreen navigation={navigation} route={{ params: currentScreen.params }} />
+          return <ScreenWrapper><OrderDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
         case 'ProductDetail':
-          return <ProductDetailScreen navigation={navigation} route={{ params: currentScreen.params }} />
+          return <ScreenWrapper><ProductDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
         case 'ProductCreate':
-          return <ProductCreateScreen navigation={navigation} />
+          return <ScreenWrapper><ProductCreateScreen navigation={navigation} /></ScreenWrapper>
         case 'Products':
-          return <ProductsScreen navigation={navigation} />
+          return <ScreenWrapper><ProductsScreen navigation={navigation} /></ScreenWrapper>
         case 'CustomRequests':
-          return <CustomRequestsScreen navigation={navigation} />
+          return <ScreenWrapper><CustomRequestsScreen navigation={navigation} /></ScreenWrapper>
         case 'CustomRequestDetail':
-          return <CustomRequestDetailScreen navigation={navigation} route={{ params: currentScreen.params }} />
+          return <ScreenWrapper><CustomRequestDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
         case 'InquiryDetail':
-          return <InquiryDetailScreen navigation={navigation} route={{ params: currentScreen.params }} />
+          return <ScreenWrapper><InquiryDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
         case 'Inquiries':
-          return <InquiriesScreen navigation={navigation} />
+          return <ScreenWrapper><InquiriesScreen navigation={navigation} /></ScreenWrapper>
         case 'ServicePackageDetail':
-          return <ServicePackageDetailScreen navigation={navigation} route={{ params: currentScreen.params }} />
+          return <ScreenWrapper><ServicePackageDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
         case 'UserDetail':
-          return <UserDetailScreen navigation={navigation} route={{ params: currentScreen.params }} />
+          return <ScreenWrapper><UserDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
         case 'Returns':
-          return <ReturnsScreen navigation={navigation} />
+          return <ScreenWrapper><ReturnsScreen navigation={navigation} /></ScreenWrapper>
         case 'Users':
-          return <UsersScreen navigation={navigation} />
+          return <ScreenWrapper><UsersScreen navigation={navigation} /></ScreenWrapper>
         case 'Expenses':
-          return <ExpensesScreen navigation={navigation} />
+          return <ScreenWrapper><ExpensesScreen navigation={navigation} /></ScreenWrapper>
         case 'Settings':
-          return <SettingsScreen navigation={navigation} />
+          return <ScreenWrapper><SettingsScreen navigation={navigation} /></ScreenWrapper>
         case 'Services':
-          return <ServicesScreen navigation={navigation} />
+          return <ScreenWrapper><ServicesScreen navigation={navigation} /></ScreenWrapper>
         case 'Email':
-          return <EmailScreen navigation={navigation} />
+          return <ScreenWrapper><EmailScreen navigation={navigation} /></ScreenWrapper>
         case 'Blog':
-          return <BlogScreen navigation={navigation} />
+          return <ScreenWrapper><BlogScreen navigation={navigation} /></ScreenWrapper>
         case 'Reports':
-          return <ReportsScreen navigation={navigation} />
+          return <ScreenWrapper><ReportsScreen navigation={navigation} /></ScreenWrapper>
         case 'RecurringBills':
-          return <RecurringBillsScreen navigation={navigation} />
+          return <ScreenWrapper><RecurringBillsScreen navigation={navigation} /></ScreenWrapper>
         case 'Analytics':
-          return <AnalyticsScreen navigation={navigation} />
+          return <ScreenWrapper><AnalyticsScreen navigation={navigation} /></ScreenWrapper>
         case 'ProfileEdit':
-          return <ProfileEditScreen navigation={navigation} />
+          return <ScreenWrapper><ProfileEditScreen navigation={navigation} /></ScreenWrapper>
         case 'ChangePassword':
-          return <ChangePasswordScreen navigation={navigation} />
+          return <ScreenWrapper><ChangePasswordScreen navigation={navigation} /></ScreenWrapper>
         case 'Categories':
-          return <CategoriesScreen navigation={navigation} />
+          return <ScreenWrapper><CategoriesScreen navigation={navigation} /></ScreenWrapper>
         case 'Inventory':
-          return <InventoryScreen navigation={navigation} />
+          return <ScreenWrapper><InventoryScreen navigation={navigation} /></ScreenWrapper>
         case 'AdminInvoices':
-          return <AdminInvoicesScreen navigation={navigation} />
+          return <ScreenWrapper><AdminInvoicesScreen navigation={navigation} /></ScreenWrapper>
         case 'Notifications':
-          return <NotificationsScreen navigation={navigation} />
+          return <ScreenWrapper><NotificationsScreen navigation={navigation} /></ScreenWrapper>
         case 'Team':
-          return <TeamScreen navigation={navigation} />
+          return <ScreenWrapper><TeamScreen navigation={navigation} /></ScreenWrapper>
         case 'AdminClients':
-          return <AdminClientsScreen navigation={navigation} />
+          return <ScreenWrapper><AdminClientsScreen navigation={navigation} /></ScreenWrapper>
         case 'AdminPartners':
-          return <AdminPartnersScreen navigation={navigation} />
+          return <ScreenWrapper><AdminPartnersScreen navigation={navigation} /></ScreenWrapper>
         case 'Marketing':
-          return <MarketingScreen navigation={navigation} />
+          return <ScreenWrapper><MarketingScreen navigation={navigation} /></ScreenWrapper>
       }
     }
 
     switch (activeTab) {
       case 'Home':
-        return <DashboardScreen navigation={navigation} />
+        return <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}><DashboardScreen navigation={navigation} /></SafeAreaView>
       case 'Sales':
         return <SalesTabScreen navigation={navigation} />
       case 'Business':
@@ -162,9 +169,9 @@ export default function AdminNavigator() {
       case 'Finance':
         return <FinanceTabScreen navigation={navigation} />
       case 'Account':
-        return <AccountScreen navigation={navigation} hideHeader />
+        return <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}><AccountScreen navigation={navigation} hideHeader /></SafeAreaView>
       default:
-        return <DashboardScreen navigation={navigation} />
+        return <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}><DashboardScreen navigation={navigation} /></SafeAreaView>
     }
   }
 
@@ -391,6 +398,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  stackedScreenContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
   tabBarContainer: {
     backgroundColor: colors.surface,
