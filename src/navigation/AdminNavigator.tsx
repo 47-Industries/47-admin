@@ -13,6 +13,7 @@ import {
 } from '../screens'
 import OrderDetailScreen from '../screens/OrderDetailScreen'
 import ProductDetailScreen from '../screens/ProductDetailScreen'
+import ProductCreateScreen from '../screens/ProductCreateScreen'
 import CustomRequestsScreen from '../screens/CustomRequestsScreen'
 import CustomRequestDetailScreen from '../screens/CustomRequestDetailScreen'
 import InquiryDetailScreen from '../screens/InquiryDetailScreen'
@@ -26,6 +27,14 @@ import ReportsScreen from '../screens/ReportsScreen'
 import ServicePackageDetailScreen from '../screens/ServicePackageDetailScreen'
 import { RecurringBillsScreen } from '../screens/RecurringBillsScreen'
 import { AccountScreen, ProfileEditScreen, ChangePasswordScreen } from '../screens/account'
+import CategoriesScreen from '../screens/CategoriesScreen'
+import InventoryScreen from '../screens/InventoryScreen'
+import AdminInvoicesScreen from '../screens/admin/InvoicesScreen'
+import NotificationsScreen from '../screens/NotificationsScreen'
+import TeamScreen from '../screens/TeamScreen'
+import AdminClientsScreen from '../screens/admin/ClientsScreen'
+import AdminPartnersScreen from '../screens/admin/PartnersScreen'
+import MarketingScreen from '../screens/MarketingScreen'
 import { colors, portalColors, spacing, fontSize } from '../theme'
 
 type TabName = 'Home' | 'Sales' | 'Business' | 'Finance' | 'Account'
@@ -65,9 +74,9 @@ export default function AdminNavigator() {
   const currentScreen = screenStack[screenStack.length - 1]
 
   const getParentTab = (screenName: string): TabName | null => {
-    const salesScreens = ['OrderDetail', 'Returns', 'Products', 'ProductDetail']
-    const businessScreens = ['ServicePackageDetail', 'CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'Users', 'UserDetail', 'Email', 'Blog', 'Settings']
-    const financeScreens = ['Expenses', 'Reports', 'RecurringBills', 'Analytics']
+    const salesScreens = ['OrderDetail', 'Returns', 'Products', 'ProductDetail', 'ProductCreate', 'Categories', 'Inventory']
+    const businessScreens = ['ServicePackageDetail', 'CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'Users', 'UserDetail', 'Email', 'Blog', 'Settings', 'Team', 'AdminClients', 'AdminPartners', 'Marketing']
+    const financeScreens = ['Expenses', 'Reports', 'RecurringBills', 'Analytics', 'AdminInvoices']
     const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications']
 
     if (salesScreens.includes(screenName)) return 'Sales'
@@ -84,6 +93,8 @@ export default function AdminNavigator() {
           return <OrderDetailScreen navigation={navigation} route={{ params: currentScreen.params }} />
         case 'ProductDetail':
           return <ProductDetailScreen navigation={navigation} route={{ params: currentScreen.params }} />
+        case 'ProductCreate':
+          return <ProductCreateScreen navigation={navigation} />
         case 'Products':
           return <ProductsScreen navigation={navigation} />
         case 'CustomRequests':
@@ -122,6 +133,22 @@ export default function AdminNavigator() {
           return <ProfileEditScreen navigation={navigation} />
         case 'ChangePassword':
           return <ChangePasswordScreen navigation={navigation} />
+        case 'Categories':
+          return <CategoriesScreen navigation={navigation} />
+        case 'Inventory':
+          return <InventoryScreen navigation={navigation} />
+        case 'AdminInvoices':
+          return <AdminInvoicesScreen navigation={navigation} />
+        case 'Notifications':
+          return <NotificationsScreen navigation={navigation} />
+        case 'Team':
+          return <TeamScreen navigation={navigation} />
+        case 'AdminClients':
+          return <AdminClientsScreen navigation={navigation} />
+        case 'AdminPartners':
+          return <AdminPartnersScreen navigation={navigation} />
+        case 'Marketing':
+          return <MarketingScreen navigation={navigation} />
       }
     }
 
@@ -187,9 +214,9 @@ export default function AdminNavigator() {
   )
 }
 
-// Sales Tab - Orders, Products, Returns
+// Sales Tab - Orders, Products, Categories, Inventory, Returns
 function SalesTabScreen({ navigation }: { navigation: any }) {
-  const [activeSection, setActiveSection] = useState<'orders' | 'products' | 'returns'>('orders')
+  const [activeSection, setActiveSection] = useState<'orders' | 'products' | 'categories' | 'inventory' | 'returns'>('orders')
 
   return (
     <SafeAreaView style={styles.tabContainer} edges={['top']}>
@@ -198,82 +225,122 @@ function SalesTabScreen({ navigation }: { navigation: any }) {
           style={[styles.segment, activeSection === 'orders' && styles.segmentActive]}
           onPress={() => setActiveSection('orders')}
         >
-          <Ionicons name="receipt-outline" size={18} color={activeSection === 'orders' ? '#fff' : '#71717a'} />
-          <Text style={[styles.segmentText, activeSection === 'orders' && styles.segmentTextActive]}>Orders</Text>
+          <Ionicons name="receipt-outline" size={16} color={activeSection === 'orders' ? '#fff' : '#71717a'} />
+          <Text style={[styles.segmentTextSmall, activeSection === 'orders' && styles.segmentTextActive]}>Orders</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.segment, activeSection === 'products' && styles.segmentActive]}
           onPress={() => setActiveSection('products')}
         >
-          <Ionicons name="cube-outline" size={18} color={activeSection === 'products' ? '#fff' : '#71717a'} />
-          <Text style={[styles.segmentText, activeSection === 'products' && styles.segmentTextActive]}>Products</Text>
+          <Ionicons name="cube-outline" size={16} color={activeSection === 'products' ? '#fff' : '#71717a'} />
+          <Text style={[styles.segmentTextSmall, activeSection === 'products' && styles.segmentTextActive]}>Products</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.segment, activeSection === 'categories' && styles.segmentActive]}
+          onPress={() => setActiveSection('categories')}
+        >
+          <Ionicons name="pricetags-outline" size={16} color={activeSection === 'categories' ? '#fff' : '#71717a'} />
+          <Text style={[styles.segmentTextSmall, activeSection === 'categories' && styles.segmentTextActive]}>Categories</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.segment, activeSection === 'inventory' && styles.segmentActive]}
+          onPress={() => setActiveSection('inventory')}
+        >
+          <Ionicons name="layers-outline" size={16} color={activeSection === 'inventory' ? '#fff' : '#71717a'} />
+          <Text style={[styles.segmentTextSmall, activeSection === 'inventory' && styles.segmentTextActive]}>Inventory</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.segment, activeSection === 'returns' && styles.segmentActive]}
           onPress={() => setActiveSection('returns')}
         >
-          <Ionicons name="return-down-back-outline" size={18} color={activeSection === 'returns' ? '#fff' : '#71717a'} />
-          <Text style={[styles.segmentText, activeSection === 'returns' && styles.segmentTextActive]}>Returns</Text>
+          <Ionicons name="return-down-back-outline" size={16} color={activeSection === 'returns' ? '#fff' : '#71717a'} />
+          <Text style={[styles.segmentTextSmall, activeSection === 'returns' && styles.segmentTextActive]}>Returns</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.tabContent}>
         {activeSection === 'orders' && <OrdersScreen navigation={navigation} hideHeader />}
         {activeSection === 'products' && <ProductsScreen navigation={navigation} hideHeader />}
+        {activeSection === 'categories' && <CategoriesScreen navigation={navigation} hideHeader />}
+        {activeSection === 'inventory' && <InventoryScreen navigation={navigation} hideHeader />}
         {activeSection === 'returns' && <ReturnsScreen navigation={navigation} hideHeader />}
       </View>
     </SafeAreaView>
   )
 }
 
-// Business Tab - Services, Inquiries, 3D Prints, Users
+// Business Tab - Services, CRM (Clients/Partners), Team, Inquiries, 3D Print, Marketing
 function BusinessTabScreen({ navigation }: { navigation: any }) {
-  const [activeSection, setActiveSection] = useState<'services' | 'inquiries' | '3dprint' | 'users'>('services')
+  const [activeSection, setActiveSection] = useState<'services' | 'clients' | 'partners' | 'team' | 'inquiries' | '3dprint' | 'marketing'>('services')
 
   return (
     <SafeAreaView style={styles.tabContainer} edges={['top']}>
-      <View style={styles.segmentedControl}>
+      <View style={styles.segmentedControlScrollable}>
         <TouchableOpacity
-          style={[styles.segment, activeSection === 'services' && styles.segmentActive]}
+          style={[styles.segmentCompact, activeSection === 'services' && styles.segmentActive]}
           onPress={() => setActiveSection('services')}
         >
-          <Ionicons name="layers-outline" size={18} color={activeSection === 'services' ? '#fff' : '#71717a'} />
-          <Text style={[styles.segmentText, activeSection === 'services' && styles.segmentTextActive]}>Services</Text>
+          <Ionicons name="briefcase-outline" size={16} color={activeSection === 'services' ? '#fff' : '#71717a'} />
+          <Text style={[styles.segmentTextSmall, activeSection === 'services' && styles.segmentTextActive]}>Services</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.segment, activeSection === 'inquiries' && styles.segmentActive]}
+          style={[styles.segmentCompact, activeSection === 'clients' && styles.segmentActive]}
+          onPress={() => setActiveSection('clients')}
+        >
+          <Ionicons name="business-outline" size={16} color={activeSection === 'clients' ? '#fff' : '#71717a'} />
+          <Text style={[styles.segmentTextSmall, activeSection === 'clients' && styles.segmentTextActive]}>Clients</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.segmentCompact, activeSection === 'partners' && styles.segmentActive]}
+          onPress={() => setActiveSection('partners')}
+        >
+          <Ionicons name="handshake-outline" size={16} color={activeSection === 'partners' ? '#fff' : '#71717a'} />
+          <Text style={[styles.segmentTextSmall, activeSection === 'partners' && styles.segmentTextActive]}>Partners</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.segmentCompact, activeSection === 'team' && styles.segmentActive]}
+          onPress={() => setActiveSection('team')}
+        >
+          <Ionicons name="people-outline" size={16} color={activeSection === 'team' ? '#fff' : '#71717a'} />
+          <Text style={[styles.segmentTextSmall, activeSection === 'team' && styles.segmentTextActive]}>Team</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.segmentCompact, activeSection === 'inquiries' && styles.segmentActive]}
           onPress={() => setActiveSection('inquiries')}
         >
-          <Ionicons name="chatbubbles-outline" size={18} color={activeSection === 'inquiries' ? '#fff' : '#71717a'} />
-          <Text style={[styles.segmentText, activeSection === 'inquiries' && styles.segmentTextActive]}>Inquiries</Text>
+          <Ionicons name="chatbubbles-outline" size={16} color={activeSection === 'inquiries' ? '#fff' : '#71717a'} />
+          <Text style={[styles.segmentTextSmall, activeSection === 'inquiries' && styles.segmentTextActive]}>Inquiries</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.segment, activeSection === '3dprint' && styles.segmentActive]}
+          style={[styles.segmentCompact, activeSection === '3dprint' && styles.segmentActive]}
           onPress={() => setActiveSection('3dprint')}
         >
-          <Ionicons name="print-outline" size={18} color={activeSection === '3dprint' ? '#fff' : '#71717a'} />
-          <Text style={[styles.segmentText, activeSection === '3dprint' && styles.segmentTextActive]}>3D Print</Text>
+          <Ionicons name="print-outline" size={16} color={activeSection === '3dprint' ? '#fff' : '#71717a'} />
+          <Text style={[styles.segmentTextSmall, activeSection === '3dprint' && styles.segmentTextActive]}>3D Print</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.segment, activeSection === 'users' && styles.segmentActive]}
-          onPress={() => setActiveSection('users')}
+          style={[styles.segmentCompact, activeSection === 'marketing' && styles.segmentActive]}
+          onPress={() => setActiveSection('marketing')}
         >
-          <Ionicons name="people-outline" size={18} color={activeSection === 'users' ? '#fff' : '#71717a'} />
-          <Text style={[styles.segmentText, activeSection === 'users' && styles.segmentTextActive]}>Users</Text>
+          <Ionicons name="megaphone-outline" size={16} color={activeSection === 'marketing' ? '#fff' : '#71717a'} />
+          <Text style={[styles.segmentTextSmall, activeSection === 'marketing' && styles.segmentTextActive]}>Marketing</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.tabContent}>
         {activeSection === 'services' && <ServicesScreen navigation={navigation} hideHeader />}
+        {activeSection === 'clients' && <AdminClientsScreen navigation={navigation} hideHeader />}
+        {activeSection === 'partners' && <AdminPartnersScreen navigation={navigation} hideHeader />}
+        {activeSection === 'team' && <TeamScreen navigation={navigation} hideHeader />}
         {activeSection === 'inquiries' && <InquiriesScreen navigation={navigation} hideHeader />}
         {activeSection === '3dprint' && <CustomRequestsScreen navigation={navigation} hideHeader />}
-        {activeSection === 'users' && <UsersScreen navigation={navigation} hideHeader />}
+        {activeSection === 'marketing' && <MarketingScreen navigation={navigation} hideHeader />}
       </View>
     </SafeAreaView>
   )
 }
 
-// Finance Tab - Analytics, Expenses, Reports
+// Finance Tab - Analytics, Invoices, Expenses, Reports
 function FinanceTabScreen({ navigation }: { navigation: any }) {
-  const [activeSection, setActiveSection] = useState<'analytics' | 'expenses' | 'reports'>('analytics')
+  const [activeSection, setActiveSection] = useState<'analytics' | 'invoices' | 'expenses' | 'reports'>('analytics')
 
   return (
     <SafeAreaView style={styles.tabContainer} edges={['top']}>
@@ -282,26 +349,34 @@ function FinanceTabScreen({ navigation }: { navigation: any }) {
           style={[styles.segment, activeSection === 'analytics' && styles.segmentActive]}
           onPress={() => setActiveSection('analytics')}
         >
-          <Ionicons name="stats-chart-outline" size={18} color={activeSection === 'analytics' ? '#fff' : '#71717a'} />
-          <Text style={[styles.segmentText, activeSection === 'analytics' && styles.segmentTextActive]}>Analytics</Text>
+          <Ionicons name="stats-chart-outline" size={16} color={activeSection === 'analytics' ? '#fff' : '#71717a'} />
+          <Text style={[styles.segmentTextSmall, activeSection === 'analytics' && styles.segmentTextActive]}>Analytics</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.segment, activeSection === 'invoices' && styles.segmentActive]}
+          onPress={() => setActiveSection('invoices')}
+        >
+          <Ionicons name="document-text-outline" size={16} color={activeSection === 'invoices' ? '#fff' : '#71717a'} />
+          <Text style={[styles.segmentTextSmall, activeSection === 'invoices' && styles.segmentTextActive]}>Invoices</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.segment, activeSection === 'expenses' && styles.segmentActive]}
           onPress={() => setActiveSection('expenses')}
         >
-          <Ionicons name="wallet-outline" size={18} color={activeSection === 'expenses' ? '#fff' : '#71717a'} />
-          <Text style={[styles.segmentText, activeSection === 'expenses' && styles.segmentTextActive]}>Expenses</Text>
+          <Ionicons name="wallet-outline" size={16} color={activeSection === 'expenses' ? '#fff' : '#71717a'} />
+          <Text style={[styles.segmentTextSmall, activeSection === 'expenses' && styles.segmentTextActive]}>Expenses</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.segment, activeSection === 'reports' && styles.segmentActive]}
           onPress={() => setActiveSection('reports')}
         >
-          <Ionicons name="bar-chart-outline" size={18} color={activeSection === 'reports' ? '#fff' : '#71717a'} />
-          <Text style={[styles.segmentText, activeSection === 'reports' && styles.segmentTextActive]}>Reports</Text>
+          <Ionicons name="bar-chart-outline" size={16} color={activeSection === 'reports' ? '#fff' : '#71717a'} />
+          <Text style={[styles.segmentTextSmall, activeSection === 'reports' && styles.segmentTextActive]}>Reports</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.tabContent}>
         {activeSection === 'analytics' && <AnalyticsScreen navigation={navigation} hideHeader />}
+        {activeSection === 'invoices' && <AdminInvoicesScreen navigation={navigation} hideHeader />}
         {activeSection === 'expenses' && <ExpensesScreen navigation={navigation} hideHeader />}
         {activeSection === 'reports' && <ReportsScreen navigation={navigation} hideHeader />}
       </View>
@@ -369,8 +444,34 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#71717a',
   },
+  segmentTextSmall: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#71717a',
+  },
   segmentTextActive: {
     color: '#ffffff',
+  },
+  segmentedControlScrollable: {
+    flexDirection: 'row',
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  segmentCompact: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xs,
+    paddingHorizontal: 2,
+    borderRadius: 8,
+    gap: 2,
   },
   tabContent: {
     flex: 1,

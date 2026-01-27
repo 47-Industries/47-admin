@@ -13,8 +13,10 @@ export default function ProductDetailScreen({ navigation, route }: any) {
   const [product, setProduct] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showStockModal, setShowStockModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [editData, setEditData] = useState({
     name: '',
     price: '',
@@ -127,6 +129,25 @@ export default function ProductDetailScreen({ navigation, route }: any) {
     }
   }
 
+  const handleDelete = async () => {
+    setDeleting(true)
+    try {
+      await api.deleteProduct(id)
+      setShowDeleteModal(false)
+      Alert.alert('Success', 'Product deleted successfully', [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ])
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to delete product')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const confirmDelete = () => {
+    setShowDeleteModal(true)
+  }
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0)
   }
@@ -161,9 +182,14 @@ export default function ProductDetailScreen({ navigation, route }: any) {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Product Details</Text>
-        <TouchableOpacity onPress={() => setShowEditModal(true)} style={styles.editButton}>
-          <Ionicons name="create-outline" size={24} color={colors.primary} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={confirmDelete} style={styles.deleteButton}>
+            <Ionicons name="trash-outline" size={22} color={colors.error} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowEditModal(true)} style={styles.editButton}>
+            <Ionicons name="create-outline" size={24} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
@@ -427,6 +453,37 @@ export default function ProductDetailScreen({ navigation, route }: any) {
           </View>
         </View>
       </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal visible={showDeleteModal} animationType="fade" transparent>
+        <View style={[styles.modalOverlay, styles.deleteModalOverlay]}>
+          <View style={styles.deleteModalContent}>
+            <View style={styles.deleteIconContainer}>
+              <Ionicons name="warning" size={48} color={colors.error} />
+            </View>
+            <Text style={styles.deleteModalTitle}>Delete Product?</Text>
+            <Text style={styles.deleteModalMessage}>
+              Are you sure you want to delete "{product?.name}"? This action cannot be undone.
+            </Text>
+            <View style={styles.deleteModalButtons}>
+              <Button
+                title="Cancel"
+                variant="outline"
+                onPress={() => setShowDeleteModal(false)}
+                style={{ flex: 1 }}
+                disabled={deleting}
+              />
+              <Button
+                title={deleting ? 'Deleting...' : 'Delete'}
+                variant="danger"
+                onPress={handleDelete}
+                loading={deleting}
+                style={{ flex: 1, marginLeft: spacing.md }}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   )
 }
@@ -462,6 +519,14 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.semibold,
     color: colors.text,
     textAlign: 'center',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  deleteButton: {
+    padding: spacing.sm,
   },
   editButton: {
     padding: spacing.sm,
@@ -693,5 +758,45 @@ const styles = StyleSheet.create({
   adjustmentTypeTextActive: {
     color: colors.text,
     fontWeight: fontWeight.semibold,
+  },
+  deleteModalOverlay: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteModalContent: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xxl,
+    marginHorizontal: spacing.xl,
+    alignItems: 'center',
+    width: '90%',
+    maxWidth: 400,
+  },
+  deleteIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.errorBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
+  deleteModalTitle: {
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  deleteModalMessage: {
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+    lineHeight: 22,
+  },
+  deleteModalButtons: {
+    flexDirection: 'row',
+    width: '100%',
   },
 })
