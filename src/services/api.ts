@@ -742,10 +742,15 @@ class ApiService {
   }
 
   // Categories
-  async getCategories(params?: { type?: string }) {
+  async getCategories(params?: { type?: string; includeInactive?: boolean }) {
     const searchParams = new URLSearchParams()
-    if (params?.type) searchParams.set('type', params.type)
+    if (params?.type) searchParams.set('productType', params.type)
+    if (params?.includeInactive) searchParams.set('includeInactive', 'true')
     return this.request<{ categories: any[] }>(`/admin/categories?${searchParams}`)
+  }
+
+  async getCategory(id: string) {
+    return this.request<{ category: any }>(`/admin/categories/${id}`)
   }
 
   async createCategory(data: any) {

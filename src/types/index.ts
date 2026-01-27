@@ -302,7 +302,11 @@ export interface Category {
   description: string | null
   image: string | null
   productType: 'PHYSICAL' | 'DIGITAL'
+  parentId: string | null
   active: boolean
+  _count?: {
+    products: number
+  }
 }
 
 // Order Types
