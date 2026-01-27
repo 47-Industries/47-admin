@@ -74,65 +74,149 @@ export function PartnerDashboardScreen({ navigation, hideHeader }: PartnerDashbo
           </View>
         </View>
 
-        {/* Stats Grid */}
-        <View style={styles.statsGrid}>
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <StatCard
-                title="Total Earned"
-                value={formatCurrency(dashboardData?.stats?.totalEarned || partner?.totalEarned || 0)}
-                icon="cash-outline"
-                iconColor={colors.success}
-                compact
-              />
+        {/* Total Earnings Overview - 4 cards like web */}
+        <View style={styles.earningsGrid}>
+          <View style={styles.earningsRow}>
+            <View style={[styles.earningsCard, styles.earningsCardHighlight]}>
+              <Text style={styles.earningsLabel}>Total Earned</Text>
+              <Text style={[styles.earningsValue, { color: colors.success }]}>
+                {formatCurrency(dashboardData?.partner?.totalEarned || partner?.totalEarned || 0)}
+              </Text>
+              <Text style={styles.earningsSubtext}>All-time earnings</Text>
             </View>
-            <View style={styles.statItem}>
-              <StatCard
-                title="Pending"
-                value={formatCurrency(dashboardData?.stats?.pendingCommissions || partner?.pendingAmount || 0)}
-                icon="time-outline"
-                iconColor={colors.warning}
-                compact
-              />
+            <View style={styles.earningsCard}>
+              <Text style={styles.earningsLabel}>Pending</Text>
+              <Text style={[styles.earningsValue, { color: colors.warning }]}>
+                {formatCurrency(dashboardData?.partner?.pendingAmount || partner?.pendingAmount || 0)}
+              </Text>
+              <Text style={styles.earningsSubtext}>Awaiting approval</Text>
             </View>
           </View>
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <StatCard
-                title="Total Leads"
-                value={dashboardData?.stats?.totalLeads || 0}
-                icon="people-outline"
-                iconColor={accentColor}
-                compact
-              />
+          <View style={styles.earningsRow}>
+            <View style={styles.earningsCard}>
+              <Text style={styles.earningsLabel}>Paid Out</Text>
+              <Text style={styles.earningsValue}>
+                {formatCurrency(dashboardData?.partner?.totalPaid || partner?.totalPaid || 0)}
+              </Text>
+              <Text style={styles.earningsSubtext}>Received</Text>
             </View>
-            <View style={styles.statItem}>
-              <StatCard
-                title="Conversion Rate"
-                value={`${dashboardData?.stats?.conversionRate || 0}%`}
-                icon="trending-up-outline"
-                iconColor={colors.purple}
-                compact
-              />
+            <View style={styles.earningsCard}>
+              <Text style={styles.earningsLabel}>Payout Status</Text>
+              {dashboardData?.partner?.stripeConnectStatus === 'CONNECTED' ? (
+                <View style={styles.payoutStatusRow}>
+                  <View style={[styles.statusDot, { backgroundColor: colors.success }]} />
+                  <Text style={[styles.payoutStatusText, { color: colors.success }]}>Ready</Text>
+                </View>
+              ) : dashboardData?.partner?.stripeConnectStatus === 'PENDING_VERIFICATION' ? (
+                <View style={styles.payoutStatusRow}>
+                  <View style={[styles.statusDot, { backgroundColor: colors.warning }]} />
+                  <Text style={[styles.payoutStatusText, { color: colors.warning }]}>Verifying</Text>
+                </View>
+              ) : (
+                <TouchableOpacity onPress={() => navigation.navigate('PayoutSetup')}>
+                  <Text style={[styles.payoutStatusText, { color: accentColor }]}>Setup Payouts</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>
 
+        {/* Payout Setup Banner - if not connected */}
+        {dashboardData?.partner?.stripeConnectStatus !== 'CONNECTED' && dashboardData?.partner?.stripeConnectStatus !== 'PENDING_VERIFICATION' && (
+          <View style={styles.payoutBanner}>
+            <View style={styles.payoutBannerIcon}>
+              <Ionicons name="warning" size={24} color={colors.warning} />
+            </View>
+            <View style={styles.payoutBannerContent}>
+              <Text style={styles.payoutBannerTitle}>Setup Required: Connect Your Bank Account</Text>
+              <Text style={styles.payoutBannerDesc}>
+                Connect via Stripe to receive your commission payouts directly to your bank account.
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.payoutBannerButton}
+              onPress={() => navigation.navigate('PayoutSetup')}
+            >
+              <Text style={styles.payoutBannerButtonText}>Connect</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Quick Links - 5 icons like web */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.quickLinksContainer}
+        >
+          <TouchableOpacity
+            style={styles.quickLinkItem}
+            onPress={() => navigation.navigate('Leads')}
+          >
+            <View style={[styles.quickLinkIcon, { backgroundColor: '#3b82f620' }]}>
+              <Ionicons name="clipboard-outline" size={20} color="#3b82f6" />
+            </View>
+            <Text style={styles.quickLinkTitle}>My Leads</Text>
+            <Text style={styles.quickLinkSubtext}>{dashboardData?.stats?.totalLeads || 0} total</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.quickLinkItem}
+            onPress={() => navigation.navigate('AffiliateLinks')}
+          >
+            <View style={[styles.quickLinkIcon, { backgroundColor: '#10b98120' }]}>
+              <Ionicons name="link-outline" size={20} color="#10b981" />
+            </View>
+            <Text style={styles.quickLinkTitle}>Affiliate Links</Text>
+            <Text style={styles.quickLinkSubtext}>{dashboardData?.partner?.affiliateLinks?.length || 0} links</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.quickLinkItem}
+            onPress={() => navigation.navigate('Commissions')}
+          >
+            <View style={[styles.quickLinkIcon, { backgroundColor: `${accentColor}20` }]}>
+              <Ionicons name="cash-outline" size={20} color={accentColor} />
+            </View>
+            <Text style={styles.quickLinkTitle}>Commissions</Text>
+            <Text style={styles.quickLinkSubtext}>View history</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.quickLinkItem}
+            onPress={() => navigation.navigate('Payouts')}
+          >
+            <View style={[styles.quickLinkIcon, { backgroundColor: `${accentColor}20` }]}>
+              <Ionicons name="wallet-outline" size={20} color={accentColor} />
+            </View>
+            <Text style={styles.quickLinkTitle}>Payouts</Text>
+            <Text style={styles.quickLinkSubtext}>{formatCurrency(dashboardData?.partner?.totalPaid || 0)} paid</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.quickLinkItem}
+            onPress={() => navigation.navigate('Contract')}
+          >
+            <View style={[styles.quickLinkIcon, { backgroundColor: `${accentColor}20` }]}>
+              <Ionicons name="document-text-outline" size={20} color={accentColor} />
+            </View>
+            <Text style={styles.quickLinkTitle}>Contract</Text>
+            <Text style={styles.quickLinkSubtext}>{dashboardData?.partner?.contract?.status || 'View'}</Text>
+          </TouchableOpacity>
+        </ScrollView>
+
         {/* Quick Actions */}
         <View style={styles.quickActions}>
           <TouchableOpacity
-            style={[styles.quickAction, { borderColor: accentColor }]}
+            style={[styles.quickAction, { backgroundColor: '#3b82f6' }]}
             onPress={() => navigation.navigate('NewLead')}
           >
-            <Ionicons name="add-circle-outline" size={24} color={accentColor} />
             <Text style={styles.quickActionText}>Submit Lead</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.quickAction}
+            style={[styles.quickAction, { backgroundColor: '#10b981' }]}
             onPress={() => navigation.navigate('AffiliateLinks')}
           >
-            <Ionicons name="link-outline" size={24} color={colors.textSecondary} />
-            <Text style={styles.quickActionText}>Share Link</Text>
+            <Text style={styles.quickActionText}>Get Affiliate Links</Text>
           </TouchableOpacity>
         </View>
 
@@ -248,38 +332,151 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.medium,
     textTransform: 'capitalize',
   },
-  statsGrid: {
+  earningsGrid: {
     paddingHorizontal: spacing.lg,
     gap: spacing.md,
+    marginBottom: spacing.lg,
   },
-  statsRow: {
+  earningsRow: {
     flexDirection: 'row',
     gap: spacing.md,
   },
-  statItem: {
+  earningsCard: {
     flex: 1,
+    backgroundColor: colors.surface,
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  earningsCardHighlight: {
+    borderColor: colors.success,
+    backgroundColor: `${colors.success}10`,
+  },
+  earningsLabel: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    marginBottom: 2,
+  },
+  earningsValue: {
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+  },
+  earningsSubtext: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  payoutStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  payoutStatusText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+  },
+  payoutBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: `${colors.warning}15`,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: `${colors.warning}50`,
+  },
+  payoutBannerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: `${colors.warning}20`,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  payoutBannerContent: {
+    flex: 1,
+    marginLeft: spacing.md,
+  },
+  payoutBannerTitle: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: colors.warning,
+    marginBottom: 2,
+  },
+  payoutBannerDesc: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+  },
+  payoutBannerButton: {
+    backgroundColor: colors.warning,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+  },
+  payoutBannerButtonText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: '#000',
+  },
+  quickLinksContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  quickLinkItem: {
+    width: 90,
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginRight: spacing.sm,
+  },
+  quickLinkIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  quickLinkTitle: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  quickLinkSubtext: {
+    fontSize: 10,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: 2,
   },
   quickActions: {
     flexDirection: 'row',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+    paddingBottom: spacing.lg,
     gap: spacing.md,
   },
   quickAction: {
     flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   quickActionText: {
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
+    fontWeight: fontWeight.semibold,
     color: colors.text,
   },
   section: {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Share } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Share, Clipboard, Image, TextInput, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '../../store/auth'
@@ -18,9 +18,17 @@ interface AffiliateDashboardScreenProps {
 
 export function AffiliateDashboardScreen({ navigation, hideHeader }: AffiliateDashboardScreenProps) {
   const affiliate = useAuthStore((state) => state.affiliate)
+  const user = useAuthStore((state) => state.user)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [dashboardData, setDashboardData] = useState<any>(null)
+  const [copied, setCopied] = useState(false)
+  const [showCustomCode, setShowCustomCode] = useState(false)
+  const [customCode, setCustomCode] = useState('')
+  const [customCodeError, setCustomCodeError] = useState<string | null>(null)
+  const [customCodeAvailable, setCustomCodeAvailable] = useState<boolean | null>(null)
+  const [checkingCode, setCheckingCode] = useState(false)
+  const [settingCode, setSettingCode] = useState(false)
 
   const fetchDashboard = async () => {
     try {
@@ -44,12 +52,12 @@ export function AffiliateDashboardScreen({ navigation, hideHeader }: AffiliateDa
   }
 
   const handleShare = async () => {
-    const shareLink = affiliate?.shareLink || dashboardData?.affiliate?.shareLink
+    const shareLink = affiliate?.shareLink || dashboardData?.stats?.shareLink
     if (!shareLink) return
 
     try {
       await Share.share({
-        message: `Join 47 Industries with my referral link and we both earn rewards! ${shareLink}`,
+        message: `Join MotoRev with my referral link and we both earn rewards! ${shareLink}`,
         url: shareLink,
       })
     } catch (error) {
@@ -57,19 +65,87 @@ export function AffiliateDashboardScreen({ navigation, hideHeader }: AffiliateDa
     }
   }
 
-  const accentColor = portalColors.affiliate
-  const points = affiliate?.points || dashboardData?.affiliate?.points || { total: 0, available: 0, toNextReward: 100, nextRewardAmount: 0 }
-  const stats = affiliate?.stats || dashboardData?.stats || { totalReferrals: 0, successfulReferrals: 0, proConversions: 0, proDaysEarned: 0 }
-  const progressPercent = points.toNextReward > 0 ? ((points.total % 100) / points.toNextReward) * 100 : 0
+  const copyShareLink = async () => {
+    const shareLink = affiliate?.shareLink || dashboardData?.stats?.shareLink
+    if (!shareLink) return
 
-  const tierColors: Record<string, string> = {
-    BRONZE: '#CD7F32',
-    SILVER: '#C0C0C0',
-    GOLD: '#FFD700',
-    PLATINUM: '#E5E4E2',
+    try {
+      await Clipboard.setString(shareLink)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (error) {
+      console.error('Error copying:', error)
+    }
   }
 
-  const tier = affiliate?.tier || dashboardData?.affiliate?.tier || 'BRONZE'
+  const handleCustomCodeChange = (value: string) => {
+    const cleaned = value.toUpperCase().replace(/[^A-Z0-9-]/g, '')
+    let formatted = cleaned
+    if (!cleaned.startsWith('MR-')) {
+      formatted = 'MR-' + cleaned.replace(/^MR-?/i, '')
+    }
+    if (formatted.length > 9) {
+      formatted = formatted.slice(0, 9)
+    }
+    setCustomCode(formatted)
+    setCustomCodeError(null)
+    setCustomCodeAvailable(null)
+  }
+
+  const checkCodeAvailability = async () => {
+    if (customCode.length !== 9) {
+      setCustomCodeError('Code must be MR- followed by 6 characters')
+      return
+    }
+    setCheckingCode(true)
+    setCustomCodeError(null)
+    setCustomCodeAvailable(null)
+    try {
+      const res = await api.checkAffiliateCode(customCode)
+      if (res.available) {
+        setCustomCodeAvailable(true)
+      } else {
+        setCustomCodeAvailable(false)
+        setCustomCodeError(res.error || 'This code is already taken')
+      }
+    } catch (err) {
+      setCustomCodeError('Failed to check code availability')
+    } finally {
+      setCheckingCode(false)
+    }
+  }
+
+  const setCustomReferralCode = async () => {
+    if (!customCodeAvailable || customCode.length !== 9) return
+    setSettingCode(true)
+    setCustomCodeError(null)
+    try {
+      const res = await api.setAffiliateCode(customCode)
+      if (res.success) {
+        setShowCustomCode(false)
+        setCustomCode('')
+        setCustomCodeAvailable(null)
+        fetchDashboard()
+      } else {
+        setCustomCodeError(res.error || 'Failed to set custom code')
+      }
+    } catch (err) {
+      setCustomCodeError('Failed to set custom code')
+    } finally {
+      setSettingCode(false)
+    }
+  }
+
+  const accentColor = '#0066FF' // MotoRev blue
+  const affiliateData = dashboardData?.stats
+  const points = affiliateData?.points || { total: 0, available: 0, redeemed: 0, toNextReward: 10, progressPercent: 0 }
+  const stats = affiliateData?.stats || { totalReferrals: 0, proConversions: 0, proDaysEarned: 0, totalTransactions: 0, totalRedemptions: 0 }
+  const progressPercent = points.progressPercent || 0
+  const motorev = affiliateData?.motorev
+  const shareLink = affiliateData?.shareLink || ''
+  const affiliateCode = affiliateData?.affiliateCode || '---'
+  const partnerEligible = affiliateData?.partnerEligible || false
+  const isPartner = affiliateData?.isPartner || false
 
   return (
     <SafeAreaView style={styles.container} edges={hideHeader ? [] : ['top']}>
@@ -79,76 +155,152 @@ export function AffiliateDashboardScreen({ navigation, hideHeader }: AffiliateDa
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accentColor} />
         }
       >
-        {/* Header */}
+        {/* Header with MotoRev Profile */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Affiliate Program</Text>
-            <Text style={styles.name}>Earn Rewards</Text>
-          </View>
-          <View style={[styles.tierBadge, { backgroundColor: `${tierColors[tier]}30`, borderColor: tierColors[tier] }]}>
-            <Ionicons name="star" size={14} color={tierColors[tier]} />
-            <Text style={[styles.tierText, { color: tierColors[tier] }]}>{tier}</Text>
-          </View>
-        </View>
-
-        {/* Points Card */}
-        <View style={styles.pointsCard}>
-          <View style={styles.pointsHeader}>
-            <View>
-              <Text style={styles.pointsLabel}>Available Points</Text>
-              <Text style={styles.pointsValue}>{points.available.toLocaleString()}</Text>
+          {motorev?.profilePicture ? (
+            <Image
+              source={{ uri: motorev.profilePicture }}
+              style={styles.profileImage}
+            />
+          ) : (
+            <View style={[styles.profilePlaceholder, { backgroundColor: accentColor }]}>
+              <Text style={styles.profileInitial}>
+                {motorev?.username?.[0]?.toUpperCase() || 'M'}
+              </Text>
             </View>
-            <View style={styles.pointsTotal}>
-              <Text style={styles.totalLabel}>Total Earned</Text>
-              <Text style={styles.totalValue}>{points.total.toLocaleString()}</Text>
-            </View>
-          </View>
-
-          {/* Progress to next reward */}
-          <View style={styles.progressSection}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressLabel}>Progress to Next Reward</Text>
-              <Text style={styles.progressPoints}>{points.toNextReward} pts to go</Text>
-            </View>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
-            </View>
-          </View>
-        </View>
-
-        {/* Share Card */}
-        <View style={styles.shareCard}>
-          <View style={styles.shareInfo}>
-            <Ionicons name="share-social-outline" size={24} color={accentColor} />
-            <View style={styles.shareText}>
-              <Text style={styles.shareTitle}>Share & Earn</Text>
-              <Text style={styles.shareDesc}>Get 10 points for each referral</Text>
-            </View>
-          </View>
-          <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
-            <Text style={styles.shareButtonText}>Share Link</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Referral Code */}
-        <View style={styles.codeCard}>
-          <Text style={styles.codeLabel}>Your Referral Code</Text>
-          <View style={styles.codeContainer}>
-            <Text style={styles.codeValue}>
-              {affiliate?.affiliateCode || dashboardData?.affiliate?.affiliateCode || '---'}
+          )}
+          <View style={styles.headerText}>
+            <Text style={styles.name}>
+              {motorev?.username ? `@${motorev.username}` : 'Your Affiliate Dashboard'}
             </Text>
-            <TouchableOpacity style={styles.copyButton}>
-              <Ionicons name="copy-outline" size={20} color={accentColor} />
+            <Text style={styles.greeting}>MotoRev Affiliate Program</Text>
+          </View>
+        </View>
+
+        {/* Points Progress Card */}
+        <View style={[styles.pointsCard, { borderColor: accentColor }]}>
+          <View style={styles.pointsHeader}>
+            <Text style={styles.pointsLabel}>Your Points</Text>
+            <Text style={[styles.pointsValue, { color: accentColor }]}>{points.available}</Text>
+          </View>
+
+          {/* Progress Bar */}
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${progressPercent}%`, backgroundColor: accentColor }]} />
+          </View>
+
+          <View style={styles.progressFooter}>
+            <Text style={styles.progressLabel}>
+              {points.toNextReward === 0 ? 'Ready to redeem!' : `${points.toNextReward} points to next reward`}
+            </Text>
+            <Text style={styles.progressLabel}>10 points = 7 days Pro</Text>
+          </View>
+
+          {/* Quick Stats in Points Card */}
+          <View style={styles.pointsStats}>
+            <View style={styles.pointsStat}>
+              <Text style={styles.pointsStatValue}>{points.total}</Text>
+              <Text style={styles.pointsStatLabel}>Total Earned</Text>
+            </View>
+            <View style={styles.pointsStat}>
+              <Text style={[styles.pointsStatValue, { color: colors.success }]}>{stats.proDaysEarned}d</Text>
+              <Text style={styles.pointsStatLabel}>Pro Time Earned</Text>
+            </View>
+            <View style={styles.pointsStat}>
+              <Text style={styles.pointsStatValue}>{points.redeemed || 0}</Text>
+              <Text style={styles.pointsStatLabel}>Points Redeemed</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Share Link Section */}
+        <View style={styles.shareLinkCard}>
+          <Text style={styles.shareLinkTitle}>Share Your Link</Text>
+          <Text style={styles.shareLinkDesc}>
+            Share this link with friends. Earn 1 point per signup, 10 points when they upgrade to Pro.
+          </Text>
+          <View style={styles.shareLinkContainer}>
+            <View style={styles.shareLinkBox}>
+              <Text style={styles.shareLinkText} numberOfLines={1}>{shareLink}</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.copyLinkButton, { backgroundColor: accentColor }]}
+              onPress={copyShareLink}
+            >
+              <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={18} color={colors.text} />
+              <Text style={styles.copyLinkButtonText}>{copied ? 'Copied' : 'Copy'}</Text>
             </TouchableOpacity>
           </View>
+          <View style={styles.codeRow}>
+            <Text style={styles.codeLabel}>
+              Referral Code: <Text style={styles.codeValue}>{affiliateCode}</Text>
+            </Text>
+            <TouchableOpacity onPress={() => setShowCustomCode(!showCustomCode)}>
+              <Text style={[styles.customizeLink, { color: accentColor }]}>Customize Code</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Custom Code Form */}
+          {showCustomCode && (
+            <View style={styles.customCodeSection}>
+              <Text style={styles.customCodeTitle}>Set Custom Referral Code</Text>
+              <Text style={styles.customCodeDesc}>
+                Choose a memorable code for your referral link. Format: MR-XXXXXX (6 alphanumeric characters)
+              </Text>
+              <View style={styles.customCodeRow}>
+                <TextInput
+                  style={styles.customCodeInput}
+                  value={customCode}
+                  onChangeText={handleCustomCodeChange}
+                  placeholder="MR-XXXXXX"
+                  placeholderTextColor={colors.textMuted}
+                  maxLength={9}
+                  autoCapitalize="characters"
+                />
+                <TouchableOpacity
+                  style={styles.checkButton}
+                  onPress={checkCodeAvailability}
+                  disabled={customCode.length !== 9 || checkingCode}
+                >
+                  {checkingCode ? (
+                    <ActivityIndicator size="small" color={colors.text} />
+                  ) : (
+                    <Text style={styles.checkButtonText}>Check</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+              {customCodeError && (
+                <Text style={styles.customCodeError}>{customCodeError}</Text>
+              )}
+              {customCodeAvailable && (
+                <View style={styles.codeAvailableSection}>
+                  <Text style={styles.codeAvailableText}>Code is available!</Text>
+                  <TouchableOpacity
+                    style={[styles.useCodeButton, { backgroundColor: accentColor }]}
+                    onPress={setCustomReferralCode}
+                    disabled={settingCode}
+                  >
+                    {settingCode ? (
+                      <ActivityIndicator size="small" color={colors.text} />
+                    ) : (
+                      <>
+                        <Ionicons name="checkmark" size={16} color={colors.text} />
+                        <Text style={styles.useCodeButtonText}>Use This Code</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
         </View>
 
-        {/* Stats */}
+        {/* Stats Grid */}
         <View style={styles.statsGrid}>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <StatCard
-                title="Total Referrals"
+                title="Total Signups"
                 value={stats.totalReferrals}
                 icon="people-outline"
                 iconColor={accentColor}
@@ -157,10 +309,10 @@ export function AffiliateDashboardScreen({ navigation, hideHeader }: AffiliateDa
             </View>
             <View style={styles.statItem}>
               <StatCard
-                title="Successful"
-                value={stats.successfulReferrals}
-                icon="checkmark-circle-outline"
-                iconColor={colors.success}
+                title="Pro Conversions"
+                value={stats.proConversions}
+                icon="star-outline"
+                iconColor={accentColor}
                 compact
               />
             </View>
@@ -168,73 +320,125 @@ export function AffiliateDashboardScreen({ navigation, hideHeader }: AffiliateDa
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <StatCard
-                title="Pro Conversions"
-                value={stats.proConversions}
-                icon="star-outline"
-                iconColor={colors.warning}
+                title="Transactions"
+                value={stats.totalTransactions}
+                icon="swap-horizontal-outline"
+                iconColor={colors.textSecondary}
                 compact
               />
             </View>
             <View style={styles.statItem}>
               <StatCard
-                title="Pro Days Earned"
-                value={stats.proDaysEarned}
-                icon="calendar-outline"
-                iconColor={colors.purple}
+                title="Redemptions"
+                value={stats.totalRedemptions}
+                icon="gift-outline"
+                iconColor={colors.textSecondary}
                 compact
               />
             </View>
           </View>
         </View>
 
+        {/* Partner CTA */}
+        {partnerEligible && !isPartner && (
+          <View style={styles.partnerBanner}>
+            <View style={styles.partnerIcon}>
+              <Ionicons name="trophy" size={24} color="#F59E0B" />
+            </View>
+            <View style={styles.partnerBannerText}>
+              <Text style={styles.partnerBannerTitle}>Become a Partner</Text>
+              <Text style={styles.partnerBannerDesc}>
+                Congratulations! With {stats.totalReferrals} referrals, you qualify for our Partner Program.
+                Partners get higher commission rates and exclusive benefits.
+              </Text>
+              <TouchableOpacity style={styles.partnerApplyButton}>
+                <Text style={styles.partnerApplyText}>Apply for Partner Program</Text>
+                <Ionicons name="arrow-forward" size={16} color="#000" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Already a Partner */}
+        {isPartner && (
+          <View style={styles.partnerBanner}>
+            <View style={styles.partnerIcon}>
+              <Ionicons name="trophy" size={24} color="#F59E0B" />
+            </View>
+            <View style={styles.partnerBannerText}>
+              <Text style={styles.partnerBannerTitle}>Partner Status Active</Text>
+              <Text style={styles.partnerBannerDesc}>
+                You are an official 47 Industries Partner with enhanced benefits.
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.viewPartnerButton}
+              onPress={() => navigation.navigate('PartnerDashboard')}
+            >
+              <Text style={styles.viewPartnerText}>View Dashboard</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Recent Activity */}
-        {dashboardData?.recentReferrals?.length > 0 && (
+        {dashboardData?.recentActivity?.length > 0 && (
           <View style={styles.section}>
-            <SectionHeader
-              title="Recent Activity"
-              actionLabel="View All"
-              onAction={() => navigation.navigate('Referrals')}
-            />
-            {dashboardData.recentReferrals.slice(0, 3).map((referral: any, index: number) => (
-              <View key={referral.id || index} style={styles.activityCard}>
-                <View style={styles.activityIcon}>
+            <SectionHeader title="Recent Activity" />
+            {dashboardData.recentActivity.slice(0, 5).map((tx: any, index: number) => (
+              <View key={tx.id || index} style={styles.activityCard}>
+                <View style={[
+                  styles.activityIcon,
+                  { backgroundColor: tx.type === 'PRO_CONVERSION' ? `${accentColor}20` : `${colors.success}20` }
+                ]}>
                   <Ionicons
-                    name={referral.status === 'CONVERTED' ? 'checkmark-circle' : 'person-add'}
-                    size={20}
-                    color={referral.status === 'CONVERTED' ? colors.success : accentColor}
+                    name={tx.type === 'PRO_CONVERSION' ? 'star' : tx.type === 'VERIFIED_SIGNUP' ? 'checkmark-circle' : 'gift'}
+                    size={18}
+                    color={tx.type === 'PRO_CONVERSION' ? accentColor : tx.type === 'VERIFIED_SIGNUP' ? colors.success : colors.textSecondary}
                   />
                 </View>
                 <View style={styles.activityInfo}>
                   <Text style={styles.activityTitle}>
-                    {referral.status === 'CONVERTED' ? 'Referral Converted' : 'New Signup'}
+                    {tx.type === 'PRO_CONVERSION' ? 'Pro Conversion' : tx.type === 'VERIFIED_SIGNUP' ? 'Signup' : tx.type.replace(/_/g, ' ')}
                   </Text>
                   <Text style={styles.activityDate}>
-                    {new Date(referral.createdAt).toLocaleDateString()}
+                    {tx.motorevEmail || tx.description || new Date(tx.createdAt).toLocaleDateString()}
                   </Text>
                 </View>
-                <Text style={[styles.activityPoints, { color: colors.success }]}>
-                  +{referral.pointsEarned || 10} pts
+                <Text style={[styles.activityPoints, { color: tx.points > 0 ? colors.success : colors.error }]}>
+                  {tx.points > 0 ? '+' : ''}{tx.points} pts
                 </Text>
               </View>
             ))}
           </View>
         )}
 
-        {/* Partner Eligible Banner */}
-        {(affiliate?.partnerEligible || dashboardData?.affiliate?.partnerEligible) && (
-          <View style={styles.partnerBanner}>
-            <Ionicons name="trophy-outline" size={24} color={portalColors.partner} />
-            <View style={styles.partnerBannerText}>
-              <Text style={styles.partnerBannerTitle}>Eligible for Partner Program</Text>
-              <Text style={styles.partnerBannerDesc}>
-                You qualify for our partner program with higher rewards
-              </Text>
+        {/* How It Works */}
+        <View style={styles.howItWorksCard}>
+          <Text style={styles.howItWorksTitle}>How Points Work</Text>
+          <View style={styles.howItWorksSteps}>
+            <View style={styles.howItWorksStep}>
+              <View style={[styles.stepNumber, { backgroundColor: `${accentColor}20` }]}>
+                <Text style={[styles.stepNumberText, { color: accentColor }]}>1</Text>
+              </View>
+              <Text style={styles.stepTitle}>Share Your Link</Text>
+              <Text style={styles.stepDesc}>Friends sign up using your referral link</Text>
             </View>
-            <TouchableOpacity style={styles.partnerButton}>
-              <Text style={styles.partnerButtonText}>Apply</Text>
-            </TouchableOpacity>
+            <View style={styles.howItWorksStep}>
+              <View style={[styles.stepNumber, { backgroundColor: `${accentColor}20` }]}>
+                <Text style={[styles.stepNumberText, { color: accentColor }]}>2</Text>
+              </View>
+              <Text style={styles.stepTitle}>Earn Points</Text>
+              <Text style={styles.stepDesc}>1 point per signup, 10 points for Pro upgrades</Text>
+            </View>
+            <View style={styles.howItWorksStep}>
+              <View style={[styles.stepNumber, { backgroundColor: `${accentColor}20` }]}>
+                <Text style={[styles.stepNumberText, { color: accentColor }]}>3</Text>
+              </View>
+              <Text style={styles.stepTitle}>Get Pro Time</Text>
+              <Text style={styles.stepDesc}>10 points = 7 days Pro (auto-redeemed)</Text>
+            </View>
           </View>
-        )}
+        </View>
 
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -249,31 +453,40 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     padding: spacing.lg,
+    gap: spacing.md,
   },
-  greeting: {
-    fontSize: fontSize.md,
-    color: colors.textMuted,
+  profileImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 2,
+    borderColor: '#0066FF50',
   },
-  name: {
-    fontSize: fontSize.xxl,
+  profilePlaceholder: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileInitial: {
+    fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
     color: colors.text,
   },
-  tierBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-    borderWidth: 1,
+  headerText: {
+    flex: 1,
   },
-  tierText: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
+  greeting: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+  },
+  name: {
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
   },
   pointsCard: {
     backgroundColor: colors.surface,
@@ -282,123 +495,202 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: portalColors.affiliate,
   },
   pointsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.lg,
+    alignItems: 'center',
+    marginBottom: spacing.md,
   },
   pointsLabel: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-    marginBottom: spacing.xs,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
   },
   pointsValue: {
-    fontSize: fontSize.hero,
+    fontSize: fontSize.xxl,
     fontWeight: fontWeight.bold,
-    color: portalColors.affiliate,
-  },
-  pointsTotal: {
-    alignItems: 'flex-end',
-  },
-  totalLabel: {
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
-    marginBottom: 2,
-  },
-  totalValue: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold,
-    color: colors.textSecondary,
-  },
-  progressSection: {},
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  progressLabel: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-  },
-  progressPoints: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
   },
   progressBar: {
-    height: 8,
-    backgroundColor: colors.border,
-    borderRadius: 4,
+    height: 12,
+    backgroundColor: colors.surfaceHover,
+    borderRadius: 6,
     overflow: 'hidden',
+    marginBottom: spacing.sm,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: portalColors.affiliate,
-    borderRadius: 4,
+    borderRadius: 6,
   },
-  shareCard: {
+  progressFooter: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.surface,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
   },
-  shareInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  shareText: {},
-  shareTitle: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.medium,
-    color: colors.text,
-  },
-  shareDesc: {
+  progressLabel: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
   },
-  shareButton: {
-    backgroundColor: portalColors.affiliate,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.md,
+  pointsStats: {
+    flexDirection: 'row',
+    marginTop: spacing.lg,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
-  shareButtonText: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
+  pointsStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  pointsStatValue: {
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
     color: colors.text,
   },
-  codeCard: {
+  pointsStatLabel: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  shareLinkCard: {
     backgroundColor: colors.surface,
     marginHorizontal: spacing.lg,
     marginBottom: spacing.lg,
-    padding: spacing.md,
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  shareLinkTitle: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  shareLinkDesc: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    marginBottom: spacing.md,
+  },
+  shareLinkContainer: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  shareLinkBox: {
+    flex: 1,
+    backgroundColor: colors.surfaceHover,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    justifyContent: 'center',
+  },
+  shareLinkText: {
+    fontSize: fontSize.sm,
+    fontFamily: 'monospace',
+    color: colors.text,
+  },
+  copyLinkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     borderRadius: borderRadius.md,
   },
-  codeLabel: {
+  copyLinkButtonText: {
     fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.text,
+  },
+  codeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing.md,
+  },
+  codeLabel: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+  },
+  codeValue: {
+    fontFamily: 'monospace',
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+  },
+  customizeLink: {
+    fontSize: fontSize.xs,
+  },
+  customCodeSection: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  customCodeTitle: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  customCodeDesc: {
+    fontSize: fontSize.xs,
     color: colors.textMuted,
     marginBottom: spacing.sm,
   },
-  codeContainer: {
+  customCodeRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  customCodeInput: {
+    flex: 1,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: fontSize.sm,
+    fontFamily: 'monospace',
+    color: colors.text,
+  },
+  checkButton: {
+    backgroundColor: colors.surfaceHover,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    justifyContent: 'center',
+  },
+  checkButtonText: {
+    fontSize: fontSize.sm,
+    color: colors.text,
+  },
+  customCodeError: {
+    fontSize: fontSize.xs,
+    color: colors.error,
+    marginTop: spacing.sm,
+  },
+  codeAvailableSection: {
+    marginTop: spacing.sm,
+  },
+  codeAvailableText: {
+    fontSize: fontSize.xs,
+    color: colors.success,
+    marginBottom: spacing.sm,
+  },
+  useCodeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    alignSelf: 'flex-start',
   },
-  codeValue: {
-    fontSize: fontSize.xxl,
-    fontWeight: fontWeight.bold,
+  useCodeButtonText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
     color: colors.text,
-    letterSpacing: 2,
-  },
-  copyButton: {
-    padding: spacing.sm,
   },
   statsGrid: {
     paddingHorizontal: spacing.lg,
@@ -425,10 +717,9 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
   },
   activityIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surfaceHover,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
@@ -437,27 +728,36 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   activityTitle: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
     color: colors.text,
   },
   activityDate: {
-    fontSize: fontSize.sm,
+    fontSize: fontSize.xs,
     color: colors.textMuted,
   },
   activityPoints: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
   },
   partnerBanner: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: `${portalColors.partner}15`,
+    alignItems: 'flex-start',
+    backgroundColor: '#F59E0B15',
     marginHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
     padding: spacing.md,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: portalColors.partner,
+    borderColor: '#F59E0B50',
+  },
+  partnerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F59E0B20',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   partnerBannerText: {
     flex: 1,
@@ -465,22 +765,84 @@ const styles = StyleSheet.create({
   },
   partnerBannerTitle: {
     fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
-    color: colors.text,
+    fontWeight: fontWeight.bold,
+    color: '#F59E0B',
+    marginBottom: spacing.xs,
   },
   partnerBannerDesc: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
+    marginBottom: spacing.sm,
   },
-  partnerButton: {
-    backgroundColor: portalColors.partner,
-    paddingHorizontal: spacing.lg,
+  partnerApplyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: '#F59E0B',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    alignSelf: 'flex-start',
+  },
+  partnerApplyText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: '#000',
+  },
+  viewPartnerButton: {
+    backgroundColor: '#F59E0B20',
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.md,
   },
-  partnerButtonText: {
+  viewPartnerText: {
     fontSize: fontSize.sm,
+    color: '#F59E0B',
+  },
+  howItWorksCard: {
+    backgroundColor: colors.surface,
+    marginHorizontal: spacing.lg,
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  howItWorksTitle: {
+    fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
     color: colors.text,
+    marginBottom: spacing.md,
+  },
+  howItWorksSteps: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  howItWorksStep: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  stepNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  stepNumberText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+  },
+  stepTitle: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  stepDesc: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    textAlign: 'center',
   },
 })

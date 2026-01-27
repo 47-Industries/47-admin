@@ -240,6 +240,17 @@ class ApiService {
     })
   }
 
+  async checkAffiliateCode(code: string) {
+    return this.request<{ available: boolean; error?: string }>(`/account/affiliate/custom-code?code=${encodeURIComponent(code)}`)
+  }
+
+  async setAffiliateCode(code: string) {
+    return this.request<{ success: boolean; affiliateCode?: string; error?: string }>('/account/affiliate/custom-code', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    })
+  }
+
   async getAffiliateShareLink() {
     return this.request<{ shareLink: string; code: string }>('/account/affiliate/share-link')
   }

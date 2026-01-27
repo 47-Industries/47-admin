@@ -107,48 +107,88 @@ export function ClientDashboardScreen({ navigation, hideHeader }: ClientDashboar
           </View>
         )}
 
-        {/* Stats Grid */}
+        {/* Stats Grid - 4 cards like web */}
         <View style={styles.statsGrid}>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <StatCard
-                title="Active Projects"
-                value={dashboardData?.stats?.activeProjects || 0}
-                icon="folder-open-outline"
-                iconColor={accentColor}
-                compact
-              />
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>Outstanding</Text>
+                <Text style={[styles.statValue, dashboardData?.stats?.outstandingBalance > 0 && { color: colors.warning }]}>
+                  {formatCurrency(dashboardData?.stats?.outstandingBalance || client?.totalOutstanding || 0)}
+                </Text>
+              </View>
             </View>
             <View style={styles.statItem}>
-              <StatCard
-                title="Total Projects"
-                value={dashboardData?.stats?.totalProjects || 0}
-                icon="folder-outline"
-                iconColor={colors.textMuted}
-                compact
-              />
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>Total Paid</Text>
+                <Text style={[styles.statValue, { color: colors.success }]}>
+                  {formatCurrency(dashboardData?.stats?.totalSpent || client?.totalRevenue || 0)}
+                </Text>
+              </View>
             </View>
           </View>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <StatCard
-                title="Outstanding"
-                value={formatCurrency(dashboardData?.stats?.outstandingBalance || client?.totalOutstanding || 0)}
-                icon="alert-circle-outline"
-                iconColor={colors.warning}
-                compact
-              />
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>Monthly Service</Text>
+                <Text style={styles.statValue}>
+                  {formatCurrency(dashboardData?.stats?.monthlyTotal || 0)}/mo
+                </Text>
+              </View>
             </View>
             <View style={styles.statItem}>
-              <StatCard
-                title="Total Spent"
-                value={formatCurrency(dashboardData?.stats?.totalSpent || client?.totalRevenue || 0)}
-                icon="wallet-outline"
-                iconColor={colors.success}
-                compact
-              />
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>Payment Method</Text>
+                {dashboardData?.client?.autopayEnabled ? (
+                  <Text style={[styles.statValue, { color: colors.success, fontSize: fontSize.md }]}>Autopay Active</Text>
+                ) : (
+                  <TouchableOpacity onPress={() => navigation.navigate('Billing')}>
+                    <Text style={[styles.statValue, { color: accentColor, fontSize: fontSize.md }]}>Set Up Autopay</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           </View>
+        </View>
+
+        {/* Quick Links - like web */}
+        <View style={styles.quickLinks}>
+          <TouchableOpacity
+            style={styles.quickLinkCard}
+            onPress={() => navigation.navigate('Invoices')}
+          >
+            <View style={styles.quickLinkIcon}>
+              <Ionicons name="document-text-outline" size={28} color={colors.textMuted} />
+            </View>
+            <Text style={styles.quickLinkTitle}>Invoices</Text>
+            <Text style={styles.quickLinkSubtitle}>
+              {dashboardData?.recentInvoices?.filter((i: any) => ['SENT', 'VIEWED', 'OVERDUE'].includes(i.status)).length > 0
+                ? `${dashboardData.recentInvoices.filter((i: any) => ['SENT', 'VIEWED', 'OVERDUE'].includes(i.status)).length} pending`
+                : 'View all invoices'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.quickLinkCard}
+            onPress={() => navigation.navigate('Contracts')}
+          >
+            <View style={styles.quickLinkIcon}>
+              <Ionicons name="newspaper-outline" size={28} color={colors.textMuted} />
+            </View>
+            <Text style={styles.quickLinkTitle}>Contracts</Text>
+            <Text style={styles.quickLinkSubtitle}>View and sign contracts</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.quickLinkCard}
+            onPress={() => navigation.navigate('Billing')}
+          >
+            <View style={styles.quickLinkIcon}>
+              <Ionicons name="card-outline" size={28} color={colors.textMuted} />
+            </View>
+            <Text style={styles.quickLinkTitle}>Billing</Text>
+            <Text style={styles.quickLinkSubtitle}>Manage payment methods</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Active Projects */}
@@ -331,6 +371,7 @@ const styles = StyleSheet.create({
   statsGrid: {
     paddingHorizontal: spacing.lg,
     gap: spacing.md,
+    marginBottom: spacing.lg,
   },
   statsRow: {
     flexDirection: 'row',
@@ -339,8 +380,52 @@ const styles = StyleSheet.create({
   statItem: {
     flex: 1,
   },
+  statCard: {
+    backgroundColor: colors.surface,
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  statLabel: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    marginBottom: spacing.xs,
+  },
+  statValue: {
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+  },
+  quickLinks: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  quickLinkCard: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  quickLinkIcon: {
+    marginBottom: spacing.md,
+  },
+  quickLinkTitle: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+    marginBottom: 2,
+  },
+  quickLinkSubtitle: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+  },
   section: {
-    marginTop: spacing.lg,
+    marginBottom: spacing.lg,
   },
   projectCard: {
     flexDirection: 'row',
