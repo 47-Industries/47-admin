@@ -12,7 +12,7 @@ import {
   Alert,
   Linking,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../../components/Card'
 import { Badge } from '../../components/Badge'
@@ -129,7 +129,7 @@ export function ClientDetailScreen({ navigation, route }: ClientDetailScreenProp
 
   if (!client) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backIcon}>
             <Ionicons name="arrow-back" size={24} color={colors.text} />
@@ -140,12 +140,12 @@ export function ClientDetailScreen({ navigation, route }: ClientDetailScreenProp
           <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
           <Text style={styles.errorText}>Client not found</Text>
         </View>
-      </SafeAreaView>
+      </View>
     )
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backIcon}>
@@ -402,7 +402,7 @@ export function ClientDetailScreen({ navigation, route }: ClientDetailScreenProp
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   )
 }
 
