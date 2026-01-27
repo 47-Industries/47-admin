@@ -159,8 +159,11 @@ export function DashboardScreen({ navigation }: any) {
             <TouchableOpacity
               style={styles.attentionBadge}
               onPress={() => {
-                // Scroll to recent activity section - the items needing attention are highlighted there
-                // Or we could navigate to a filtered view
+                // Navigate to first pending item
+                const pendingItem = stats?.recentActivity?.find(a => ['PENDING', 'NEW'].includes(a.status))
+                if (pendingItem) {
+                  handleActivityPress(pendingItem)
+                }
               }}
               activeOpacity={0.7}
             >
@@ -338,8 +341,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: spacing.md,
-    paddingBottom: spacing.lg,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.md,
   },
   greeting: {
     fontSize: fontSize.sm,
