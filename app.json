@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "47 Admin",
-    "slug": "47-admin",
+    "name": "47",
+    "slug": "47-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,8 +14,8 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.fortyseven.admin",
-      "buildNumber": "2",
+      "bundleIdentifier": "com.47industries.app",
+      "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -25,7 +25,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0a0a0a"
       },
-      "package": "com.fortyseven.admin"
+      "package": "com.47industries.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"

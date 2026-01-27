@@ -47,15 +47,227 @@ class ApiService {
   }
 
   // Auth
-  async login(email: string, password: string) {
-    return this.request<{ user: any; token: string }>('/auth/mobile-login', {
+  async login(email: string, password: string, portalType?: string) {
+    return this.request<{
+      user: any
+      token: string
+      portalAccess: { admin: boolean; partner: boolean; client: boolean; affiliate: boolean }
+      partner?: any
+      client?: any
+      affiliate?: any
+    }>('/auth/mobile-login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, portalType }),
     })
   }
 
   async getMe() {
-    return this.request<{ user: any }>('/auth/me')
+    return this.request<{
+      user: any
+      portalAccess: { admin: boolean; partner: boolean; client: boolean; affiliate: boolean }
+      partner?: any
+      client?: any
+      affiliate?: any
+    }>('/auth/me')
+  }
+
+  // Partner Portal APIs
+  async getPartnerDashboard() {
+    return this.request<{ partner: any; stats: any; recentLeads: any[]; recentCommissions: any[]; pendingPayouts: any[] }>('/account/partner')
+  }
+
+  async getPartnerLeads(params?: { page?: number; status?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.status) searchParams.set('status', params.status)
+    return this.request<{ leads: any[]; total: number }>(`/account/partner/leads?${searchParams}`)
+  }
+
+  async getPartnerLead(id: string) {
+    return this.request<{ lead: any }>(`/account/partner/leads/${id}`)
+  }
+
+  async createPartnerLead(data: {
+    businessName: string
+    contactName: string
+    email: string
+    phone?: string
+    interests: string[]
+    notes?: string
+    estimatedValue?: number
+  }) {
+    return this.request<{ lead: any }>('/account/partner/leads', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async getPartnerCommissions(params?: { page?: number; status?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.status) searchParams.set('status', params.status)
+    return this.request<{ commissions: any[]; total: number; totals: any }>(`/account/partner/commissions?${searchParams}`)
+  }
+
+  async getPartnerPayouts(params?: { page?: number; status?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.status) searchParams.set('status', params.status)
+    return this.request<{ payouts: any[]; total: number }>(`/account/partner/payouts?${searchParams}`)
+  }
+
+  async getPartnerAffiliateStats() {
+    return this.request<{ stats: any; links: any[] }>('/account/partner/affiliate/stats')
+  }
+
+  async getPartnerAffiliateLinks() {
+    return this.request<{ links: any[] }>('/account/partner/affiliate/links')
+  }
+
+  async createPartnerAffiliateLink(data: { name: string; campaignId?: string }) {
+    return this.request<{ link: any }>('/account/partner/affiliate/links', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async getPartnerContract() {
+    return this.request<{ contract: any }>('/account/partner/contract')
+  }
+
+  async signPartnerContract(signatureData: string) {
+    return this.request<{ contract: any }>('/account/partner/contract/sign', {
+      method: 'POST',
+      body: JSON.stringify({ signature: signatureData }),
+    })
+  }
+
+  async setupPartnerStripeConnect() {
+    return this.request<{ url: string }>('/account/partner/stripe-connect', {
+      method: 'POST',
+    })
+  }
+
+  // Client Portal APIs
+  async getClientDashboard() {
+    return this.request<{
+      client: any
+      stats: any
+      activeProjects: any[]
+      recentInvoices: any[]
+      pendingContracts: any[]
+    }>('/account/client')
+  }
+
+  async getClientProjects(params?: { page?: number; status?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.status) searchParams.set('status', params.status)
+    return this.request<{ projects: any[]; total: number }>(`/account/client/projects?${searchParams}`)
+  }
+
+  async getClientProject(id: string) {
+    return this.request<{ project: any }>(`/account/client/projects/${id}`)
+  }
+
+  async getClientInvoices(params?: { page?: number; status?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.status) searchParams.set('status', params.status)
+    return this.request<{ invoices: any[]; total: number; totals: any }>(`/account/client/invoices?${searchParams}`)
+  }
+
+  async getClientInvoice(id: string) {
+    return this.request<{ invoice: any }>(`/account/client/invoices/${id}`)
+  }
+
+  async payClientInvoice(id: string, paymentMethodId?: string) {
+    return this.request<{ invoice: any; paymentUrl?: string }>(`/account/client/invoices/${id}/pay`, {
+      method: 'POST',
+      body: JSON.stringify({ paymentMethodId }),
+    })
+  }
+
+  async getClientContracts(params?: { page?: number; status?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.status) searchParams.set('status', params.status)
+    return this.request<{ contracts: any[]; total: number }>(`/account/client/contracts?${searchParams}`)
+  }
+
+  async getClientContract(id: string) {
+    return this.request<{ contract: any }>(`/account/client/contracts/${id}`)
+  }
+
+  async signClientContract(id: string, signatureData: string) {
+    return this.request<{ contract: any }>(`/account/client/contracts/${id}/sign`, {
+      method: 'POST',
+      body: JSON.stringify({ signature: signatureData }),
+    })
+  }
+
+  async getClientBilling() {
+    return this.request<{ paymentMethods: any[]; autopayEnabled: boolean; defaultMethod: string | null }>('/account/client/billing')
+  }
+
+  async updateClientBilling(data: { autopayEnabled?: boolean; defaultMethod?: string }) {
+    return this.request<{ success: boolean }>('/account/client/billing', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  // Affiliate Portal APIs
+  async getAffiliateStats() {
+    return this.request<{
+      affiliate: any
+      stats: any
+      recentReferrals: any[]
+      rewards: any[]
+    }>('/account/affiliate')
+  }
+
+  async getAffiliateReferrals(params?: { page?: number }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    return this.request<{ referrals: any[]; total: number }>(`/account/affiliate/referrals?${searchParams}`)
+  }
+
+  async setAffiliateCustomCode(code: string) {
+    return this.request<{ affiliate: any }>('/account/affiliate/custom-code', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    })
+  }
+
+  async getAffiliateShareLink() {
+    return this.request<{ shareLink: string; code: string }>('/account/affiliate/share-link')
+  }
+
+  // Account APIs (shared across portals)
+  async updateProfile(data: { name?: string; email?: string; phone?: string; image?: string }) {
+    return this.request<{ user: any }>('/account/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async changePassword(data: { currentPassword: string; newPassword: string }) {
+    return this.request<{ success: boolean }>('/account/password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async getNotificationSettings() {
+    return this.request<{ settings: any }>('/account/notifications/settings')
+  }
+
+  async updateNotificationSettings(settings: any) {
+    return this.request<{ settings: any }>('/account/notifications/settings', {
+      method: 'PATCH',
+      body: JSON.stringify(settings),
+    })
   }
 
   // Dashboard

@@ -25,10 +25,10 @@ import BlogScreen from '../screens/BlogScreen'
 import ReportsScreen from '../screens/ReportsScreen'
 import ServicePackageDetailScreen from '../screens/ServicePackageDetailScreen'
 import { RecurringBillsScreen } from '../screens/RecurringBillsScreen'
-import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
+import { AccountScreen, ProfileEditScreen, ChangePasswordScreen } from '../screens/account'
+import { colors, portalColors, spacing, fontSize } from '../theme'
 
-// 5 tabs with real content, not lists
-type TabName = 'Home' | 'Orders' | 'Services' | 'Business' | 'Tools'
+type TabName = 'Home' | 'Sales' | 'Business' | 'Finance' | 'Account'
 
 interface ScreenState {
   name: string
@@ -37,13 +37,13 @@ interface ScreenState {
 
 const tabs: { name: TabName; icon: string; iconFocused: string }[] = [
   { name: 'Home', icon: 'home-outline', iconFocused: 'home' },
-  { name: 'Orders', icon: 'receipt-outline', iconFocused: 'receipt' },
-  { name: 'Services', icon: 'briefcase-outline', iconFocused: 'briefcase' },
+  { name: 'Sales', icon: 'receipt-outline', iconFocused: 'receipt' },
   { name: 'Business', icon: 'briefcase-outline', iconFocused: 'briefcase' },
-  { name: 'Tools', icon: 'build-outline', iconFocused: 'build' },
+  { name: 'Finance', icon: 'wallet-outline', iconFocused: 'wallet' },
+  { name: 'Account', icon: 'person-outline', iconFocused: 'person' },
 ]
 
-export default function AuthenticatedApp() {
+export default function AdminNavigator() {
   const [activeTab, setActiveTab] = useState<TabName>('Home')
   const [screenStack, setScreenStack] = useState<ScreenState[]>([])
 
@@ -64,17 +64,16 @@ export default function AuthenticatedApp() {
   const navigation = { navigate, goBack }
   const currentScreen = screenStack[screenStack.length - 1]
 
-  // Determine which tab a subscreen belongs to
   const getParentTab = (screenName: string): TabName | null => {
-    const orderScreens = ['OrderDetail', 'Returns', 'Products', 'ProductDetail']
-    const serviceScreens = ['ServicePackageDetail', 'CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'PortfolioDetail']
-    const businessScreens = ['Expenses', 'Reports', 'RecurringBills']
-    const toolsScreens = ['Users', 'UserDetail', 'Email', 'Blog', 'Settings']
+    const salesScreens = ['OrderDetail', 'Returns', 'Products', 'ProductDetail']
+    const businessScreens = ['ServicePackageDetail', 'CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'Users', 'UserDetail', 'Email', 'Blog', 'Settings']
+    const financeScreens = ['Expenses', 'Reports', 'RecurringBills', 'Analytics']
+    const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications']
 
-    if (orderScreens.includes(screenName)) return 'Orders'
-    if (serviceScreens.includes(screenName)) return 'Services'
+    if (salesScreens.includes(screenName)) return 'Sales'
     if (businessScreens.includes(screenName)) return 'Business'
-    if (toolsScreens.includes(screenName)) return 'Tools'
+    if (financeScreens.includes(screenName)) return 'Finance'
+    if (accountScreens.includes(screenName)) return 'Account'
     return null
   }
 
@@ -117,24 +116,32 @@ export default function AuthenticatedApp() {
           return <ReportsScreen navigation={navigation} />
         case 'RecurringBills':
           return <RecurringBillsScreen navigation={navigation} />
+        case 'Analytics':
+          return <AnalyticsScreen navigation={navigation} />
+        case 'ProfileEdit':
+          return <ProfileEditScreen navigation={navigation} />
+        case 'ChangePassword':
+          return <ChangePasswordScreen navigation={navigation} />
       }
     }
 
     switch (activeTab) {
       case 'Home':
         return <DashboardScreen navigation={navigation} />
-      case 'Orders':
-        return <OrdersTabScreen navigation={navigation} />
-      case 'Services':
-        return <ServicesTabScreen navigation={navigation} />
+      case 'Sales':
+        return <SalesTabScreen navigation={navigation} />
       case 'Business':
         return <BusinessTabScreen navigation={navigation} />
-      case 'Tools':
-        return <ToolsTabScreen navigation={navigation} />
+      case 'Finance':
+        return <FinanceTabScreen navigation={navigation} />
+      case 'Account':
+        return <AccountScreen navigation={navigation} hideHeader />
       default:
         return <DashboardScreen navigation={navigation} />
     }
   }
+
+  const accentColor = portalColors.admin
 
   return (
     <View style={styles.container}>
@@ -166,9 +173,9 @@ export default function AuthenticatedApp() {
                 <Ionicons
                   name={focused ? tab.iconFocused as any : tab.icon as any}
                   size={24}
-                  color={focused ? '#3b82f6' : '#71717a'}
+                  color={focused ? accentColor : '#71717a'}
                 />
-                <Text style={[styles.tabLabel, focused && styles.tabLabelFocused]}>
+                <Text style={[styles.tabLabel, focused && { color: accentColor }]}>
                   {tab.name}
                 </Text>
               </TouchableOpacity>
@@ -180,13 +187,12 @@ export default function AuthenticatedApp() {
   )
 }
 
-// Orders Tab - Integrated view with Orders, Products, Returns toggle
-function OrdersTabScreen({ navigation }: { navigation: any }) {
+// Sales Tab - Orders, Products, Returns
+function SalesTabScreen({ navigation }: { navigation: any }) {
   const [activeSection, setActiveSection] = useState<'orders' | 'products' | 'returns'>('orders')
 
   return (
     <SafeAreaView style={styles.tabContainer} edges={['top']}>
-      {/* Segmented Control */}
       <View style={styles.segmentedControl}>
         <TouchableOpacity
           style={[styles.segment, activeSection === 'orders' && styles.segmentActive]}
@@ -219,20 +225,19 @@ function OrdersTabScreen({ navigation }: { navigation: any }) {
   )
 }
 
-// Services Tab - Integrated view with Services, Inquiries, 3D Prints
-function ServicesTabScreen({ navigation }: { navigation: any }) {
-  const [activeSection, setActiveSection] = useState<'packages' | 'inquiries' | '3dprint'>('packages')
+// Business Tab - Services, Inquiries, 3D Prints, Users
+function BusinessTabScreen({ navigation }: { navigation: any }) {
+  const [activeSection, setActiveSection] = useState<'services' | 'inquiries' | '3dprint' | 'users'>('services')
 
   return (
     <SafeAreaView style={styles.tabContainer} edges={['top']}>
-      {/* Segmented Control */}
       <View style={styles.segmentedControl}>
         <TouchableOpacity
-          style={[styles.segment, activeSection === 'packages' && styles.segmentActive]}
-          onPress={() => setActiveSection('packages')}
+          style={[styles.segment, activeSection === 'services' && styles.segmentActive]}
+          onPress={() => setActiveSection('services')}
         >
-          <Ionicons name="layers-outline" size={18} color={activeSection === 'packages' ? '#fff' : '#71717a'} />
-          <Text style={[styles.segmentText, activeSection === 'packages' && styles.segmentTextActive]}>Packages</Text>
+          <Ionicons name="layers-outline" size={18} color={activeSection === 'services' ? '#fff' : '#71717a'} />
+          <Text style={[styles.segmentText, activeSection === 'services' && styles.segmentTextActive]}>Services</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.segment, activeSection === 'inquiries' && styles.segmentActive]}
@@ -248,23 +253,30 @@ function ServicesTabScreen({ navigation }: { navigation: any }) {
           <Ionicons name="print-outline" size={18} color={activeSection === '3dprint' ? '#fff' : '#71717a'} />
           <Text style={[styles.segmentText, activeSection === '3dprint' && styles.segmentTextActive]}>3D Print</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.segment, activeSection === 'users' && styles.segmentActive]}
+          onPress={() => setActiveSection('users')}
+        >
+          <Ionicons name="people-outline" size={18} color={activeSection === 'users' ? '#fff' : '#71717a'} />
+          <Text style={[styles.segmentText, activeSection === 'users' && styles.segmentTextActive]}>Users</Text>
+        </TouchableOpacity>
       </View>
       <View style={styles.tabContent}>
-        {activeSection === 'packages' && <ServicesScreen navigation={navigation} hideHeader />}
+        {activeSection === 'services' && <ServicesScreen navigation={navigation} hideHeader />}
         {activeSection === 'inquiries' && <InquiriesScreen navigation={navigation} hideHeader />}
         {activeSection === '3dprint' && <CustomRequestsScreen navigation={navigation} hideHeader />}
+        {activeSection === 'users' && <UsersScreen navigation={navigation} hideHeader />}
       </View>
     </SafeAreaView>
   )
 }
 
-// Business Tab - Analytics, Expenses, Reports
-function BusinessTabScreen({ navigation }: { navigation: any }) {
+// Finance Tab - Analytics, Expenses, Reports
+function FinanceTabScreen({ navigation }: { navigation: any }) {
   const [activeSection, setActiveSection] = useState<'analytics' | 'expenses' | 'reports'>('analytics')
 
   return (
     <SafeAreaView style={styles.tabContainer} edges={['top']}>
-      {/* Segmented Control */}
       <View style={styles.segmentedControl}>
         <TouchableOpacity
           style={[styles.segment, activeSection === 'analytics' && styles.segmentActive]}
@@ -297,113 +309,63 @@ function BusinessTabScreen({ navigation }: { navigation: any }) {
   )
 }
 
-// Tools Tab - Users, Email, Blog, Settings
-function ToolsTabScreen({ navigation }: { navigation: any }) {
-  const [activeSection, setActiveSection] = useState<'users' | 'email' | 'blog' | 'settings'>('users')
-
-  return (
-    <SafeAreaView style={styles.tabContainer} edges={['top']}>
-      {/* Segmented Control */}
-      <View style={styles.segmentedControl}>
-        <TouchableOpacity
-          style={[styles.segment, activeSection === 'users' && styles.segmentActive]}
-          onPress={() => setActiveSection('users')}
-        >
-          <Ionicons name="people-outline" size={18} color={activeSection === 'users' ? '#fff' : '#71717a'} />
-          <Text style={[styles.segmentText, activeSection === 'users' && styles.segmentTextActive]}>Users</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.segment, activeSection === 'email' && styles.segmentActive]}
-          onPress={() => setActiveSection('email')}
-        >
-          <Ionicons name="mail-outline" size={18} color={activeSection === 'email' ? '#fff' : '#71717a'} />
-          <Text style={[styles.segmentText, activeSection === 'email' && styles.segmentTextActive]}>Email</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.segment, activeSection === 'blog' && styles.segmentActive]}
-          onPress={() => setActiveSection('blog')}
-        >
-          <Ionicons name="document-text-outline" size={18} color={activeSection === 'blog' ? '#fff' : '#71717a'} />
-          <Text style={[styles.segmentText, activeSection === 'blog' && styles.segmentTextActive]}>Blog</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.segment, activeSection === 'settings' && styles.segmentActive]}
-          onPress={() => setActiveSection('settings')}
-        >
-          <Ionicons name="settings-outline" size={18} color={activeSection === 'settings' ? '#fff' : '#71717a'} />
-          <Text style={[styles.segmentText, activeSection === 'settings' && styles.segmentTextActive]}>Settings</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.tabContent}>
-        {activeSection === 'users' && <UsersScreen navigation={navigation} hideHeader />}
-        {activeSection === 'email' && <EmailScreen navigation={navigation} hideHeader />}
-        {activeSection === 'blog' && <BlogScreen navigation={navigation} hideHeader />}
-        {activeSection === 'settings' && <SettingsScreen navigation={navigation} hideHeader />}
-      </View>
-    </SafeAreaView>
-  )
-}
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
   },
   tabBarContainer: {
-    backgroundColor: '#18181b',
+    backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: '#27272a',
+    borderTopColor: colors.border,
   },
   tabBar: {
     flexDirection: 'row',
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
   },
   tabLabel: {
     fontSize: 10,
     marginTop: 4,
     color: '#71717a',
   },
-  tabLabelFocused: {
-    color: '#3b82f6',
-  },
   tabContainer: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
+    backgroundColor: colors.background,
   },
   segmentedControl: {
     flexDirection: 'row',
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 8,
-    backgroundColor: '#18181b',
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 4,
     borderWidth: 1,
-    borderColor: '#27272a',
+    borderColor: colors.border,
   },
   segment: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
     borderRadius: 8,
     gap: 4,
   },
   segmentActive: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: portalColors.admin,
   },
   segmentText: {
-    fontSize: 13,
+    fontSize: fontSize.sm,
     fontWeight: '500',
     color: '#71717a',
   },

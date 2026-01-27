@@ -28,6 +28,21 @@ export const colors = {
   pink: '#ec4899',
 }
 
+// Portal-specific accent colors
+export const portalColors = {
+  admin: '#3b82f6',     // Blue
+  partner: '#10b981',   // Green
+  client: '#8b5cf6',    // Purple
+  affiliate: '#f59e0b', // Amber
+}
+
+export const portalColorsBg = {
+  admin: 'rgba(59, 130, 246, 0.1)',
+  partner: 'rgba(16, 185, 129, 0.1)',
+  client: 'rgba(139, 92, 246, 0.1)',
+  affiliate: 'rgba(245, 158, 11, 0.1)',
+}
+
 export const spacing = {
   xs: 4,
   sm: 8,
