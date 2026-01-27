@@ -147,6 +147,26 @@ export function AffiliateDashboardScreen({ navigation, hideHeader }: AffiliateDa
   const partnerEligible = affiliateData?.partnerEligible || false
   const isPartner = affiliateData?.isPartner || false
 
+  // If user is a partner, redirect to Partner Dashboard (which now includes MotoRev affiliate)
+  useEffect(() => {
+    if (isPartner && !loading) {
+      navigation.navigate('PartnerDashboard')
+    }
+  }, [isPartner, loading])
+
+  // Show loading while checking or redirecting
+  if (loading || isPartner) {
+    return (
+      <SafeAreaView style={styles.container} edges={hideHeader ? [] : ['top']}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ color: colors.textMuted }}>
+            {isPartner ? 'Redirecting to Partner Dashboard...' : 'Loading...'}
+          </Text>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={hideHeader ? [] : ['top']}>
       <ScrollView

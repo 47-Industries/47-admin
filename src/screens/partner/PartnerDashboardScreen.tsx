@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Image, Clipboard } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '../../store/auth'
@@ -8,6 +8,8 @@ import { StatCard } from '../../components/StatCard'
 import { SectionHeader } from '../../components/SectionHeader'
 import { StatusBadge, getStatusType } from '../../components/StatusBadge'
 import { colors, portalColors, spacing, borderRadius, fontSize, fontWeight } from '../../theme'
+
+const MOTOREV_BLUE = '#0066FF'
 
 interface PartnerDashboardScreenProps {
   navigation: {
@@ -22,16 +24,32 @@ export function PartnerDashboardScreen({ navigation, hideHeader }: PartnerDashbo
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [dashboardData, setDashboardData] = useState<any>(null)
+  const [motorevAffiliate, setMotorevAffiliate] = useState<any>(null)
+  const [motorevActivity, setMotorevActivity] = useState<any[]>([])
+  const [motorevCopied, setMotorevCopied] = useState(false)
 
   const fetchDashboard = async () => {
     try {
       const data = await api.getPartnerDashboard()
       setDashboardData(data)
+      setMotorevAffiliate(data.motorevAffiliate || null)
+      setMotorevActivity(data.motorevRecentActivity || [])
     } catch (error) {
       console.error('Failed to fetch partner dashboard:', error)
     } finally {
       setLoading(false)
       setRefreshing(false)
+    }
+  }
+
+  const copyMotorevLink = async () => {
+    if (!motorevAffiliate?.shareLink) return
+    try {
+      await Clipboard.setString(motorevAffiliate.shareLink)
+      setMotorevCopied(true)
+      setTimeout(() => setMotorevCopied(false), 2000)
+    } catch (error) {
+      console.error('Error copying:', error)
     }
   }
 
@@ -219,6 +237,133 @@ export function PartnerDashboardScreen({ navigation, hideHeader }: PartnerDashbo
             <Text style={styles.quickActionText}>Get Affiliate Links</Text>
           </TouchableOpacity>
         </View>
+
+        {/* MotoRev Affiliate Section */}
+        {motorevAffiliate && (
+          <View style={styles.motorevSection}>
+            <View style={styles.motorevHeader}>
+              {motorevAffiliate.motorev?.profilePicture ? (
+                <Image
+                  source={{ uri: motorevAffiliate.motorev.profilePicture }}
+                  style={styles.motorevProfileImage}
+                />
+              ) : (
+                <View style={styles.motorevProfilePlaceholder}>
+                  <Text style={styles.motorevProfileInitial}>
+                    {motorevAffiliate.motorev?.username?.[0]?.toUpperCase() || 'M'}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.motorevHeaderText}>
+                <Text style={styles.motorevTitle}>MotoRev Affiliate</Text>
+                <Text style={styles.motorevSubtitle}>
+                  {motorevAffiliate.motorev?.username ? `@${motorevAffiliate.motorev.username}` : 'Points-based referrals'}
+                </Text>
+              </View>
+              <View style={styles.motorevPointsBadge}>
+                <Text style={styles.motorevPointsValue}>{motorevAffiliate.points?.available || 0}</Text>
+                <Text style={styles.motorevPointsLabel}>pts</Text>
+              </View>
+            </View>
+
+            {/* Progress Bar */}
+            <View style={styles.motorevProgress}>
+              <View style={styles.motorevProgressBar}>
+                <View
+                  style={[
+                    styles.motorevProgressFill,
+                    { width: `${motorevAffiliate.points?.progressPercent || 0}%` }
+                  ]}
+                />
+              </View>
+              <View style={styles.motorevProgressLabels}>
+                <Text style={styles.motorevProgressText}>
+                  {motorevAffiliate.points?.toNextReward === 0
+                    ? 'Ready to redeem!'
+                    : `${motorevAffiliate.points?.toNextReward || 0} to next reward`}
+                </Text>
+                <Text style={styles.motorevProgressText}>10 pts = 7 days Pro</Text>
+              </View>
+            </View>
+
+            {/* Stats Grid */}
+            <View style={styles.motorevStatsGrid}>
+              <View style={styles.motorevStatItem}>
+                <Text style={styles.motorevStatValue}>{motorevAffiliate.stats?.totalReferrals || 0}</Text>
+                <Text style={styles.motorevStatLabel}>Signups</Text>
+              </View>
+              <View style={styles.motorevStatItem}>
+                <Text style={[styles.motorevStatValue, { color: MOTOREV_BLUE }]}>
+                  {motorevAffiliate.stats?.proConversions || 0}
+                </Text>
+                <Text style={styles.motorevStatLabel}>Pro Conv.</Text>
+              </View>
+              <View style={styles.motorevStatItem}>
+                <Text style={[styles.motorevStatValue, { color: colors.success }]}>
+                  {motorevAffiliate.stats?.proDaysEarned || 0}d
+                </Text>
+                <Text style={styles.motorevStatLabel}>Pro Earned</Text>
+              </View>
+              <View style={styles.motorevStatItem}>
+                <Text style={styles.motorevStatValue}>{motorevAffiliate.points?.total || 0}</Text>
+                <Text style={styles.motorevStatLabel}>Total Pts</Text>
+              </View>
+            </View>
+
+            {/* Share Link */}
+            <View style={styles.motorevShareSection}>
+              <Text style={styles.motorevShareLabel}>Share your MotoRev referral link:</Text>
+              <View style={styles.motorevShareRow}>
+                <View style={styles.motorevShareBox}>
+                  <Text style={styles.motorevShareText} numberOfLines={1}>
+                    {motorevAffiliate.shareLink || ''}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.motorevCopyButton}
+                  onPress={copyMotorevLink}
+                >
+                  <Ionicons
+                    name={motorevCopied ? 'checkmark' : 'copy-outline'}
+                    size={16}
+                    color={colors.text}
+                  />
+                  <Text style={styles.motorevCopyText}>{motorevCopied ? 'Copied' : 'Copy'}</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.motorevCodeText}>
+                Code: <Text style={styles.motorevCodeValue}>{motorevAffiliate.affiliateCode || '---'}</Text>
+              </Text>
+            </View>
+
+            {/* Recent Activity */}
+            {motorevActivity.length > 0 && (
+              <View style={styles.motorevActivitySection}>
+                <Text style={styles.motorevActivityTitle}>Recent Activity</Text>
+                {motorevActivity.slice(0, 3).map((tx: any) => (
+                  <View key={tx.id} style={styles.motorevActivityItem}>
+                    <View style={[
+                      styles.motorevActivityIcon,
+                      { backgroundColor: tx.type === 'PRO_CONVERSION' ? `${MOTOREV_BLUE}20` : `${colors.success}20` }
+                    ]}>
+                      <Ionicons
+                        name={tx.type === 'PRO_CONVERSION' ? 'star' : 'checkmark-circle'}
+                        size={12}
+                        color={tx.type === 'PRO_CONVERSION' ? MOTOREV_BLUE : colors.success}
+                      />
+                    </View>
+                    <Text style={styles.motorevActivityText}>
+                      {tx.type === 'PRO_CONVERSION' ? 'Pro Conversion' : 'Signup'}
+                    </Text>
+                    <Text style={[styles.motorevActivityPoints, { color: colors.success }]}>
+                      +{tx.points} pts
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Recent Leads */}
         {dashboardData?.recentLeads?.length > 0 && (
@@ -558,5 +703,204 @@ const styles = StyleSheet.create({
     width: 1,
     backgroundColor: colors.border,
     marginHorizontal: spacing.md,
+  },
+  // MotoRev Affiliate Styles
+  motorevSection: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: `${MOTOREV_BLUE}50`,
+    overflow: 'hidden',
+  },
+  motorevHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: `${MOTOREV_BLUE}30`,
+    backgroundColor: `${MOTOREV_BLUE}10`,
+  },
+  motorevProfileImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: `${MOTOREV_BLUE}50`,
+  },
+  motorevProfilePlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: MOTOREV_BLUE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  motorevProfileInitial: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+  },
+  motorevHeaderText: {
+    flex: 1,
+    marginLeft: spacing.md,
+  },
+  motorevTitle: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+  },
+  motorevSubtitle: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+  },
+  motorevPointsBadge: {
+    alignItems: 'center',
+  },
+  motorevPointsValue: {
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.bold,
+    color: MOTOREV_BLUE,
+  },
+  motorevPointsLabel: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+  },
+  motorevProgress: {
+    padding: spacing.md,
+  },
+  motorevProgressBar: {
+    height: 10,
+    backgroundColor: colors.surfaceHover,
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+  motorevProgressFill: {
+    height: '100%',
+    backgroundColor: MOTOREV_BLUE,
+    borderRadius: 5,
+  },
+  motorevProgressLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: spacing.xs,
+  },
+  motorevProgressText: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+  },
+  motorevStatsGrid: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  motorevStatItem: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: colors.surfaceHover,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+  },
+  motorevStatValue: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+  },
+  motorevStatLabel: {
+    fontSize: 10,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  motorevShareSection: {
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.surfaceHover,
+    borderRadius: borderRadius.md,
+  },
+  motorevShareLabel: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginBottom: spacing.sm,
+  },
+  motorevShareRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  motorevShareBox: {
+    flex: 1,
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: 'center',
+  },
+  motorevShareText: {
+    fontSize: fontSize.xs,
+    fontFamily: 'monospace',
+    color: colors.text,
+  },
+  motorevCopyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: MOTOREV_BLUE,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.sm,
+  },
+  motorevCopyText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    color: colors.text,
+  },
+  motorevCodeText: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: spacing.sm,
+  },
+  motorevCodeValue: {
+    fontFamily: 'monospace',
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+  },
+  motorevActivitySection: {
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  motorevActivityTitle: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  motorevActivityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  motorevActivityIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+  },
+  motorevActivityText: {
+    flex: 1,
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+  },
+  motorevActivityPoints: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
   },
 })

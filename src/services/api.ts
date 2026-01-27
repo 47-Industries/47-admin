@@ -73,7 +73,15 @@ class ApiService {
 
   // Partner Portal APIs
   async getPartnerDashboard() {
-    return this.request<{ partner: any; stats: any; recentLeads: any[]; recentCommissions: any[]; pendingPayouts: any[] }>('/account/partner')
+    return this.request<{
+      partner: any
+      stats: any
+      recentLeads: any[]
+      recentCommissions: any[]
+      pendingPayouts: any[]
+      motorevAffiliate: any | null
+      motorevRecentActivity: any[]
+    }>('/account/partner')
   }
 
   async getPartnerLeads(params?: { page?: number; status?: string }) {
