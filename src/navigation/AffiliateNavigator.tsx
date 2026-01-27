@@ -50,26 +50,33 @@ export default function AffiliateNavigator() {
   }
 
   const renderScreen = () => {
+    // Wrapper for stacked screens to handle iOS notch
+    const ScreenWrapper = ({ children }: { children: React.ReactNode }) => (
+      <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}>
+        {children}
+      </SafeAreaView>
+    )
+
     if (currentScreen) {
       switch (currentScreen.name) {
         case 'Referrals':
-          return <ReferralsScreen navigation={navigation} />
+          return <ScreenWrapper><ReferralsScreen navigation={navigation} /></ScreenWrapper>
         case 'ProfileEdit':
-          return <ProfileEditScreen navigation={navigation} />
+          return <ScreenWrapper><ProfileEditScreen navigation={navigation} /></ScreenWrapper>
         case 'ChangePassword':
-          return <ChangePasswordScreen navigation={navigation} />
+          return <ScreenWrapper><ChangePasswordScreen navigation={navigation} /></ScreenWrapper>
       }
     }
 
     switch (activeTab) {
       case 'Dashboard':
-        return <AffiliateDashboardScreen navigation={navigation} hideHeader />
+        return <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}><AffiliateDashboardScreen navigation={navigation} hideHeader /></SafeAreaView>
       case 'Referrals':
-        return <ReferralsScreen navigation={navigation} hideHeader />
+        return <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}><ReferralsScreen navigation={navigation} hideHeader /></SafeAreaView>
       case 'Account':
-        return <AccountScreen navigation={navigation} hideHeader />
+        return <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}><AccountScreen navigation={navigation} hideHeader /></SafeAreaView>
       default:
-        return <AffiliateDashboardScreen navigation={navigation} hideHeader />
+        return <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}><AffiliateDashboardScreen navigation={navigation} hideHeader /></SafeAreaView>
     }
   }
 
@@ -126,6 +133,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  stackedScreenContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
   tabBarContainer: {
     backgroundColor: colors.surface,

@@ -53,32 +53,39 @@ export default function PartnerNavigator() {
   }
 
   const renderScreen = () => {
+    // Wrapper for stacked screens to handle iOS notch
+    const ScreenWrapper = ({ children }: { children: React.ReactNode }) => (
+      <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}>
+        {children}
+      </SafeAreaView>
+    )
+
     if (currentScreen) {
       switch (currentScreen.name) {
         case 'Leads':
-          return <LeadsScreen navigation={navigation} />
+          return <ScreenWrapper><LeadsScreen navigation={navigation} /></ScreenWrapper>
         case 'NewLead':
-          return <NewLeadScreen navigation={navigation} />
+          return <ScreenWrapper><NewLeadScreen navigation={navigation} /></ScreenWrapper>
         case 'Commissions':
-          return <CommissionsScreen navigation={navigation} />
+          return <ScreenWrapper><CommissionsScreen navigation={navigation} /></ScreenWrapper>
         case 'ProfileEdit':
-          return <ProfileEditScreen navigation={navigation} />
+          return <ScreenWrapper><ProfileEditScreen navigation={navigation} /></ScreenWrapper>
         case 'ChangePassword':
-          return <ChangePasswordScreen navigation={navigation} />
+          return <ScreenWrapper><ChangePasswordScreen navigation={navigation} /></ScreenWrapper>
       }
     }
 
     switch (activeTab) {
       case 'Dashboard':
-        return <PartnerDashboardScreen navigation={navigation} hideHeader />
+        return <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}><PartnerDashboardScreen navigation={navigation} hideHeader /></SafeAreaView>
       case 'Referrals':
         return <ReferralsTabScreen navigation={navigation} />
       case 'Earnings':
         return <EarningsTabScreen navigation={navigation} />
       case 'Account':
-        return <AccountScreen navigation={navigation} hideHeader />
+        return <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}><AccountScreen navigation={navigation} hideHeader /></SafeAreaView>
       default:
-        return <PartnerDashboardScreen navigation={navigation} hideHeader />
+        return <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}><PartnerDashboardScreen navigation={navigation} hideHeader /></SafeAreaView>
     }
   }
 
@@ -201,6 +208,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  stackedScreenContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
   tabBarContainer: {
     backgroundColor: colors.surface,

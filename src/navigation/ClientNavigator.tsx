@@ -53,30 +53,37 @@ export default function ClientNavigator() {
   }
 
   const renderScreen = () => {
+    // Wrapper for stacked screens to handle iOS notch
+    const ScreenWrapper = ({ children }: { children: React.ReactNode }) => (
+      <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}>
+        {children}
+      </SafeAreaView>
+    )
+
     if (currentScreen) {
       switch (currentScreen.name) {
         case 'Projects':
-          return <ProjectsScreen navigation={navigation} />
+          return <ScreenWrapper><ProjectsScreen navigation={navigation} /></ScreenWrapper>
         case 'Invoices':
-          return <InvoicesScreen navigation={navigation} />
+          return <ScreenWrapper><InvoicesScreen navigation={navigation} /></ScreenWrapper>
         case 'ProfileEdit':
-          return <ProfileEditScreen navigation={navigation} />
+          return <ScreenWrapper><ProfileEditScreen navigation={navigation} /></ScreenWrapper>
         case 'ChangePassword':
-          return <ChangePasswordScreen navigation={navigation} />
+          return <ScreenWrapper><ChangePasswordScreen navigation={navigation} /></ScreenWrapper>
       }
     }
 
     switch (activeTab) {
       case 'Dashboard':
-        return <ClientDashboardScreen navigation={navigation} hideHeader />
+        return <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}><ClientDashboardScreen navigation={navigation} hideHeader /></SafeAreaView>
       case 'Projects':
-        return <ProjectsScreen navigation={navigation} hideHeader />
+        return <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}><ProjectsScreen navigation={navigation} hideHeader /></SafeAreaView>
       case 'Billing':
         return <BillingTabScreen navigation={navigation} />
       case 'Account':
-        return <AccountScreen navigation={navigation} hideHeader />
+        return <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}><AccountScreen navigation={navigation} hideHeader /></SafeAreaView>
       default:
-        return <ClientDashboardScreen navigation={navigation} hideHeader />
+        return <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}><ClientDashboardScreen navigation={navigation} hideHeader /></SafeAreaView>
     }
   }
 
@@ -166,6 +173,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  stackedScreenContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
   tabBarContainer: {
     backgroundColor: colors.surface,
