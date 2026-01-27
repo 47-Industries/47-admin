@@ -35,6 +35,8 @@ import { ClientsScreen as AdminClientsScreen } from '../screens/admin/ClientsScr
 import { PartnersScreen as AdminPartnersScreen } from '../screens/admin/PartnersScreen'
 import { ClientDetailScreen } from '../screens/admin/ClientDetailScreen'
 import { PartnerDetailScreen } from '../screens/admin/PartnerDetailScreen'
+import { TeamMemberDetailScreen } from '../screens/admin/TeamMemberDetailScreen'
+import { AffiliatesScreen } from '../screens/admin/AffiliatesScreen'
 import MarketingScreen from '../screens/MarketingScreen'
 import { colors, portalColors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
@@ -79,8 +81,8 @@ export default function AdminNavigator() {
     const salesScreens = ['OrderDetail', 'Returns', 'AdminInvoices', 'Products', 'ProductDetail', 'ProductCreate', 'Categories', 'Inventory']
     // Business: Services (Inquiries, 3D Prints, Packages) + Finance (Expenses, Reports, Analytics)
     const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills']
-    // People: Clients, Partners, Team, Users
-    const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'ClientDetail', 'PartnerDetail', 'PartnerLeads', 'PartnerLeadDetail']
+    // People: Clients, Partners, Team, Affiliates, Users
+    const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail']
     // Account: Profile, Email, Settings, Notifications, Marketing
     const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'Email', 'Marketing']
 
@@ -160,6 +162,8 @@ export default function AdminNavigator() {
           return <ScreenWrapper><PartnerDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
         case 'ClientDetail':
           return <ScreenWrapper><ClientDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
+        case 'TeamMemberDetail':
+          return <ScreenWrapper><TeamMemberDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
         case 'Marketing':
           return <ScreenWrapper><MarketingScreen navigation={navigation} /></ScreenWrapper>
       }
@@ -429,12 +433,12 @@ function BusinessTabScreen({ navigation }: { navigation: any }) {
 
 // People Tab - Clients, Partners, Team
 function PeopleTabScreen({ navigation }: { navigation: any }) {
-  const [activeSection, setActiveSection] = useState<'clients' | 'partners' | 'team'>('clients')
+  const [activeSection, setActiveSection] = useState<'clients' | 'partners' | 'team' | 'affiliates'>('clients')
 
   return (
     <SafeAreaView style={styles.tabContainer} edges={['top']}>
       <View style={styles.segmentWrapper}>
-        <View style={styles.segmentedControl}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segmentedControlWide}>
           <TouchableOpacity
             style={[styles.segment, activeSection === 'clients' && styles.segmentActive]}
             onPress={() => setActiveSection('clients')}
@@ -453,12 +457,19 @@ function PeopleTabScreen({ navigation }: { navigation: any }) {
           >
             <Text style={[styles.segmentText, activeSection === 'team' && styles.segmentTextActive]}>Team</Text>
           </TouchableOpacity>
-        </View>
+          <TouchableOpacity
+            style={[styles.segment, activeSection === 'affiliates' && styles.segmentActive]}
+            onPress={() => setActiveSection('affiliates')}
+          >
+            <Text style={[styles.segmentText, activeSection === 'affiliates' && styles.segmentTextActive]}>Affiliates</Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
       <View style={styles.tabContent}>
         {activeSection === 'clients' && <AdminClientsScreen navigation={navigation} hideHeader />}
         {activeSection === 'partners' && <AdminPartnersScreen navigation={navigation} hideHeader />}
         {activeSection === 'team' && <TeamScreen navigation={navigation} hideHeader />}
+        {activeSection === 'affiliates' && <AffiliatesScreen navigation={navigation} hideHeader />}
       </View>
     </SafeAreaView>
   )
@@ -553,6 +564,14 @@ const styles = StyleSheet.create({
   },
   segmentedControl: {
     flex: 1,
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  segmentedControlWide: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
     borderRadius: 10,

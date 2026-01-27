@@ -1252,6 +1252,18 @@ class ApiService {
       method: 'DELETE',
     })
   }
+
+  // Affiliates (Admin)
+  async getAdminAffiliates(params?: { page?: number; search?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.search) searchParams.set('search', params.search)
+    return this.request<{ affiliates: any[]; total: number }>(`/admin/affiliates?${searchParams}`)
+  }
+
+  async getAdminAffiliate(id: string) {
+    return this.request<{ affiliate: any }>(`/admin/affiliates/${id}`)
+  }
 }
 
 export const api = new ApiService()
