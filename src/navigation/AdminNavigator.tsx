@@ -40,6 +40,7 @@ import { AffiliatesScreen } from '../screens/admin/AffiliatesScreen'
 import { PartnerLeadsScreen } from '../screens/admin/PartnerLeadsScreen'
 import { PartnerLeadDetailScreen } from '../screens/admin/PartnerLeadDetailScreen'
 import MarketingScreen from '../screens/MarketingScreen'
+import PortfolioScreen from '../screens/PortfolioScreen'
 import { colors, portalColors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
 type TabName = 'Home' | 'Sales' | 'Business' | 'People' | 'Account'
@@ -81,8 +82,8 @@ export default function AdminNavigator() {
   const getParentTab = (screenName: string): TabName | null => {
     // Sales: Orders, Invoices, Returns + Products, Categories, Inventory
     const salesScreens = ['OrderDetail', 'Returns', 'AdminInvoices', 'Products', 'ProductDetail', 'ProductCreate', 'Categories', 'Inventory']
-    // Business: Services (Inquiries, 3D Prints, Packages) + Finance (Expenses, Reports, Analytics)
-    const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills']
+    // Business: Requests (Inquiries, 3D Prints) + Packages + Portfolio + Finance (Expenses, Reports) + Analytics
+    const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Portfolio', 'PortfolioDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills']
     // People: Clients, Partners, Team, Affiliates, Users
     const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail']
     // Account: Profile, Email, Settings, Notifications, Marketing
@@ -174,6 +175,10 @@ export default function AdminNavigator() {
           return <ScreenWrapper><PartnerLeadsScreen navigation={navigation} /></ScreenWrapper>
         case 'PartnerLeadDetail':
           return <ScreenWrapper><PartnerLeadDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
+        case 'Portfolio':
+          return <ScreenWrapper><PortfolioScreen navigation={navigation} /></ScreenWrapper>
+        case 'PortfolioDetail':
+          return <ScreenWrapper><PortfolioScreen navigation={navigation} /></ScreenWrapper>
       }
     }
 
@@ -343,7 +348,7 @@ function SalesTabScreen({ navigation }: { navigation: any }) {
 
 // Business Tab - Services, Finance, and Analytics as top-level categories
 type BusinessCategory = 'services' | 'finance' | 'analytics'
-type ServiceSection = 'inquiries' | '3dprint' | 'packages'
+type ServiceSection = 'inquiries' | 'packages' | 'portfolio'
 type FinanceSection = 'expenses' | 'reports'
 
 function BusinessTabScreen({ navigation }: { navigation: any }) {
@@ -390,16 +395,16 @@ function BusinessTabScreen({ navigation }: { navigation: any }) {
               <Text style={[styles.segmentText, serviceSection === 'inquiries' && styles.segmentTextActive]}>Inquiries</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.segment, serviceSection === '3dprint' && styles.segmentActive]}
-              onPress={() => setServiceSection('3dprint')}
-            >
-              <Text style={[styles.segmentText, serviceSection === '3dprint' && styles.segmentTextActive]}>3D Prints</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
               style={[styles.segment, serviceSection === 'packages' && styles.segmentActive]}
               onPress={() => setServiceSection('packages')}
             >
               <Text style={[styles.segmentText, serviceSection === 'packages' && styles.segmentTextActive]}>Packages</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segment, serviceSection === 'portfolio' && styles.segmentActive]}
+              onPress={() => setServiceSection('portfolio')}
+            >
+              <Text style={[styles.segmentText, serviceSection === 'portfolio' && styles.segmentTextActive]}>Portfolio</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -427,8 +432,8 @@ function BusinessTabScreen({ navigation }: { navigation: any }) {
       {/* Content */}
       <View style={styles.tabContent}>
         {category === 'services' && serviceSection === 'inquiries' && <InquiriesScreen navigation={navigation} hideHeader />}
-        {category === 'services' && serviceSection === '3dprint' && <CustomRequestsScreen navigation={navigation} hideHeader />}
         {category === 'services' && serviceSection === 'packages' && <ServicesScreen navigation={navigation} hideHeader />}
+        {category === 'services' && serviceSection === 'portfolio' && <PortfolioScreen navigation={navigation} hideHeader />}
 
         {category === 'finance' && financeSection === 'expenses' && <ExpensesScreen navigation={navigation} hideHeader />}
         {category === 'finance' && financeSection === 'reports' && <ReportsScreen navigation={navigation} hideHeader />}
