@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import {
@@ -22,7 +22,6 @@ import ReturnsScreen from '../screens/ReturnsScreen'
 import AnalyticsScreen from '../screens/AnalyticsScreen'
 import ServicesScreen from '../screens/ServicesScreen'
 import EmailScreen from '../screens/EmailScreen'
-import BlogScreen from '../screens/BlogScreen'
 import ReportsScreen from '../screens/ReportsScreen'
 import ServicePackageDetailScreen from '../screens/ServicePackageDetailScreen'
 import { RecurringBillsScreen } from '../screens/RecurringBillsScreen'
@@ -37,9 +36,9 @@ import { PartnersScreen as AdminPartnersScreen } from '../screens/admin/Partners
 import { ClientDetailScreen } from '../screens/admin/ClientDetailScreen'
 import { PartnerDetailScreen } from '../screens/admin/PartnerDetailScreen'
 import MarketingScreen from '../screens/MarketingScreen'
-import { colors, portalColors, spacing, fontSize, fontWeight } from '../theme'
+import { colors, portalColors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
-type TabName = 'Home' | 'Sales' | 'Work' | 'People' | 'Account'
+type TabName = 'Home' | 'Sales' | 'Business' | 'People' | 'Account'
 
 interface ScreenState {
   name: string
@@ -48,8 +47,8 @@ interface ScreenState {
 
 const tabs: { name: TabName; icon: string; iconFocused: string }[] = [
   { name: 'Home', icon: 'home-outline', iconFocused: 'home' },
-  { name: 'Sales', icon: 'card-outline', iconFocused: 'card' },
-  { name: 'Work', icon: 'clipboard-outline', iconFocused: 'clipboard' },
+  { name: 'Sales', icon: 'cart-outline', iconFocused: 'cart' },
+  { name: 'Business', icon: 'briefcase-outline', iconFocused: 'briefcase' },
   { name: 'People', icon: 'people-outline', iconFocused: 'people' },
   { name: 'Account', icon: 'person-outline', iconFocused: 'person' },
 ]
@@ -76,17 +75,19 @@ export default function AdminNavigator() {
   const currentScreen = screenStack[screenStack.length - 1]
 
   const getParentTab = (screenName: string): TabName | null => {
-    const salesScreens = ['OrderDetail', 'Returns', 'AdminInvoices', 'Expenses', 'Reports', 'Analytics', 'RecurringBills']
-    const workScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail']
-    const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'ClientDetail', 'PartnerDetail']
-    const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'Marketing', 'Email', 'Blog', 'Products', 'ProductDetail', 'ProductCreate', 'Categories', 'Inventory']
-    const homeScreens = ['Products', 'ProductDetail', 'ProductCreate', 'Categories', 'Inventory']
+    // Sales: Orders, Invoices, Returns + Products, Categories, Inventory
+    const salesScreens = ['OrderDetail', 'Returns', 'AdminInvoices', 'Products', 'ProductDetail', 'ProductCreate', 'Categories', 'Inventory']
+    // Business: Services (Inquiries, 3D Prints, Packages) + Finance (Expenses, Reports, Analytics)
+    const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills']
+    // People: Clients, Partners, Team, Users
+    const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'ClientDetail', 'PartnerDetail', 'PartnerLeads', 'PartnerLeadDetail']
+    // Account: Profile, Email, Settings, Notifications, Marketing
+    const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'Email', 'Marketing']
 
     if (salesScreens.includes(screenName)) return 'Sales'
-    if (workScreens.includes(screenName)) return 'Work'
+    if (businessScreens.includes(screenName)) return 'Business'
     if (peopleScreens.includes(screenName)) return 'People'
     if (accountScreens.includes(screenName)) return 'Account'
-    if (homeScreens.includes(screenName)) return 'Home'
     return null
   }
 
@@ -131,8 +132,6 @@ export default function AdminNavigator() {
           return <ScreenWrapper><ServicesScreen navigation={navigation} /></ScreenWrapper>
         case 'Email':
           return <ScreenWrapper><EmailScreen navigation={navigation} /></ScreenWrapper>
-        case 'Blog':
-          return <ScreenWrapper><BlogScreen navigation={navigation} /></ScreenWrapper>
         case 'Reports':
           return <ScreenWrapper><ReportsScreen navigation={navigation} /></ScreenWrapper>
         case 'RecurringBills':
@@ -171,8 +170,8 @@ export default function AdminNavigator() {
         return <SafeAreaView style={styles.stackedScreenContainer} edges={['top']}><DashboardScreen navigation={navigation} /></SafeAreaView>
       case 'Sales':
         return <SalesTabScreen navigation={navigation} />
-      case 'Work':
-        return <WorkTabScreen navigation={navigation} />
+      case 'Business':
+        return <BusinessTabScreen navigation={navigation} />
       case 'People':
         return <PeopleTabScreen navigation={navigation} />
       case 'Account':
@@ -228,103 +227,205 @@ export default function AdminNavigator() {
   )
 }
 
-// Sales Tab - Orders, Invoices, Returns (money coming in) + Expenses, Reports
+// Sales Tab - Products-focused: Products, Categories, Inventory + Orders, Invoices, Returns
+type SalesCategory = 'catalog' | 'sales'
+type CatalogSection = 'products' | 'categories' | 'inventory'
+type SalesSection = 'orders' | 'invoices' | 'returns'
+
 function SalesTabScreen({ navigation }: { navigation: any }) {
-  const [activeSection, setActiveSection] = useState<'orders' | 'invoices' | 'returns'>('orders')
-  const [showFinance, setShowFinance] = useState(false)
+  const [category, setCategory] = useState<SalesCategory>('sales')
+  const [catalogSection, setCatalogSection] = useState<CatalogSection>('products')
+  const [salesSection, setSalesSection] = useState<SalesSection>('orders')
+
+  const categoryConfig: Record<SalesCategory, { icon: string; label: string }> = {
+    sales: { icon: 'receipt-outline', label: 'Sales' },
+    catalog: { icon: 'cube-outline', label: 'Catalog' },
+  }
 
   return (
     <SafeAreaView style={styles.tabContainer} edges={['top']}>
-      {/* Main segment: Orders / Invoices / Returns */}
-      <View style={styles.segmentWrapper}>
-        <View style={styles.segmentedControl}>
+      {/* Category Row */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryRow} contentContainerStyle={styles.categoryRowContent}>
+        {(Object.keys(categoryConfig) as SalesCategory[]).map((cat) => (
           <TouchableOpacity
-            style={[styles.segment, activeSection === 'orders' && styles.segmentActive]}
-            onPress={() => { setActiveSection('orders'); setShowFinance(false); }}
+            key={cat}
+            style={[styles.categoryChip, category === cat && styles.categoryChipActive]}
+            onPress={() => setCategory(cat)}
           >
-            <Text style={[styles.segmentText, activeSection === 'orders' && styles.segmentTextActive]}>Orders</Text>
+            <Ionicons
+              name={categoryConfig[cat].icon as any}
+              size={16}
+              color={category === cat ? '#fff' : colors.textMuted}
+            />
+            <Text style={[styles.categoryChipText, category === cat && styles.categoryChipTextActive]}>
+              {categoryConfig[cat].label}
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.segment, activeSection === 'invoices' && styles.segmentActive]}
-            onPress={() => { setActiveSection('invoices'); setShowFinance(false); }}
-          >
-            <Text style={[styles.segmentText, activeSection === 'invoices' && styles.segmentTextActive]}>Invoices</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.segment, activeSection === 'returns' && styles.segmentActive]}
-            onPress={() => { setActiveSection('returns'); setShowFinance(false); }}
-          >
-            <Text style={[styles.segmentText, activeSection === 'returns' && styles.segmentTextActive]}>Returns</Text>
-          </TouchableOpacity>
-        </View>
-        {/* Finance quick access */}
-        <TouchableOpacity
-          style={styles.financeToggle}
-          onPress={() => setShowFinance(!showFinance)}
-        >
-          <Ionicons name="wallet-outline" size={20} color={showFinance ? portalColors.admin : '#71717a'} />
-        </TouchableOpacity>
-      </View>
+        ))}
+      </ScrollView>
 
-      {/* Finance submenu */}
-      {showFinance && (
-        <View style={styles.subMenu}>
-          <TouchableOpacity style={styles.subMenuItem} onPress={() => navigation.navigate('Expenses')}>
-            <Ionicons name="receipt-outline" size={18} color={colors.textMuted} />
-            <Text style={styles.subMenuText}>Expenses</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.subMenuItem} onPress={() => navigation.navigate('Reports')}>
-            <Ionicons name="bar-chart-outline" size={18} color={colors.textMuted} />
-            <Text style={styles.subMenuText}>Reports</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.subMenuItem} onPress={() => navigation.navigate('Analytics')}>
-            <Ionicons name="stats-chart-outline" size={18} color={colors.textMuted} />
-            <Text style={styles.subMenuText}>Analytics</Text>
-          </TouchableOpacity>
+      {/* Sub-section segments */}
+      {category === 'sales' && (
+        <View style={styles.segmentWrapper}>
+          <View style={styles.segmentedControl}>
+            <TouchableOpacity
+              style={[styles.segment, salesSection === 'orders' && styles.segmentActive]}
+              onPress={() => setSalesSection('orders')}
+            >
+              <Text style={[styles.segmentText, salesSection === 'orders' && styles.segmentTextActive]}>Orders</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segment, salesSection === 'invoices' && styles.segmentActive]}
+              onPress={() => setSalesSection('invoices')}
+            >
+              <Text style={[styles.segmentText, salesSection === 'invoices' && styles.segmentTextActive]}>Invoices</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segment, salesSection === 'returns' && styles.segmentActive]}
+              onPress={() => setSalesSection('returns')}
+            >
+              <Text style={[styles.segmentText, salesSection === 'returns' && styles.segmentTextActive]}>Returns</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
+      {category === 'catalog' && (
+        <View style={styles.segmentWrapper}>
+          <View style={styles.segmentedControl}>
+            <TouchableOpacity
+              style={[styles.segment, catalogSection === 'products' && styles.segmentActive]}
+              onPress={() => setCatalogSection('products')}
+            >
+              <Text style={[styles.segmentText, catalogSection === 'products' && styles.segmentTextActive]}>Products</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segment, catalogSection === 'categories' && styles.segmentActive]}
+              onPress={() => setCatalogSection('categories')}
+            >
+              <Text style={[styles.segmentText, catalogSection === 'categories' && styles.segmentTextActive]}>Categories</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segment, catalogSection === 'inventory' && styles.segmentActive]}
+              onPress={() => setCatalogSection('inventory')}
+            >
+              <Text style={[styles.segmentText, catalogSection === 'inventory' && styles.segmentTextActive]}>Inventory</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Content */}
       <View style={styles.tabContent}>
-        {activeSection === 'orders' && <OrdersScreen navigation={navigation} hideHeader />}
-        {activeSection === 'invoices' && <AdminInvoicesScreen navigation={navigation} hideHeader />}
-        {activeSection === 'returns' && <ReturnsScreen navigation={navigation} hideHeader />}
+        {category === 'sales' && salesSection === 'orders' && <OrdersScreen navigation={navigation} hideHeader />}
+        {category === 'sales' && salesSection === 'invoices' && <AdminInvoicesScreen navigation={navigation} hideHeader />}
+        {category === 'sales' && salesSection === 'returns' && <ReturnsScreen navigation={navigation} hideHeader />}
+
+        {category === 'catalog' && catalogSection === 'products' && <ProductsScreen navigation={navigation} hideHeader />}
+        {category === 'catalog' && catalogSection === 'categories' && <CategoriesScreen navigation={navigation} hideHeader />}
+        {category === 'catalog' && catalogSection === 'inventory' && <InventoryScreen navigation={navigation} hideHeader />}
       </View>
     </SafeAreaView>
   )
 }
 
-// Work Tab - Inquiries, 3D Prints, Projects (things that need action)
-function WorkTabScreen({ navigation }: { navigation: any }) {
-  const [activeSection, setActiveSection] = useState<'inquiries' | '3dprint' | 'services'>('inquiries')
+// Business Tab - Services (Inquiries, 3D Prints, Packages) and Finance (Expenses, Reports, Analytics)
+type BusinessCategory = 'services' | 'finance'
+type ServiceSection = 'inquiries' | '3dprint' | 'packages'
+type FinanceSection = 'expenses' | 'reports' | 'analytics'
+
+function BusinessTabScreen({ navigation }: { navigation: any }) {
+  const [category, setCategory] = useState<BusinessCategory>('services')
+  const [serviceSection, setServiceSection] = useState<ServiceSection>('inquiries')
+  const [financeSection, setFinanceSection] = useState<FinanceSection>('expenses')
+
+  const categoryConfig: Record<BusinessCategory, { icon: string; label: string }> = {
+    services: { icon: 'construct-outline', label: 'Services' },
+    finance: { icon: 'wallet-outline', label: 'Finance' },
+  }
 
   return (
     <SafeAreaView style={styles.tabContainer} edges={['top']}>
-      <View style={styles.segmentWrapper}>
-        <View style={styles.segmentedControl}>
+      {/* Category Row */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryRow} contentContainerStyle={styles.categoryRowContent}>
+        {(Object.keys(categoryConfig) as BusinessCategory[]).map((cat) => (
           <TouchableOpacity
-            style={[styles.segment, activeSection === 'inquiries' && styles.segmentActive]}
-            onPress={() => setActiveSection('inquiries')}
+            key={cat}
+            style={[styles.categoryChip, category === cat && styles.categoryChipActive]}
+            onPress={() => setCategory(cat)}
           >
-            <Text style={[styles.segmentText, activeSection === 'inquiries' && styles.segmentTextActive]}>Inquiries</Text>
+            <Ionicons
+              name={categoryConfig[cat].icon as any}
+              size={16}
+              color={category === cat ? '#fff' : colors.textMuted}
+            />
+            <Text style={[styles.categoryChipText, category === cat && styles.categoryChipTextActive]}>
+              {categoryConfig[cat].label}
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.segment, activeSection === '3dprint' && styles.segmentActive]}
-            onPress={() => setActiveSection('3dprint')}
-          >
-            <Text style={[styles.segmentText, activeSection === '3dprint' && styles.segmentTextActive]}>3D Prints</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.segment, activeSection === 'services' && styles.segmentActive]}
-            onPress={() => setActiveSection('services')}
-          >
-            <Text style={[styles.segmentText, activeSection === 'services' && styles.segmentTextActive]}>Services</Text>
-          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* Sub-section segments based on category */}
+      {category === 'services' && (
+        <View style={styles.segmentWrapper}>
+          <View style={styles.segmentedControl}>
+            <TouchableOpacity
+              style={[styles.segment, serviceSection === 'inquiries' && styles.segmentActive]}
+              onPress={() => setServiceSection('inquiries')}
+            >
+              <Text style={[styles.segmentText, serviceSection === 'inquiries' && styles.segmentTextActive]}>Inquiries</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segment, serviceSection === '3dprint' && styles.segmentActive]}
+              onPress={() => setServiceSection('3dprint')}
+            >
+              <Text style={[styles.segmentText, serviceSection === '3dprint' && styles.segmentTextActive]}>3D Prints</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segment, serviceSection === 'packages' && styles.segmentActive]}
+              onPress={() => setServiceSection('packages')}
+            >
+              <Text style={[styles.segmentText, serviceSection === 'packages' && styles.segmentTextActive]}>Packages</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      )}
+
+      {category === 'finance' && (
+        <View style={styles.segmentWrapper}>
+          <View style={styles.segmentedControl}>
+            <TouchableOpacity
+              style={[styles.segment, financeSection === 'expenses' && styles.segmentActive]}
+              onPress={() => setFinanceSection('expenses')}
+            >
+              <Text style={[styles.segmentText, financeSection === 'expenses' && styles.segmentTextActive]}>Expenses</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segment, financeSection === 'reports' && styles.segmentActive]}
+              onPress={() => setFinanceSection('reports')}
+            >
+              <Text style={[styles.segmentText, financeSection === 'reports' && styles.segmentTextActive]}>Reports</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segment, financeSection === 'analytics' && styles.segmentActive]}
+              onPress={() => setFinanceSection('analytics')}
+            >
+              <Text style={[styles.segmentText, financeSection === 'analytics' && styles.segmentTextActive]}>Analytics</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Content */}
       <View style={styles.tabContent}>
-        {activeSection === 'inquiries' && <InquiriesScreen navigation={navigation} hideHeader />}
-        {activeSection === '3dprint' && <CustomRequestsScreen navigation={navigation} hideHeader />}
-        {activeSection === 'services' && <ServicesScreen navigation={navigation} hideHeader />}
+        {category === 'services' && serviceSection === 'inquiries' && <InquiriesScreen navigation={navigation} hideHeader />}
+        {category === 'services' && serviceSection === '3dprint' && <CustomRequestsScreen navigation={navigation} hideHeader />}
+        {category === 'services' && serviceSection === 'packages' && <ServicesScreen navigation={navigation} hideHeader />}
+
+        {category === 'finance' && financeSection === 'expenses' && <ExpensesScreen navigation={navigation} hideHeader />}
+        {category === 'finance' && financeSection === 'reports' && <ReportsScreen navigation={navigation} hideHeader />}
+        {category === 'finance' && financeSection === 'analytics' && <AnalyticsScreen navigation={navigation} hideHeader />}
       </View>
     </SafeAreaView>
   )
@@ -367,11 +468,11 @@ function PeopleTabScreen({ navigation }: { navigation: any }) {
   )
 }
 
-// Account Tab - Profile, Settings, Marketing, Products/Catalog management
+// Account Tab - Profile, Email, Settings (simplified)
 function AccountTabScreen({ navigation }: { navigation: any }) {
   return (
     <SafeAreaView style={styles.tabContainer} edges={['top']}>
-      <AccountScreen navigation={navigation} hideHeader showAdminSections />
+      <AccountScreen navigation={navigation} hideHeader />
     </SafeAreaView>
   )
 }
@@ -412,6 +513,40 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  categoryRow: {
+    maxHeight: 52,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  categoryRowContent: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+  },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginRight: spacing.sm,
+  },
+  categoryChipActive: {
+    backgroundColor: portalColors.admin,
+    borderColor: portalColors.admin,
+  },
+  categoryChipText: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    fontWeight: '500' as any,
+  },
+  categoryChipTextActive: {
+    color: '#fff',
+  },
   segmentWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -446,38 +581,6 @@ const styles = StyleSheet.create({
   },
   segmentTextActive: {
     color: '#ffffff',
-  },
-  financeToggle: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  subMenu: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
-    gap: spacing.sm,
-  },
-  subMenuItem: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  subMenuText: {
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
   },
   tabContent: {
     flex: 1,

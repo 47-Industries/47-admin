@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '../../store/auth'
@@ -11,10 +11,9 @@ interface AccountScreenProps {
     goBack: () => void
   }
   hideHeader?: boolean
-  showAdminSections?: boolean
 }
 
-export function AccountScreen({ navigation, hideHeader, showAdminSections }: AccountScreenProps) {
+export function AccountScreen({ navigation, hideHeader }: AccountScreenProps) {
   const user = useAuthStore((state) => state.user)
   const portalType = useAuthStore((state) => state.portalType)
   const portalAccess = useAuthStore((state) => state.portalAccess)
@@ -133,103 +132,48 @@ export function AccountScreen({ navigation, hideHeader, showAdminSections }: Acc
           </TouchableOpacity>
         </View>
 
-        {/* Admin: Catalog Section */}
-        {showAdminSections && (
-          <View style={styles.menuSection}>
-            <Text style={styles.sectionTitle}>Catalog</Text>
+        {/* Communication & Marketing */}
+        <View style={styles.menuSection}>
+          <Text style={styles.sectionTitle}>Communication</Text>
 
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('Products')}
-            >
-              <View style={styles.menuItemLeft}>
-                <Ionicons name="cube-outline" size={20} color={colors.textSecondary} />
-                <Text style={styles.menuItemText}>Products</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('Email')}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="mail-outline" size={20} color={colors.textSecondary} />
+              <Text style={styles.menuItemText}>Email</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('Categories')}
-            >
-              <View style={styles.menuItemLeft}>
-                <Ionicons name="pricetags-outline" size={20} color={colors.textSecondary} />
-                <Text style={styles.menuItemText}>Categories</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('Marketing')}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="megaphone-outline" size={20} color={colors.textSecondary} />
+              <Text style={styles.menuItemText}>Marketing</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          </TouchableOpacity>
+        </View>
 
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('Inventory')}
-            >
-              <View style={styles.menuItemLeft}>
-                <Ionicons name="layers-outline" size={20} color={colors.textSecondary} />
-                <Text style={styles.menuItemText}>Inventory</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
-          </View>
-        )}
+        {/* Settings */}
+        <View style={styles.menuSection}>
+          <Text style={styles.sectionTitle}>Settings</Text>
 
-        {/* Admin: Marketing Section */}
-        {showAdminSections && (
-          <View style={styles.menuSection}>
-            <Text style={styles.sectionTitle}>Marketing</Text>
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('Marketing')}
-            >
-              <View style={styles.menuItemLeft}>
-                <Ionicons name="megaphone-outline" size={20} color={colors.textSecondary} />
-                <Text style={styles.menuItemText}>Campaigns</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('Email')}
-            >
-              <View style={styles.menuItemLeft}>
-                <Ionicons name="mail-outline" size={20} color={colors.textSecondary} />
-                <Text style={styles.menuItemText}>Email</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('Blog')}
-            >
-              <View style={styles.menuItemLeft}>
-                <Ionicons name="document-text-outline" size={20} color={colors.textSecondary} />
-                <Text style={styles.menuItemText}>Blog</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Admin: Settings Section */}
-        {showAdminSections && (
-          <View style={styles.menuSection}>
-            <Text style={styles.sectionTitle}>Settings</Text>
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('Settings')}
-            >
-              <View style={styles.menuItemLeft}>
-                <Ionicons name="settings-outline" size={20} color={colors.textSecondary} />
-                <Text style={styles.menuItemText}>General Settings</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </TouchableOpacity>
-          </View>
-        )}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('Settings')}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="settings-outline" size={20} color={colors.textSecondary} />
+              <Text style={styles.menuItemText}>General Settings</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          </TouchableOpacity>
+        </View>
 
         {/* Switch Portal */}
         {availablePortals.length > 1 && (
@@ -257,28 +201,37 @@ export function AccountScreen({ navigation, hideHeader, showAdminSections }: Acc
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>Support</Text>
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => Linking.openURL('https://47industries.com/help')}
+          >
             <View style={styles.menuItemLeft}>
               <Ionicons name="help-circle-outline" size={20} color={colors.textSecondary} />
               <Text style={styles.menuItemText}>Help Center</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            <Ionicons name="open-outline" size={20} color={colors.textMuted} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => Linking.openURL('https://47industries.com/terms')}
+          >
             <View style={styles.menuItemLeft}>
               <Ionicons name="document-text-outline" size={20} color={colors.textSecondary} />
               <Text style={styles.menuItemText}>Terms of Service</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            <Ionicons name="open-outline" size={20} color={colors.textMuted} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => Linking.openURL('https://47industries.com/privacy')}
+          >
             <View style={styles.menuItemLeft}>
               <Ionicons name="shield-checkmark-outline" size={20} color={colors.textSecondary} />
               <Text style={styles.menuItemText}>Privacy Policy</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            <Ionicons name="open-outline" size={20} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
 
