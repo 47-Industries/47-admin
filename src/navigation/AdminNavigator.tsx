@@ -453,31 +453,31 @@ function PeopleTabScreen({ navigation }: { navigation: any }) {
       <View style={styles.segmentWrapper}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segmentedControlWide}>
           <TouchableOpacity
-            style={[styles.segment, activeSection === 'clients' && styles.segmentActive]}
+            style={[styles.segmentPill, activeSection === 'clients' && styles.segmentPillActive]}
             onPress={() => setActiveSection('clients')}
           >
             <Text style={[styles.segmentText, activeSection === 'clients' && styles.segmentTextActive]}>Clients</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.segment, activeSection === 'partners' && styles.segmentActive]}
+            style={[styles.segmentPill, activeSection === 'partners' && styles.segmentPillActive]}
             onPress={() => setActiveSection('partners')}
           >
             <Text style={[styles.segmentText, activeSection === 'partners' && styles.segmentTextActive]}>Partners</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.segment, activeSection === 'leads' && styles.segmentActive]}
+            style={[styles.segmentPill, activeSection === 'leads' && styles.segmentPillActive]}
             onPress={() => setActiveSection('leads')}
           >
             <Text style={[styles.segmentText, activeSection === 'leads' && styles.segmentTextActive]}>Leads</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.segment, activeSection === 'team' && styles.segmentActive]}
+            style={[styles.segmentPill, activeSection === 'team' && styles.segmentPillActive]}
             onPress={() => setActiveSection('team')}
           >
             <Text style={[styles.segmentText, activeSection === 'team' && styles.segmentTextActive]}>Team</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.segment, activeSection === 'affiliates' && styles.segmentActive]}
+            style={[styles.segmentPill, activeSection === 'affiliates' && styles.segmentPillActive]}
             onPress={() => setActiveSection('affiliates')}
           >
             <Text style={[styles.segmentText, activeSection === 'affiliates' && styles.segmentTextActive]}>Affiliates</Text>
@@ -586,8 +586,8 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: 4,
+    borderRadius: 8,
+    padding: 3,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -596,18 +596,14 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   segment: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: 6,
   },
   segmentActive: {
     backgroundColor: portalColors.admin,
-    borderColor: portalColors.admin,
   },
   segmentText: {
     fontSize: fontSize.sm,
@@ -617,6 +613,21 @@ const styles = StyleSheet.create({
   segmentTextActive: {
     color: '#ffffff',
     fontWeight: '600' as any,
+  },
+  // Pill styles for People tab
+  segmentPill: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  segmentPillActive: {
+    backgroundColor: portalColors.admin,
+    borderColor: portalColors.admin,
   },
   tabContent: {
     flex: 1,
