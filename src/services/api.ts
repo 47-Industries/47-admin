@@ -937,6 +937,63 @@ class ApiService {
       }),
     })
   }
+
+  // Admin Invoices
+  async getAdminInvoices(params?: { page?: number; status?: string; search?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.search) searchParams.set('search', params.search)
+    return this.request<{ invoices: any[]; total: number }>(`/admin/invoices?${searchParams}`)
+  }
+
+  async getAdminInvoice(id: string) {
+    return this.request<{ invoice: any }>(`/admin/invoices/${id}`)
+  }
+
+  async createAdminInvoice(data: {
+    clientId: string
+    items: { description: string; quantity: number; unitPrice: number }[]
+    notes?: string
+    dueDate?: string
+  }) {
+    return this.request<{ invoice: any }>('/admin/invoices', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateAdminInvoice(id: string, data: { status?: string; notes?: string; dueDate?: string }) {
+    return this.request<{ invoice: any }>(`/admin/invoices/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async sendAdminInvoice(id: string) {
+    return this.request<{ invoice: any; success: boolean }>(`/admin/invoices/${id}/send`, {
+      method: 'POST',
+    })
+  }
+
+  async deleteAdminInvoice(id: string) {
+    return this.request<{ success: boolean }>(`/admin/invoices/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // Admin Clients (for invoice creation)
+  async getAdminClients(params?: { page?: number; search?: string; status?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.search) searchParams.set('search', params.search)
+    if (params?.status) searchParams.set('status', params.status)
+    return this.request<{ clients: any[]; total: number }>(`/admin/clients?${searchParams}`)
+  }
+
+  async getAdminClient(id: string) {
+    return this.request<{ client: any }>(`/admin/clients/${id}`)
+  }
 }
 
 export const api = new ApiService()
