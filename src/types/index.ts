@@ -25,6 +25,12 @@ export interface User {
   partnerId?: string
   clientId?: string
   affiliateId?: string
+  // Team member info (for admin users)
+  teamMember?: {
+    id: string
+    name: string
+    gender: string | null
+  }
 }
 
 export interface AuthState {

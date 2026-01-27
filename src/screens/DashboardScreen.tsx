@@ -152,7 +152,16 @@ export function DashboardScreen({ navigation }: any) {
           <View>
             <Text style={styles.greeting}>Welcome back,</Text>
             <Text style={styles.userName}>
-              {user?.name?.split(' ')[0] || user?.email?.split('@')[0] || 'there'}
+              {(() => {
+                const gender = user?.teamMember?.gender
+                const name = user?.teamMember?.name || user?.name
+                if (gender && name) {
+                  const lastName = name.split(' ').slice(-1)[0]
+                  const honorific = gender === 'MALE' ? 'Mr.' : gender === 'FEMALE' ? 'Ms.' : ''
+                  return honorific ? `${honorific} ${lastName}` : name.split(' ')[0]
+                }
+                return name?.split(' ')[0] || user?.email?.split('@')[0] || 'there'
+              })()}
             </Text>
           </View>
           {needsAttention > 0 && (
