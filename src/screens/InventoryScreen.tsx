@@ -249,30 +249,6 @@ export default function InventoryScreen({ navigation, hideHeader }: { navigation
         </View>
       )}
 
-      {/* Stats Overview */}
-      {stats && (
-        <View style={styles.statsContainer}>
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{stats.totalProducts}</Text>
-              <Text style={styles.statLabel}>Total Items</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colors.warning }]}>
-                {stats.lowStock}
-              </Text>
-              <Text style={styles.statLabel}>Low Stock</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={[styles.statValue, { color: colors.error }]}>
-                {stats.outOfStock}
-              </Text>
-              <Text style={styles.statLabel}>Out of Stock</Text>
-            </View>
-          </View>
-        </View>
-      )}
-
       {/* Search */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
@@ -292,32 +268,51 @@ export default function InventoryScreen({ navigation, hideHeader }: { navigation
         </View>
       </View>
 
-      {/* Stock Filters */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filtersContainer}
-      >
-        {STOCK_FILTERS.map((filter) => (
-          <TouchableOpacity
-            key={filter.value}
-            style={[
-              styles.filterChip,
-              stockFilter === filter.value && styles.filterChipActive,
-            ]}
-            onPress={() => setStockFilter(filter.value)}
-          >
-            <Text
+      {/* Stats + Filters Row */}
+      <View style={styles.statsFilterRow}>
+        {/* Compact Stats */}
+        {stats && (
+          <View style={styles.compactStats}>
+            <View style={styles.compactStatItem}>
+              <Text style={styles.compactStatValue}>{stats.totalProducts}</Text>
+              <Text style={styles.compactStatLabel}>Total</Text>
+            </View>
+            <View style={styles.compactStatDivider} />
+            <View style={styles.compactStatItem}>
+              <Text style={[styles.compactStatValue, { color: colors.warning }]}>{stats.lowStock}</Text>
+              <Text style={styles.compactStatLabel}>Low</Text>
+            </View>
+            <View style={styles.compactStatDivider} />
+            <View style={styles.compactStatItem}>
+              <Text style={[styles.compactStatValue, { color: colors.error }]}>{stats.outOfStock}</Text>
+              <Text style={styles.compactStatLabel}>Out</Text>
+            </View>
+          </View>
+        )}
+
+        {/* Stock Filters */}
+        <View style={styles.filterPills}>
+          {STOCK_FILTERS.map((filter) => (
+            <TouchableOpacity
+              key={filter.value}
               style={[
-                styles.filterChipText,
-                stockFilter === filter.value && styles.filterChipTextActive,
+                styles.filterPill,
+                stockFilter === filter.value && styles.filterPillActive,
               ]}
+              onPress={() => setStockFilter(filter.value)}
             >
-              {filter.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+              <Text
+                style={[
+                  styles.filterPillText,
+                  stockFilter === filter.value && styles.filterPillTextActive,
+                ]}
+              >
+                {filter.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
 
       {/* Products List */}
       <FlatList
@@ -492,36 +487,9 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
     color: colors.text,
   },
-  statsContainer: {
-    paddingHorizontal: spacing.xl,
-    marginBottom: spacing.lg,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  statItem: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  statValue: {
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
-  },
-  statLabel: {
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-  },
   searchContainer: {
-    paddingHorizontal: spacing.xl,
-    marginBottom: spacing.md,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
   },
   searchBox: {
     flexDirection: 'row',
@@ -539,34 +507,68 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.md,
   },
-  filtersContainer: {
-    paddingHorizontal: spacing.xl,
-    marginBottom: spacing.md,
-    gap: spacing.sm,
-  },
-  filterChip: {
-    paddingVertical: spacing.sm,
+  statsFilterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    gap: spacing.md,
+  },
+  compactStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  compactStatItem: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+  },
+  compactStatValue: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+  },
+  compactStatLabel: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+  },
+  compactStatDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: colors.border,
+  },
+  filterPills: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  filterPill: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
     borderRadius: borderRadius.full,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    marginRight: spacing.sm,
   },
-  filterChipActive: {
+  filterPillActive: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
-  filterChipText: {
+  filterPillText: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
   },
-  filterChipTextActive: {
+  filterPillTextActive: {
     color: colors.text,
     fontWeight: fontWeight.medium,
   },
   list: {
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,
   },
   productCard: {
