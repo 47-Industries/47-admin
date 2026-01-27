@@ -37,6 +37,8 @@ import { ClientDetailScreen } from '../screens/admin/ClientDetailScreen'
 import { PartnerDetailScreen } from '../screens/admin/PartnerDetailScreen'
 import { TeamMemberDetailScreen } from '../screens/admin/TeamMemberDetailScreen'
 import { AffiliatesScreen } from '../screens/admin/AffiliatesScreen'
+import { PartnerLeadsScreen } from '../screens/admin/PartnerLeadsScreen'
+import { PartnerLeadDetailScreen } from '../screens/admin/PartnerLeadDetailScreen'
 import MarketingScreen from '../screens/MarketingScreen'
 import { colors, portalColors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
@@ -166,6 +168,12 @@ export default function AdminNavigator() {
           return <ScreenWrapper><TeamMemberDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
         case 'Marketing':
           return <ScreenWrapper><MarketingScreen navigation={navigation} /></ScreenWrapper>
+        case 'Affiliates':
+          return <ScreenWrapper><AffiliatesScreen navigation={navigation} /></ScreenWrapper>
+        case 'PartnerLeads':
+          return <ScreenWrapper><PartnerLeadsScreen navigation={navigation} /></ScreenWrapper>
+        case 'PartnerLeadDetail':
+          return <ScreenWrapper><PartnerLeadDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
       }
     }
 
@@ -433,7 +441,7 @@ function BusinessTabScreen({ navigation }: { navigation: any }) {
 
 // People Tab - Clients, Partners, Team
 function PeopleTabScreen({ navigation }: { navigation: any }) {
-  const [activeSection, setActiveSection] = useState<'clients' | 'partners' | 'team' | 'affiliates'>('clients')
+  const [activeSection, setActiveSection] = useState<'clients' | 'partners' | 'leads' | 'team' | 'affiliates'>('clients')
 
   return (
     <SafeAreaView style={styles.tabContainer} edges={['top']}>
@@ -452,6 +460,12 @@ function PeopleTabScreen({ navigation }: { navigation: any }) {
             <Text style={[styles.segmentText, activeSection === 'partners' && styles.segmentTextActive]}>Partners</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            style={[styles.segment, activeSection === 'leads' && styles.segmentActive]}
+            onPress={() => setActiveSection('leads')}
+          >
+            <Text style={[styles.segmentText, activeSection === 'leads' && styles.segmentTextActive]}>Leads</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[styles.segment, activeSection === 'team' && styles.segmentActive]}
             onPress={() => setActiveSection('team')}
           >
@@ -468,6 +482,7 @@ function PeopleTabScreen({ navigation }: { navigation: any }) {
       <View style={styles.tabContent}>
         {activeSection === 'clients' && <AdminClientsScreen navigation={navigation} hideHeader />}
         {activeSection === 'partners' && <AdminPartnersScreen navigation={navigation} hideHeader />}
+        {activeSection === 'leads' && <PartnerLeadsScreen navigation={navigation} hideHeader />}
         {activeSection === 'team' && <TeamScreen navigation={navigation} hideHeader />}
         {activeSection === 'affiliates' && <AffiliatesScreen navigation={navigation} hideHeader />}
       </View>

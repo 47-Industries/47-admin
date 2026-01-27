@@ -1150,6 +1150,62 @@ class ApiService {
     })
   }
 
+  // Admin Partner Leads (all leads)
+  async getAdminLeads(params?: { page?: number; status?: string; partnerId?: string; search?: string; interest?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.partnerId) searchParams.set('partnerId', params.partnerId)
+    if (params?.search) searchParams.set('search', params.search)
+    if (params?.interest) searchParams.set('interest', params.interest)
+    return this.request<{ leads: any[]; stats?: any }>(`/admin/partners/leads?${searchParams}`)
+  }
+
+  async getAdminLead(id: string) {
+    return this.request<{ lead: any; relatedPortfolio: any[]; recommendedServiceType: string }>(`/admin/partners/leads/${id}`)
+  }
+
+  async updateAdminLead(id: string, data: {
+    businessName?: string
+    contactName?: string
+    email?: string
+    phone?: string | null
+    website?: string | null
+    description?: string | null
+    interests?: string[] | null
+    estimatedBudget?: string | null
+    timeline?: string | null
+    companySize?: string | null
+    currentSolution?: string | null
+    painPoints?: string | null
+    status?: string
+    notes?: string | null
+  }) {
+    return this.request<{ success: boolean; lead: any }>(`/admin/partners/leads/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async createAdminLead(data: {
+    partnerId: string
+    businessName: string
+    contactName: string
+    email: string
+    phone?: string
+    website?: string
+    description?: string
+    interests?: string[]
+    estimatedBudget?: string
+    timeline?: string
+    notes?: string
+  }) {
+    return this.request<{ success: boolean; lead: any }>('/admin/partners/leads', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
   // Marketing / Email Campaigns
   async getCampaigns(params?: { status?: string; search?: string }) {
     const searchParams = new URLSearchParams()

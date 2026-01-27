@@ -7,6 +7,11 @@ import {
   RefreshControl,
   ActivityIndicator,
   TouchableOpacity,
+  Modal,
+  TextInput,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../../components/Card'
@@ -38,11 +43,54 @@ const typeLabels: Record<string, string> = {
   FULL_PARTNER: 'Full Partner',
 }
 
+const PARTNER_STATUSES = ['ACTIVE', 'PENDING', 'SUSPENDED', 'INACTIVE']
+const PARTNER_TYPES = ['SERVICE_REFERRAL', 'PRODUCT_AFFILIATE', 'BOTH']
+const COMMISSION_TYPES = ['PERCENTAGE', 'FLAT']
+
+interface EditFormData {
+  name: string
+  email: string
+  phone: string
+  company: string
+  status: string
+  partnerType: string
+  commissionType: string
+  firstSaleRate: string
+  recurringRate: string
+  shopCommissionRate: string
+  affiliateCode: string
+  zelleEmail: string
+  zellePhone: string
+  venmoUsername: string
+  cashAppTag: string
+  mailingAddress: string
+}
+
 export function PartnerDetailScreen({ navigation, route }: PartnerDetailScreenProps) {
   const { id } = route.params
   const [partner, setPartner] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [editModalVisible, setEditModalVisible] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [editForm, setEditForm] = useState<EditFormData>({
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+    status: 'ACTIVE',
+    partnerType: 'SERVICE_REFERRAL',
+    commissionType: 'PERCENTAGE',
+    firstSaleRate: '10',
+    recurringRate: '5',
+    shopCommissionRate: '',
+    affiliateCode: '',
+    zelleEmail: '',
+    zellePhone: '',
+    venmoUsername: '',
+    cashAppTag: '',
+    mailingAddress: '',
+  })
 
   const fetchPartner = async () => {
     try {
@@ -63,6 +111,67 @@ export function PartnerDetailScreen({ navigation, route }: PartnerDetailScreenPr
   const onRefresh = () => {
     setRefreshing(true)
     fetchPartner()
+  }
+
+  const openEditModal = () => {
+    if (partner) {
+      setEditForm({
+        name: partner.name || '',
+        email: partner.email || '',
+        phone: partner.phone || '',
+        company: partner.company || '',
+        status: partner.status || 'ACTIVE',
+        partnerType: partner.partnerType || 'SERVICE_REFERRAL',
+        commissionType: partner.commissionType || 'PERCENTAGE',
+        firstSaleRate: String(partner.firstSaleRate || 10),
+        recurringRate: String(partner.recurringRate || 5),
+        shopCommissionRate: partner.shopCommissionRate ? String(partner.shopCommissionRate) : '',
+        affiliateCode: partner.affiliateCode || '',
+        zelleEmail: partner.zelleEmail || '',
+        zellePhone: partner.zellePhone || '',
+        venmoUsername: partner.venmoUsername || '',
+        cashAppTag: partner.cashAppTag || '',
+        mailingAddress: partner.mailingAddress || '',
+      })
+      setEditModalVisible(true)
+    }
+  }
+
+  const handleSave = async () => {
+    if (!editForm.name.trim() || !editForm.email.trim()) {
+      Alert.alert('Error', 'Name and email are required')
+      return
+    }
+
+    setSaving(true)
+    try {
+      await api.updateAdminPartner(id, {
+        name: editForm.name.trim(),
+        email: editForm.email.trim(),
+        phone: editForm.phone.trim() || null,
+        company: editForm.company.trim() || null,
+        status: editForm.status,
+        partnerType: editForm.partnerType,
+        commissionType: editForm.commissionType,
+        firstSaleRate: editForm.firstSaleRate,
+        recurringRate: editForm.recurringRate,
+        shopCommissionRate: editForm.shopCommissionRate || null,
+        affiliateCode: editForm.affiliateCode.trim() || null,
+        zelleEmail: editForm.zelleEmail.trim() || null,
+        zellePhone: editForm.zellePhone.trim() || null,
+        venmoUsername: editForm.venmoUsername.trim() || null,
+        cashAppTag: editForm.cashAppTag.trim() || null,
+        mailingAddress: editForm.mailingAddress.trim() || null,
+      })
+      setEditModalVisible(false)
+      fetchPartner()
+      Alert.alert('Success', 'Partner updated successfully')
+    } catch (error) {
+      console.error('Failed to update partner:', error)
+      Alert.alert('Error', 'Failed to update partner')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const formatCurrency = (amount: number) => {
@@ -109,122 +218,419 @@ export function PartnerDetailScreen({ navigation, route }: PartnerDetailScreenPr
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-      }
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backIcon} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Partner Details</Text>
-      </View>
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        }
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backIcon} onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Partner Details</Text>
+          <TouchableOpacity style={styles.editButton} onPress={openEditModal}>
+            <Ionicons name="pencil" size={20} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
 
-      {/* Profile Card */}
-      <Card style={styles.profileCard}>
-        <View style={styles.profileHeader}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{getInitials(partner.name)}</Text>
+        {/* Profile Card */}
+        <Card style={styles.profileCard}>
+          <View style={styles.profileHeader}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{getInitials(partner.name)}</Text>
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>{partner.name}</Text>
+              <Text style={styles.profileNumber}>#{partner.partnerNumber}</Text>
+              <Text style={styles.profileEmail}>{partner.email}</Text>
+            </View>
           </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{partner.name}</Text>
-            <Text style={styles.profileNumber}>#{partner.partnerNumber}</Text>
-            <Text style={styles.profileEmail}>{partner.email}</Text>
+          <View style={styles.badgeRow}>
+            <Badge text={partner.status} variant={statusColors[partner.status] || 'default'} />
+            <Badge text={typeLabels[partner.partnerType] || partner.partnerType} variant="primary" />
           </View>
-        </View>
-        <View style={styles.badgeRow}>
-          <Badge text={partner.status} variant={statusColors[partner.status] || 'default'} />
-          <Badge text={typeLabels[partner.partnerType] || partner.partnerType} variant="primary" />
-        </View>
-      </Card>
+        </Card>
 
-      {/* Stats */}
-      <View style={styles.statsGrid}>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Total Earned</Text>
-          <Text style={[styles.statValue, { color: colors.success }]}>
-            {formatCurrency(Number(partner.totalEarned))}
-          </Text>
+        {/* Stats */}
+        <View style={styles.statsGrid}>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Total Earned</Text>
+            <Text style={[styles.statValue, { color: colors.success }]}>
+              {formatCurrency(Number(partner.totalEarned))}
+            </Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Pending</Text>
+            <Text style={[styles.statValue, { color: colors.warning }]}>
+              {formatCurrency(Number(partner.pendingAmount))}
+            </Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Total Paid</Text>
+            <Text style={styles.statValue}>
+              {formatCurrency(Number(partner.totalPaid))}
+            </Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Leads</Text>
+            <Text style={styles.statValue}>{partner.leads?.length || 0}</Text>
+          </View>
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Pending</Text>
-          <Text style={[styles.statValue, { color: colors.warning }]}>
-            {formatCurrency(Number(partner.pendingAmount))}
-          </Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Total Paid</Text>
-          <Text style={styles.statValue}>
-            {formatCurrency(Number(partner.totalPaid))}
-          </Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>Leads</Text>
-          <Text style={styles.statValue}>{partner.leads?.length || 0}</Text>
-        </View>
-      </View>
 
-      {/* Commission Rates */}
-      <Card style={styles.section}>
-        <Text style={styles.sectionTitle}>Commission Rates</Text>
-        <View style={styles.ratesRow}>
-          <View style={styles.rateItem}>
-            <Text style={styles.rateLabel}>First Sale</Text>
-            <Text style={styles.rateValue}>{partner.firstSaleRate || 0}%</Text>
-          </View>
-          <View style={styles.rateItem}>
-            <Text style={styles.rateLabel}>Recurring</Text>
-            <Text style={styles.rateValue}>{partner.recurringRate || 0}%</Text>
-          </View>
-          {partner.shopCommissionRate && (
+        {/* Commission Rates */}
+        <Card style={styles.section}>
+          <Text style={styles.sectionTitle}>Commission Rates</Text>
+          <View style={styles.ratesRow}>
             <View style={styles.rateItem}>
-              <Text style={styles.rateLabel}>Shop</Text>
-              <Text style={styles.rateValue}>{partner.shopCommissionRate}%</Text>
+              <Text style={styles.rateLabel}>First Sale</Text>
+              <Text style={styles.rateValue}>{partner.firstSaleRate || 0}%</Text>
+            </View>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Recurring</Text>
+              <Text style={styles.rateValue}>{partner.recurringRate || 0}%</Text>
+            </View>
+            {partner.shopCommissionRate && (
+              <View style={styles.rateItem}>
+                <Text style={styles.rateLabel}>Shop</Text>
+                <Text style={styles.rateValue}>{partner.shopCommissionRate}%</Text>
+              </View>
+            )}
+          </View>
+        </Card>
+
+        {/* Payment Methods */}
+        {(partner.zelleEmail || partner.zellePhone || partner.venmoUsername || partner.cashAppTag) && (
+          <Card style={styles.section}>
+            <Text style={styles.sectionTitle}>Payment Methods</Text>
+            {partner.zelleEmail && (
+              <View style={styles.paymentRow}>
+                <Text style={styles.paymentLabel}>Zelle Email</Text>
+                <Text style={styles.paymentValue}>{partner.zelleEmail}</Text>
+              </View>
+            )}
+            {partner.zellePhone && (
+              <View style={styles.paymentRow}>
+                <Text style={styles.paymentLabel}>Zelle Phone</Text>
+                <Text style={styles.paymentValue}>{partner.zellePhone}</Text>
+              </View>
+            )}
+            {partner.venmoUsername && (
+              <View style={styles.paymentRow}>
+                <Text style={styles.paymentLabel}>Venmo</Text>
+                <Text style={styles.paymentValue}>@{partner.venmoUsername}</Text>
+              </View>
+            )}
+            {partner.cashAppTag && (
+              <View style={styles.paymentRow}>
+                <Text style={styles.paymentLabel}>Cash App</Text>
+                <Text style={styles.paymentValue}>${partner.cashAppTag}</Text>
+              </View>
+            )}
+          </Card>
+        )}
+
+        {/* Recent Leads */}
+        {partner.leads && partner.leads.length > 0 && (
+          <Card style={styles.section}>
+            <Text style={styles.sectionTitle}>Recent Leads</Text>
+            {partner.leads.slice(0, 5).map((lead: any) => (
+              <TouchableOpacity
+                key={lead.id}
+                style={styles.leadItem}
+                onPress={() => navigation.navigate('PartnerLeadDetail', { id: lead.id })}
+              >
+                <View style={styles.leadInfo}>
+                  <Text style={styles.leadName}>{lead.businessName}</Text>
+                  <Text style={styles.leadDate}>{formatDate(lead.createdAt)}</Text>
+                </View>
+                <View style={styles.leadRight}>
+                  <Badge text={lead.status} variant={lead.status === 'WON' ? 'success' : 'default'} />
+                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                </View>
+              </TouchableOpacity>
+            ))}
+          </Card>
+        )}
+
+        {/* Contact Info */}
+        <Card style={styles.section}>
+          <Text style={styles.sectionTitle}>Contact Information</Text>
+          <View style={styles.contactRow}>
+            <Ionicons name="mail-outline" size={18} color={colors.textMuted} />
+            <Text style={styles.contactText}>{partner.email}</Text>
+          </View>
+          {partner.phone && (
+            <View style={styles.contactRow}>
+              <Ionicons name="call-outline" size={18} color={colors.textMuted} />
+              <Text style={styles.contactText}>{partner.phone}</Text>
             </View>
           )}
-        </View>
-      </Card>
-
-      {/* Recent Leads */}
-      {partner.leads && partner.leads.length > 0 && (
-        <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Leads</Text>
-          {partner.leads.slice(0, 5).map((lead: any) => (
-            <View key={lead.id} style={styles.leadItem}>
-              <View style={styles.leadInfo}>
-                <Text style={styles.leadName}>{lead.businessName}</Text>
-                <Text style={styles.leadDate}>{formatDate(lead.createdAt)}</Text>
-              </View>
-              <Badge text={lead.status} variant={lead.status === 'WON' ? 'success' : 'default'} />
+          {partner.company && (
+            <View style={styles.contactRow}>
+              <Ionicons name="business-outline" size={18} color={colors.textMuted} />
+              <Text style={styles.contactText}>{partner.company}</Text>
             </View>
-          ))}
-        </Card>
-      )}
-
-      {/* Contact Info */}
-      <Card style={styles.section}>
-        <Text style={styles.sectionTitle}>Contact Information</Text>
-        <View style={styles.contactRow}>
-          <Ionicons name="mail-outline" size={18} color={colors.textMuted} />
-          <Text style={styles.contactText}>{partner.email}</Text>
-        </View>
-        {partner.phone && (
+          )}
           <View style={styles.contactRow}>
-            <Ionicons name="call-outline" size={18} color={colors.textMuted} />
-            <Text style={styles.contactText}>{partner.phone}</Text>
+            <Ionicons name="calendar-outline" size={18} color={colors.textMuted} />
+            <Text style={styles.contactText}>Partner since {formatDate(partner.createdAt)}</Text>
           </View>
-        )}
-        <View style={styles.contactRow}>
-          <Ionicons name="calendar-outline" size={18} color={colors.textMuted} />
-          <Text style={styles.contactText}>Partner since {formatDate(partner.createdAt)}</Text>
-        </View>
-      </Card>
+        </Card>
 
-      <View style={{ height: spacing.xxl }} />
-    </ScrollView>
+        <View style={{ height: spacing.xxl }} />
+      </ScrollView>
+
+      {/* Edit Modal */}
+      <Modal
+        visible={editModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalContainer}
+        >
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+              <Text style={styles.modalCancel}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Edit Partner</Text>
+            <TouchableOpacity onPress={handleSave} disabled={saving}>
+              {saving ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Text style={styles.modalSave}>Save</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalContent}>
+            {/* Basic Info */}
+            <Text style={styles.formSectionTitle}>Basic Information</Text>
+
+            <Text style={styles.inputLabel}>Name *</Text>
+            <TextInput
+              style={styles.input}
+              value={editForm.name}
+              onChangeText={(text) => setEditForm({ ...editForm, name: text })}
+              placeholder="Partner name"
+              placeholderTextColor={colors.textMuted}
+            />
+
+            <Text style={styles.inputLabel}>Email *</Text>
+            <TextInput
+              style={styles.input}
+              value={editForm.email}
+              onChangeText={(text) => setEditForm({ ...editForm, email: text })}
+              placeholder="Email address"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+
+            <Text style={styles.inputLabel}>Phone</Text>
+            <TextInput
+              style={styles.input}
+              value={editForm.phone}
+              onChangeText={(text) => setEditForm({ ...editForm, phone: text })}
+              placeholder="Phone number"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="phone-pad"
+            />
+
+            <Text style={styles.inputLabel}>Company</Text>
+            <TextInput
+              style={styles.input}
+              value={editForm.company}
+              onChangeText={(text) => setEditForm({ ...editForm, company: text })}
+              placeholder="Company name"
+              placeholderTextColor={colors.textMuted}
+            />
+
+            {/* Status & Type */}
+            <Text style={styles.formSectionTitle}>Status & Type</Text>
+
+            <Text style={styles.inputLabel}>Status</Text>
+            <View style={styles.selectorRow}>
+              {PARTNER_STATUSES.map((status) => (
+                <TouchableOpacity
+                  key={status}
+                  style={[
+                    styles.selectorOption,
+                    editForm.status === status && styles.selectorOptionActive,
+                  ]}
+                  onPress={() => setEditForm({ ...editForm, status })}
+                >
+                  <Text
+                    style={[
+                      styles.selectorText,
+                      editForm.status === status && styles.selectorTextActive,
+                    ]}
+                  >
+                    {status}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.inputLabel}>Partner Type</Text>
+            <View style={styles.selectorRow}>
+              {PARTNER_TYPES.map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  style={[
+                    styles.selectorOption,
+                    editForm.partnerType === type && styles.selectorOptionActive,
+                  ]}
+                  onPress={() => setEditForm({ ...editForm, partnerType: type })}
+                >
+                  <Text
+                    style={[
+                      styles.selectorText,
+                      editForm.partnerType === type && styles.selectorTextActive,
+                    ]}
+                  >
+                    {typeLabels[type] || type}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Commission Settings */}
+            <Text style={styles.formSectionTitle}>Commission Settings</Text>
+
+            <Text style={styles.inputLabel}>Commission Type</Text>
+            <View style={styles.selectorRow}>
+              {COMMISSION_TYPES.map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  style={[
+                    styles.selectorOption,
+                    editForm.commissionType === type && styles.selectorOptionActive,
+                  ]}
+                  onPress={() => setEditForm({ ...editForm, commissionType: type })}
+                >
+                  <Text
+                    style={[
+                      styles.selectorText,
+                      editForm.commissionType === type && styles.selectorTextActive,
+                    ]}
+                  >
+                    {type}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.rateInputRow}>
+              <View style={styles.rateInputContainer}>
+                <Text style={styles.inputLabel}>First Sale Rate (%)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editForm.firstSaleRate}
+                  onChangeText={(text) => setEditForm({ ...editForm, firstSaleRate: text })}
+                  placeholder="10"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+              <View style={styles.rateInputContainer}>
+                <Text style={styles.inputLabel}>Recurring Rate (%)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editForm.recurringRate}
+                  onChangeText={(text) => setEditForm({ ...editForm, recurringRate: text })}
+                  placeholder="5"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            </View>
+
+            <Text style={styles.inputLabel}>Shop Commission Rate (%)</Text>
+            <TextInput
+              style={styles.input}
+              value={editForm.shopCommissionRate}
+              onChangeText={(text) => setEditForm({ ...editForm, shopCommissionRate: text })}
+              placeholder="Optional"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="decimal-pad"
+            />
+
+            <Text style={styles.inputLabel}>Affiliate Code</Text>
+            <TextInput
+              style={styles.input}
+              value={editForm.affiliateCode}
+              onChangeText={(text) => setEditForm({ ...editForm, affiliateCode: text })}
+              placeholder="Optional affiliate code"
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="none"
+            />
+
+            {/* Payment Methods */}
+            <Text style={styles.formSectionTitle}>Payment Methods</Text>
+
+            <Text style={styles.inputLabel}>Zelle Email</Text>
+            <TextInput
+              style={styles.input}
+              value={editForm.zelleEmail}
+              onChangeText={(text) => setEditForm({ ...editForm, zelleEmail: text })}
+              placeholder="Zelle email"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+
+            <Text style={styles.inputLabel}>Zelle Phone</Text>
+            <TextInput
+              style={styles.input}
+              value={editForm.zellePhone}
+              onChangeText={(text) => setEditForm({ ...editForm, zellePhone: text })}
+              placeholder="Zelle phone number"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="phone-pad"
+            />
+
+            <Text style={styles.inputLabel}>Venmo Username</Text>
+            <TextInput
+              style={styles.input}
+              value={editForm.venmoUsername}
+              onChangeText={(text) => setEditForm({ ...editForm, venmoUsername: text })}
+              placeholder="Venmo username"
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="none"
+            />
+
+            <Text style={styles.inputLabel}>Cash App Tag</Text>
+            <TextInput
+              style={styles.input}
+              value={editForm.cashAppTag}
+              onChangeText={(text) => setEditForm({ ...editForm, cashAppTag: text })}
+              placeholder="Cash App $tag"
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="none"
+            />
+
+            <Text style={styles.inputLabel}>Mailing Address</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={editForm.mailingAddress}
+              onChangeText={(text) => setEditForm({ ...editForm, mailingAddress: text })}
+              placeholder="Mailing address for checks"
+              placeholderTextColor={colors.textMuted}
+              multiline
+              numberOfLines={3}
+            />
+
+            <View style={{ height: spacing.xxxl }} />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
+    </View>
   )
 }
 
@@ -232,6 +638,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  scrollView: {
+    flex: 1,
   },
   loadingContainer: {
     flex: 1,
@@ -273,9 +682,13 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
   title: {
+    flex: 1,
     fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
     color: colors.text,
+  },
+  editButton: {
+    padding: spacing.sm,
   },
   profileCard: {
     marginHorizontal: spacing.lg,
@@ -373,6 +786,22 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
     color: colors.primary,
   },
+  paymentRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  paymentLabel: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+  },
+  paymentValue: {
+    fontSize: fontSize.sm,
+    color: colors.text,
+  },
   leadItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -393,6 +822,11 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: 2,
   },
+  leadRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   contactRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -402,5 +836,96 @@ const styles = StyleSheet.create({
   contactText: {
     fontSize: fontSize.sm,
     color: colors.text,
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalCancel: {
+    fontSize: fontSize.md,
+    color: colors.textMuted,
+  },
+  modalTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+  },
+  modalSave: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    color: colors.primary,
+  },
+  modalContent: {
+    flex: 1,
+    padding: spacing.lg,
+  },
+  formSectionTitle: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  inputLabel: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    marginBottom: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  input: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: fontSize.md,
+    color: colors.text,
+  },
+  textArea: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  selectorRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  selectorOption: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  selectorOptionActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  selectorText: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+  },
+  selectorTextActive: {
+    color: colors.text,
+    fontWeight: fontWeight.medium,
+  },
+  rateInputRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  rateInputContainer: {
+    flex: 1,
   },
 })
