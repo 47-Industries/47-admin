@@ -34,6 +34,8 @@ import NotificationsScreen from '../screens/NotificationsScreen'
 import { TeamScreen } from '../screens/TeamScreen'
 import { ClientsScreen as AdminClientsScreen } from '../screens/admin/ClientsScreen'
 import { PartnersScreen as AdminPartnersScreen } from '../screens/admin/PartnersScreen'
+import { ClientDetailScreen } from '../screens/admin/ClientDetailScreen'
+import { PartnerDetailScreen } from '../screens/admin/PartnerDetailScreen'
 import MarketingScreen from '../screens/MarketingScreen'
 import { colors, portalColors, spacing, fontSize, fontWeight } from '../theme'
 
@@ -76,7 +78,7 @@ export default function AdminNavigator() {
   const getParentTab = (screenName: string): TabName | null => {
     const salesScreens = ['OrderDetail', 'Returns', 'AdminInvoices', 'Expenses', 'Reports', 'Analytics', 'RecurringBills']
     const workScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail']
-    const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail']
+    const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'ClientDetail', 'PartnerDetail']
     const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'Marketing', 'Email', 'Blog', 'Products', 'ProductDetail', 'ProductCreate', 'Categories', 'Inventory']
     const homeScreens = ['Products', 'ProductDetail', 'ProductCreate', 'Categories', 'Inventory']
 
@@ -155,6 +157,10 @@ export default function AdminNavigator() {
           return <ScreenWrapper><AdminClientsScreen navigation={navigation} /></ScreenWrapper>
         case 'AdminPartners':
           return <ScreenWrapper><AdminPartnersScreen navigation={navigation} /></ScreenWrapper>
+        case 'PartnerDetail':
+          return <ScreenWrapper><PartnerDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
+        case 'ClientDetail':
+          return <ScreenWrapper><ClientDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
         case 'Marketing':
           return <ScreenWrapper><MarketingScreen navigation={navigation} /></ScreenWrapper>
       }

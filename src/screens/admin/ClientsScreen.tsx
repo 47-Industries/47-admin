@@ -152,7 +152,15 @@ export function ClientsScreen({ navigation, hideHeader }: ClientsScreenProps) {
     }
   }
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number, compact = false) => {
+    if (compact && Math.abs(amount) >= 1000) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        notation: 'compact',
+        maximumFractionDigits: 1,
+      }).format(amount || 0)
+    }
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0)
   }
 
@@ -294,23 +302,23 @@ export function ClientsScreen({ navigation, hideHeader }: ClientsScreenProps) {
       {/* Stats */}
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
-          <Text style={styles.statCardLabel}>Total</Text>
-          <Text style={styles.statCardValue}>{stats.totalClients}</Text>
+          <Text style={styles.statCardLabel} numberOfLines={1}>Total</Text>
+          <Text style={styles.statCardValue} numberOfLines={1}>{stats.totalClients}</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statCardLabel}>Active</Text>
-          <Text style={[styles.statCardValue, { color: colors.success }]}>{stats.activeCount}</Text>
+          <Text style={styles.statCardLabel} numberOfLines={1}>Active</Text>
+          <Text style={[styles.statCardValue, { color: colors.success }]} numberOfLines={1}>{stats.activeCount}</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statCardLabel}>Revenue</Text>
-          <Text style={[styles.statCardValue, { color: colors.success }]}>
-            {formatCurrency(stats.totalRevenue)}
+          <Text style={styles.statCardLabel} numberOfLines={1}>Revenue</Text>
+          <Text style={[styles.statCardValue, { color: colors.success }]} numberOfLines={1}>
+            {formatCurrency(stats.totalRevenue, true)}
           </Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statCardLabel}>Outstanding</Text>
-          <Text style={[styles.statCardValue, { color: stats.totalOutstanding > 0 ? colors.warning : colors.text }]}>
-            {formatCurrency(stats.totalOutstanding)}
+          <Text style={styles.statCardLabel} numberOfLines={1}>Owed</Text>
+          <Text style={[styles.statCardValue, { color: stats.totalOutstanding > 0 ? colors.warning : colors.text }]} numberOfLines={1}>
+            {formatCurrency(stats.totalOutstanding, true)}
           </Text>
         </View>
       </View>
@@ -590,17 +598,19 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     marginBottom: spacing.lg,
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   statCard: {
     flex: 1,
     backgroundColor: colors.surface,
     borderRadius: borderRadius.md,
-    padding: spacing.md,
+    padding: spacing.sm,
+    paddingVertical: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
+    minWidth: 0,
   },
   statCardLabel: {
     fontSize: fontSize.xs,
@@ -608,7 +618,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   statCardValue: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
     color: colors.text,
   },
