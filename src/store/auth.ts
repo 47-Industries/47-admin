@@ -37,12 +37,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
       const user = response.user
 
-      // Derive portal access from user role if not provided by API
+      // Derive portal access from user associations (not role)
       const access: PortalAccess = response.portalAccess || {
         admin: user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
-        partner: !!user.partnerId || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
-        client: !!user.clientId || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
-        affiliate: !!user.affiliateId || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
+        partner: !!user.partnerId,
+        client: !!user.clientId,
+        affiliate: !!user.affiliateId,
       }
 
       // Validate portal access
@@ -109,12 +109,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const response = await api.getMe()
       const user = response.user
 
-      // Derive portal access from user role if not provided by API
+      // Derive portal access from user associations (not role)
       const access: PortalAccess = response.portalAccess || {
         admin: user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
-        partner: !!user.partnerId || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
-        client: !!user.clientId || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
-        affiliate: !!user.affiliateId || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
+        partner: !!user.partnerId,
+        client: !!user.clientId,
+        affiliate: !!user.affiliateId,
       }
 
       // Verify user still has access to saved portal
