@@ -214,7 +214,7 @@ export function AccountScreen({ navigation, hideHeader }: AccountScreenProps) {
 
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={() => Linking.openURL('https://47industries.com/terms-of-service')}
+            onPress={() => Linking.openURL('https://47industries.com/legal/terms')}
           >
             <View style={styles.menuItemLeft}>
               <Ionicons name="document-text-outline" size={20} color={colors.textSecondary} />
@@ -225,7 +225,7 @@ export function AccountScreen({ navigation, hideHeader }: AccountScreenProps) {
 
           <TouchableOpacity
             style={styles.menuItem}
-            onPress={() => Linking.openURL('https://47industries.com/privacy-policy')}
+            onPress={() => Linking.openURL('https://47industries.com/legal/privacy')}
           >
             <View style={styles.menuItemLeft}>
               <Ionicons name="shield-checkmark-outline" size={20} color={colors.textSecondary} />
