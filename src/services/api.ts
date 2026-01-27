@@ -805,6 +805,21 @@ class ApiService {
     })
   }
 
+  async deleteNotification(id: string) {
+    return this.request<{ success: boolean }>(`/admin/notifications/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async getNotificationsWithFilter(filter?: 'all' | 'unread') {
+    const searchParams = new URLSearchParams()
+    if (filter) searchParams.set('filter', filter)
+    return this.request<{
+      notifications: any[]
+      stats: { total: number; unread: number; today: number; thisWeek: number }
+    }>(`/admin/notifications?${searchParams}`)
+  }
+
   // Services
   async getServicePackages() {
     return this.request<{ packages: any[] }>('/admin/services/packages')
@@ -993,6 +1008,230 @@ class ApiService {
 
   async getAdminClient(id: string) {
     return this.request<{ client: any }>(`/admin/clients/${id}`)
+  }
+
+  async createAdminClient(data: {
+    name: string
+    email: string
+    phone?: string
+    company?: string
+    type?: string
+    notes?: string
+  }) {
+    return this.request<{ client: any }>('/admin/clients', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateAdminClient(id: string, data: {
+    name?: string
+    email?: string
+    phone?: string
+    company?: string
+    type?: string
+    status?: string
+    notes?: string
+  }) {
+    return this.request<{ client: any }>(`/admin/clients/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  // Admin Partners
+  async getAdminPartners(params?: { page?: number; status?: string; type?: string; search?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.type) searchParams.set('type', params.type)
+    if (params?.search) searchParams.set('search', params.search)
+    return this.request<{
+      partners: any[]
+      total: number
+      stats: {
+        total: number
+        active: number
+        pending: number
+        totalLeads: number
+        totalCommissions: number
+        pendingPayouts: number
+      }
+    }>(`/admin/partners?${searchParams}`)
+  }
+
+  async getAdminPartner(id: string) {
+    return this.request<{ partner: any }>(`/admin/partners/${id}`)
+  }
+
+  async createAdminPartner(data: {
+    name: string
+    email: string
+    phone?: string
+    company?: string
+    partnerType: 'SERVICE_REFERRAL' | 'PRODUCT_AFFILIATE' | 'BOTH'
+    firstSaleRate?: number
+    recurringRate?: number
+    userId?: string
+  }) {
+    return this.request<{ partner: any; inviteSent: boolean }>('/admin/partners', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateAdminPartner(id: string, data: {
+    name?: string
+    email?: string
+    phone?: string
+    company?: string
+    partnerType?: 'SERVICE_REFERRAL' | 'PRODUCT_AFFILIATE' | 'BOTH'
+    status?: 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'INACTIVE'
+    firstSaleRate?: number
+    recurringRate?: number
+    shopCommissionRate?: number
+  }) {
+    return this.request<{ partner: any }>(`/admin/partners/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteAdminPartner(id: string) {
+    return this.request<{ success: boolean; softDeleted?: boolean }>(`/admin/partners/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async getAdminPartnerLeads(partnerId: string, params?: { page?: number; status?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.status) searchParams.set('status', params.status)
+    return this.request<{ leads: any[]; total: number }>(`/admin/partners/${partnerId}/leads?${searchParams}`)
+  }
+
+  async getAdminPartnerCommissions(partnerId: string, params?: { page?: number; status?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.status) searchParams.set('status', params.status)
+    return this.request<{ commissions: any[]; total: number }>(`/admin/partners/${partnerId}/commissions?${searchParams}`)
+  }
+
+  async getAdminPartnerPayouts(partnerId: string, params?: { page?: number; status?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.status) searchParams.set('status', params.status)
+    return this.request<{ payouts: any[]; total: number }>(`/admin/partners/${partnerId}/payouts?${searchParams}`)
+  }
+
+  async createAdminPartnerPayout(partnerId: string, data: { amount: number; method?: 'STRIPE' | 'MANUAL' | 'CHECK'; notes?: string }) {
+    return this.request<{ payout: any }>(`/admin/partners/${partnerId}/payouts`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  // Marketing / Email Campaigns
+  async getCampaigns(params?: { status?: string; search?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.search) searchParams.set('search', params.search)
+    return this.request<{ campaigns: any[] }>(`/admin/marketing/campaigns?${searchParams}`)
+  }
+
+  async getCampaign(id: string) {
+    return this.request<{ campaign: any }>(`/admin/marketing/campaigns/${id}`)
+  }
+
+  async createCampaign(data: {
+    name: string
+    subject: string
+    content: string
+    recipientType: 'all' | 'customers' | 'newsletter'
+    status?: 'draft' | 'scheduled' | 'sending'
+    scheduledAt?: string
+  }) {
+    return this.request<{ campaign: any }>('/admin/marketing/campaigns', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateCampaign(id: string, data: {
+    name?: string
+    subject?: string
+    content?: string
+    recipientType?: 'all' | 'customers' | 'newsletter'
+    status?: 'draft' | 'scheduled' | 'sending'
+    scheduledAt?: string
+  }) {
+    return this.request<{ campaign: any }>(`/admin/marketing/campaigns/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteCampaign(id: string) {
+    return this.request<{ success: boolean }>(`/admin/marketing/campaigns/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async sendCampaign(id: string) {
+    return this.request<{ campaign: any }>(`/admin/marketing/campaigns/${id}/send`, {
+      method: 'POST',
+    })
+  }
+
+  async getCustomerSegments() {
+    return this.request<{ segments: any[] }>('/admin/customers/segments')
+  }
+
+  // Team Members
+  async getTeamMembers(params?: { page?: number; limit?: number; status?: string; search?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.limit) searchParams.set('limit', params.limit.toString())
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.search) searchParams.set('search', params.search)
+    return this.request<{
+      teamMembers: any[]
+      stats: { total: number; active: number; totalPayments: number }
+    }>(`/admin/team?${searchParams}`)
+  }
+
+  async getTeamMember(id: string) {
+    return this.request<{ teamMember: any }>(`/admin/team/${id}`)
+  }
+
+  async createTeamMember(data: {
+    name: string
+    email: string
+    phone?: string
+    title: string
+    department?: string
+    startDate: string
+    salaryType?: string
+    salaryAmount?: number
+    salaryFrequency?: string
+  }) {
+    return this.request<{ teamMember: any }>('/admin/team', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateTeamMember(id: string, data: any) {
+    return this.request<{ teamMember: any }>(`/admin/team/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteTeamMember(id: string) {
+    return this.request<{ success: boolean }>(`/admin/team/${id}`, {
+      method: 'DELETE',
+    })
   }
 }
 
