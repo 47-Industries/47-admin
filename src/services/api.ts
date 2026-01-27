@@ -579,6 +579,115 @@ class ApiService {
     return this.request<{ founders: any[] }>('/admin/founders')
   }
 
+  // Bill Splits (v2 - team member based)
+  async getBillSplits(billInstanceId: string) {
+    return this.request<{ splits: any[] }>(`/admin/bill-instances/${billInstanceId}/bill-splits`)
+  }
+
+  async updateBillSplit(billInstanceId: string, splitId: string, data: { status?: string; amount?: number }) {
+    return this.request<{ split: any }>(`/admin/bill-instances/${billInstanceId}/bill-splits`, {
+      method: 'PATCH',
+      body: JSON.stringify({ splitId, ...data }),
+    })
+  }
+
+  // Proposed Bills (Approval Queue)
+  async getProposedBills(params?: { status?: string; limit?: number; offset?: number }) {
+    const searchParams = new URLSearchParams()
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.limit) searchParams.set('limit', params.limit.toString())
+    if (params?.offset) searchParams.set('offset', params.offset.toString())
+    return this.request<{ proposedBills: any[]; pendingCount: number; total: number }>(`/admin/proposed-bills?${searchParams}`)
+  }
+
+  async approveProposedBill(id: string, data?: { vendor?: string; vendorType?: string; createRecurring?: boolean; autoApprove?: boolean }) {
+    return this.request<{ billInstance: any; recurringBill?: any }>(`/admin/proposed-bills/${id}/approve`, {
+      method: 'POST',
+      body: JSON.stringify(data || {}),
+    })
+  }
+
+  async skipProposedBill(id: string, data?: { createSkipRule?: boolean; skipRuleType?: string; vendor?: string; amount?: number }) {
+    return this.request<{ success: boolean; skipRule?: any }>(`/admin/proposed-bills/${id}/skip`, {
+      method: 'POST',
+      body: JSON.stringify(data || {}),
+    })
+  }
+
+  // Bank Transactions (Financial Connections)
+  async getBankTransactions(params?: { matched?: boolean; limit?: number; offset?: number }) {
+    const searchParams = new URLSearchParams()
+    if (params?.matched !== undefined) searchParams.set('matched', params.matched.toString())
+    if (params?.limit) searchParams.set('limit', params.limit.toString())
+    if (params?.offset) searchParams.set('offset', params.offset.toString())
+    return this.request<{ transactions: any[]; unmatchedCount: number; total: number }>(`/admin/financial-connections/transactions?${searchParams}`)
+  }
+
+  async getBankAccounts() {
+    return this.request<{ accounts: any[] }>('/admin/financial-connections/accounts')
+  }
+
+  async syncBankAccount(accountId: string) {
+    return this.request<{ success: boolean; transactionCount: number }>(`/admin/financial-connections/${accountId}/sync`, {
+      method: 'POST',
+    })
+  }
+
+  async matchBankTransaction(transactionId: string, billInstanceId: string) {
+    return this.request<{ success: boolean }>(`/admin/financial-connections/transactions/${transactionId}/match`, {
+      method: 'POST',
+      body: JSON.stringify({ billInstanceId }),
+    })
+  }
+
+  // Skip Rules
+  async getSkipRules() {
+    return this.request<{ skipRules: any[] }>('/admin/skip-rules')
+  }
+
+  async createSkipRule(data: { ruleType: string; vendor?: string; amount?: number; amountMin?: number; amountMax?: number; pattern?: string; accountId?: string; transactionType?: string }) {
+    return this.request<{ skipRule: any }>('/admin/skip-rules', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateSkipRule(id: string, data: any) {
+    return this.request<{ skipRule: any }>(`/admin/skip-rules/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteSkipRule(id: string) {
+    return this.request<{ success: boolean }>(`/admin/skip-rules/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // Email Accounts (for bill scanning)
+  async getEmailAccounts() {
+    return this.request<{ emailAccounts: any[] }>('/admin/email-accounts')
+  }
+
+  async createEmailAccount(data: { email: string; provider: string }) {
+    return this.request<{ emailAccount: any; authUrl?: string }>('/admin/email-accounts', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteEmailAccount(id: string) {
+    return this.request<{ success: boolean }>(`/admin/email-accounts/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // Expense Permission Check
+  async checkExpensePermission() {
+    return this.request<{ canAccess: boolean; userId: string | null; teamMemberId: string | null; reason: string }>('/admin/expense-permission')
+  }
+
   // Legacy endpoints (for compatibility during migration)
   async getBills(params?: { page?: number; status?: string }) {
     const searchParams = new URLSearchParams()

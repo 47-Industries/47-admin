@@ -79,10 +79,47 @@ const VENDOR_TYPES = [
   { value: 'OTHER', label: 'Other' }
 ]
 
-type TabKey = 'monthly' | 'balances'
+interface ProposedBill {
+  id: string
+  source: string
+  emailSubject: string | null
+  vendor: string | null
+  vendorType: string | null
+  amount: number | null
+  dueDate: string | null
+  confidence: number
+  status: string
+  createdAt: string
+}
+
+interface RecurringBillTemplate {
+  id: string
+  name: string
+  vendor: string
+  amountType: 'FIXED' | 'VARIABLE'
+  fixedAmount: number | null
+  frequency: string
+  dueDay: number
+  vendorType: string
+  active: boolean
+  autoApprove: boolean
+}
+
+interface SkipRule {
+  id: string
+  ruleType: string
+  vendor: string | null
+  amount: number | null
+  amountMin: number | null
+  amountMax: number | null
+  pattern: string | null
+  active: boolean
+}
+
+type TabKey = 'bills' | 'approval' | 'settings'
 
 export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hideHeader?: boolean }) {
-  const [activeTab, setActiveTab] = useState<TabKey>('monthly')
+  const [activeTab, setActiveTab] = useState<TabKey>('bills')
   const [summary, setSummary] = useState<ExpensesSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -96,6 +133,20 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
   const [submitting, setSubmitting] = useState(false)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [scanning, setScanning] = useState(false)
+
+  // Approval Queue state
+  const [proposedBills, setProposedBills] = useState<ProposedBill[]>([])
+  const [pendingApprovalCount, setPendingApprovalCount] = useState(0)
+  const [approvalLoading, setApprovalLoading] = useState(false)
+  const [processingId, setProcessingId] = useState<string | null>(null)
+
+  // Settings state
+  const [recurringBills, setRecurringBills] = useState<RecurringBillTemplate[]>([])
+  const [skipRules, setSkipRules] = useState<SkipRule[]>([])
+  const [settingsLoading, setSettingsLoading] = useState(false)
+
+  // Balances view toggle
+  const [showBalances, setShowBalances] = useState(false)
 
   const user = useAuthStore((state) => state.user)
   const isFounder = user?.isFounder || false
@@ -112,14 +163,156 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
     }
   }
 
+  const fetchApprovalQueue = async () => {
+    setApprovalLoading(true)
+    try {
+      const data = await api.getProposedBills({ status: 'PENDING', limit: 50 })
+      setProposedBills(data.proposedBills || [])
+      setPendingApprovalCount(data.pendingCount || 0)
+    } catch (error) {
+      console.error('Failed to fetch proposed bills:', error)
+    } finally {
+      setApprovalLoading(false)
+    }
+  }
+
+  const fetchSettings = async () => {
+    setSettingsLoading(true)
+    try {
+      const [recurringData, skipData] = await Promise.all([
+        api.getRecurringBills(),
+        api.getSkipRules().catch(() => ({ skipRules: [] }))
+      ])
+      setRecurringBills(recurringData.recurringBills || [])
+      setSkipRules(skipData.skipRules || [])
+    } catch (error) {
+      console.error('Failed to fetch settings:', error)
+    } finally {
+      setSettingsLoading(false)
+    }
+  }
+
   useEffect(() => {
     setLoading(true)
     fetchData()
+    // Also fetch approval count for badge
+    api.getProposedBills({ status: 'PENDING', limit: 1 }).then(data => {
+      setPendingApprovalCount(data.pendingCount || 0)
+    }).catch(() => {})
   }, [currentPeriod])
+
+  useEffect(() => {
+    if (activeTab === 'approval') {
+      fetchApprovalQueue()
+    } else if (activeTab === 'settings') {
+      fetchSettings()
+    }
+  }, [activeTab])
 
   const onRefresh = () => {
     setRefreshing(true)
     fetchData()
+    if (activeTab === 'approval') {
+      fetchApprovalQueue()
+    } else if (activeTab === 'settings') {
+      fetchSettings()
+    }
+  }
+
+  const handleApproveProposal = async (proposal: ProposedBill) => {
+    setProcessingId(proposal.id)
+    try {
+      await api.approveProposedBill(proposal.id, {
+        vendor: proposal.vendor || undefined,
+        vendorType: proposal.vendorType || 'OTHER',
+      })
+      setProposedBills(prev => prev.filter(p => p.id !== proposal.id))
+      setPendingApprovalCount(prev => Math.max(0, prev - 1))
+      fetchData() // Refresh bills
+      Alert.alert('Success', 'Bill approved and created')
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to approve bill')
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  const handleSkipProposal = async (proposal: ProposedBill) => {
+    Alert.alert(
+      'Skip Bill',
+      'Skip this proposed bill?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Skip',
+          onPress: async () => {
+            setProcessingId(proposal.id)
+            try {
+              await api.skipProposedBill(proposal.id)
+              setProposedBills(prev => prev.filter(p => p.id !== proposal.id))
+              setPendingApprovalCount(prev => Math.max(0, prev - 1))
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to skip bill')
+            } finally {
+              setProcessingId(null)
+            }
+          },
+        },
+        {
+          text: 'Skip & Create Rule',
+          onPress: async () => {
+            setProcessingId(proposal.id)
+            try {
+              await api.skipProposedBill(proposal.id, {
+                createSkipRule: true,
+                skipRuleType: 'VENDOR',
+                vendor: proposal.vendor || undefined,
+              })
+              setProposedBills(prev => prev.filter(p => p.id !== proposal.id))
+              setPendingApprovalCount(prev => Math.max(0, prev - 1))
+              Alert.alert('Success', 'Skipped and created rule for future')
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to skip bill')
+            } finally {
+              setProcessingId(null)
+            }
+          },
+        },
+      ]
+    )
+  }
+
+  const handleDeleteSkipRule = async (rule: SkipRule) => {
+    Alert.alert(
+      'Delete Rule',
+      'Are you sure you want to delete this skip rule?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.deleteSkipRule(rule.id)
+              setSkipRules(prev => prev.filter(r => r.id !== rule.id))
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to delete rule')
+            }
+          },
+        },
+      ]
+    )
+  }
+
+  const handleToggleRecurringBill = async (bill: RecurringBillTemplate) => {
+    try {
+      await api.updateRecurringBill(bill.id, { active: !bill.active })
+      setRecurringBills(prev => prev.map(b =>
+        b.id === bill.id ? { ...b, active: !b.active } : b
+      ))
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to update recurring bill')
+    }
   }
 
   const formatCurrency = (amount: number) => {
@@ -385,7 +578,7 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
     return VENDOR_TYPES.find(t => t.value === value)?.label || value
   }
 
-  const TabButton = ({ title, tabKey, icon }: { title: string; tabKey: TabKey; icon: string }) => (
+  const TabButton = ({ title, tabKey, icon, badge }: { title: string; tabKey: TabKey; icon: string; badge?: number }) => (
     <TouchableOpacity
       style={[styles.tab, activeTab === tabKey && styles.tabActive]}
       onPress={() => setActiveTab(tabKey)}
@@ -397,7 +590,104 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
         color={activeTab === tabKey ? colors.text : colors.textMuted}
       />
       <Text style={[styles.tabText, activeTab === tabKey && styles.tabTextActive]}>{title}</Text>
+      {badge !== undefined && badge > 0 && (
+        <View style={styles.tabBadge}>
+          <Text style={styles.tabBadgeText}>{badge > 99 ? '99+' : badge}</Text>
+        </View>
+      )}
     </TouchableOpacity>
+  )
+
+  const renderProposalRow = (proposal: ProposedBill) => {
+    const isProcessing = processingId === proposal.id
+    return (
+      <View key={proposal.id} style={styles.proposalRow}>
+        <View style={styles.proposalInfo}>
+          <View style={styles.proposalHeader}>
+            <Text style={styles.proposalVendor}>{proposal.vendor || 'Unknown Vendor'}</Text>
+            {proposal.confidence > 0 && (
+              <View style={[styles.confidenceBadge, { backgroundColor: proposal.confidence >= 0.8 ? colors.successBg : proposal.confidence >= 0.5 ? colors.warningBg : colors.errorBg }]}>
+                <Text style={[styles.confidenceText, { color: proposal.confidence >= 0.8 ? colors.success : proposal.confidence >= 0.5 ? colors.warning : colors.error }]}>
+                  {Math.round(proposal.confidence * 100)}%
+                </Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.proposalAmount}>{proposal.amount ? formatCurrency(proposal.amount) : 'Amount TBD'}</Text>
+          <Text style={styles.proposalMeta}>
+            {proposal.source === 'EMAIL' ? 'From email' : 'Bank transaction'} - {formatDate(proposal.createdAt)}
+          </Text>
+          {proposal.emailSubject && (
+            <Text style={styles.proposalSubject} numberOfLines={1}>{proposal.emailSubject}</Text>
+          )}
+        </View>
+        <View style={styles.proposalActions}>
+          <TouchableOpacity
+            style={[styles.proposalButton, styles.approveButton]}
+            onPress={() => handleApproveProposal(proposal)}
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <ActivityIndicator size="small" color={colors.text} />
+            ) : (
+              <Ionicons name="checkmark" size={20} color={colors.text} />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.proposalButton, styles.skipButton]}
+            onPress={() => handleSkipProposal(proposal)}
+            disabled={isProcessing}
+          >
+            <Ionicons name="close" size={20} color={colors.textMuted} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    )
+  }
+
+  const renderRecurringBillRow = (bill: RecurringBillTemplate) => (
+    <TouchableOpacity
+      key={bill.id}
+      style={styles.settingsRow}
+      onPress={() => navigation.navigate('RecurringBillDetail', { id: bill.id })}
+    >
+      <View style={styles.settingsRowLeft}>
+        <Text style={[styles.settingsRowTitle, !bill.active && styles.settingsRowInactive]}>{bill.name}</Text>
+        <Text style={styles.settingsRowSubtitle}>
+          {bill.vendor} - {bill.amountType === 'FIXED' ? formatCurrency(bill.fixedAmount || 0) : 'Variable'} - {bill.frequency}
+        </Text>
+      </View>
+      <TouchableOpacity
+        style={[styles.toggleButton, bill.active ? styles.toggleActive : styles.toggleInactive]}
+        onPress={() => handleToggleRecurringBill(bill)}
+      >
+        <Text style={[styles.toggleText, bill.active ? styles.toggleTextActive : styles.toggleTextInactive]}>
+          {bill.active ? 'ON' : 'OFF'}
+        </Text>
+      </TouchableOpacity>
+    </TouchableOpacity>
+  )
+
+  const renderSkipRuleRow = (rule: SkipRule) => (
+    <View key={rule.id} style={styles.settingsRow}>
+      <View style={styles.settingsRowLeft}>
+        <Text style={styles.settingsRowTitle}>
+          {rule.ruleType === 'VENDOR' ? `Vendor: ${rule.vendor}` :
+           rule.ruleType === 'VENDOR_AMOUNT' ? `${rule.vendor} @ ${formatCurrency(rule.amount || 0)}` :
+           rule.ruleType === 'DESCRIPTION_PATTERN' ? `Pattern: ${rule.pattern}` :
+           'Custom Rule'}
+        </Text>
+        <Text style={styles.settingsRowSubtitle}>
+          {rule.ruleType} rule
+        </Text>
+      </View>
+      <TouchableOpacity
+        style={styles.deleteRuleButton}
+        onPress={() => handleDeleteSkipRule(rule)}
+      >
+        <Ionicons name="trash-outline" size={18} color={colors.error} />
+      </TouchableOpacity>
+    </View>
   )
 
   const renderBillRow = (bill: BillInstance) => {
@@ -495,16 +785,17 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
 
       {/* Tabs */}
       <View style={styles.tabs}>
-        <TabButton title="Monthly Bills" tabKey="monthly" icon="calendar" />
-        <TabButton title="Balances" tabKey="balances" icon="people" />
+        <TabButton title="Bills" tabKey="bills" icon="receipt" />
+        <TabButton title="Approval" tabKey="approval" icon="checkmark-circle" badge={pendingApprovalCount} />
+        <TabButton title="Settings" tabKey="settings" icon="settings" />
       </View>
 
       <ScrollView
         style={styles.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
-        {/* Monthly Bills Tab */}
-        {activeTab === 'monthly' && summary && (
+        {/* Bills Tab */}
+        {activeTab === 'bills' && summary && (
           <>
             {/* Period Navigator */}
             <View style={styles.periodNav}>
@@ -575,40 +866,101 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
                 </Card>
               </>
             )}
+
+            {/* Balances Expandable Section */}
+            <TouchableOpacity
+              style={styles.expandableHeader}
+              onPress={() => setShowBalances(!showBalances)}
+            >
+              <View style={styles.expandableHeaderLeft}>
+                <Ionicons name="people" size={18} color={colors.primary} />
+                <Text style={styles.expandableHeaderText}>Team Balances</Text>
+              </View>
+              <View style={styles.expandableHeaderRight}>
+                <Text style={styles.outstandingBadge}>{formatCurrency(summary.totalOutstanding)}</Text>
+                <Ionicons name={showBalances ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textMuted} />
+              </View>
+            </TouchableOpacity>
+
+            {showBalances && (
+              <>
+                {summary.founderBalances.length === 0 ? (
+                  <Card style={styles.emptyCard}>
+                    <Text style={styles.emptyText}>No team members configured</Text>
+                  </Card>
+                ) : (
+                  summary.founderBalances.map(renderBalanceCard)
+                )}
+              </>
+            )}
           </>
         )}
 
-        {/* Balances Tab */}
-        {activeTab === 'balances' && summary && (
+        {/* Approval Queue Tab */}
+        {activeTab === 'approval' && (
           <>
-            {/* Quick Actions */}
+            <View style={styles.approvalHeader}>
+              <Text style={styles.approvalTitle}>Pending Approval</Text>
+              <Text style={styles.approvalSubtitle}>{pendingApprovalCount} items waiting</Text>
+            </View>
+
+            {approvalLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+              </View>
+            ) : proposedBills.length === 0 ? (
+              <Card style={styles.emptyCard}>
+                <Ionicons name="checkmark-done-circle-outline" size={48} color={colors.success} />
+                <Text style={styles.emptyText}>All caught up!</Text>
+                <Text style={styles.emptySubtext}>No pending bills to review</Text>
+              </Card>
+            ) : (
+              <Card style={styles.billsCard}>
+                {proposedBills.map(renderProposalRow)}
+              </Card>
+            )}
+          </>
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <>
+            {/* Recurring Bills Section */}
+            <Text style={styles.sectionTitle}>Recurring Bills</Text>
             <TouchableOpacity
               style={styles.manageRecurringButton}
               onPress={() => navigation.navigate('RecurringBills')}
             >
-              <Ionicons name="repeat" size={18} color={colors.primary} />
-              <Text style={styles.manageRecurringText}>Manage Recurring Bills</Text>
+              <Ionicons name="add-circle" size={18} color={colors.primary} />
+              <Text style={styles.manageRecurringText}>Add Recurring Bill</Text>
               <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </TouchableOpacity>
 
-            {/* Outstanding Total */}
-            <Card style={styles.outstandingCard}>
-              <Text style={styles.outstandingLabel}>Total Outstanding</Text>
-              <Text style={styles.outstandingValue}>{formatCurrency(summary.totalOutstanding)}</Text>
-              <Text style={styles.outstandingSubtext}>
-                Split among {summary.founderCount} founder{summary.founderCount !== 1 ? 's' : ''}
-              </Text>
-            </Card>
-
-            {/* Founder Balances */}
-            <Text style={styles.sectionTitle}>Outstanding Balances</Text>
-            {summary.founderBalances.length === 0 ? (
+            {settingsLoading ? (
+              <ActivityIndicator color={colors.primary} style={{ marginVertical: spacing.lg }} />
+            ) : recurringBills.length === 0 ? (
               <Card style={styles.emptyCard}>
-                <Ionicons name="people-outline" size={48} color={colors.textMuted} />
-                <Text style={styles.emptyText}>No founders configured</Text>
+                <Ionicons name="repeat-outline" size={48} color={colors.textMuted} />
+                <Text style={styles.emptyText}>No recurring bills</Text>
               </Card>
             ) : (
-              summary.founderBalances.map(renderBalanceCard)
+              <Card style={styles.billsCard}>
+                {recurringBills.map(renderRecurringBillRow)}
+              </Card>
+            )}
+
+            {/* Skip Rules Section */}
+            <Text style={styles.sectionTitle}>Skip Rules</Text>
+            {skipRules.length === 0 ? (
+              <Card style={styles.emptyCard}>
+                <Ionicons name="filter-outline" size={48} color={colors.textMuted} />
+                <Text style={styles.emptyText}>No skip rules</Text>
+                <Text style={styles.emptySubtext}>Skip rules are created when you skip a bill</Text>
+              </Card>
+            ) : (
+              <Card style={styles.billsCard}>
+                {skipRules.map(renderSkipRuleRow)}
+              </Card>
             )}
           </>
         )}
@@ -875,6 +1227,21 @@ const styles = StyleSheet.create({
   },
   tabTextActive: {
     color: colors.text,
+  },
+  tabBadge: {
+    backgroundColor: colors.error,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+    marginLeft: 4,
+  },
+  tabBadgeText: {
+    color: colors.text,
+    fontSize: 11,
+    fontWeight: fontWeight.bold,
   },
   scroll: {
     flex: 1,
@@ -1319,5 +1686,175 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.primary,
     marginTop: spacing.sm,
+  },
+  // Expandable section styles
+  expandableHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginTop: spacing.xl,
+    marginBottom: spacing.md,
+  },
+  expandableHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  expandableHeaderText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.text,
+  },
+  expandableHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  outstandingBadge: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    color: colors.error,
+  },
+  // Approval queue styles
+  approvalHeader: {
+    marginBottom: spacing.lg,
+  },
+  approvalTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+  },
+  approvalSubtitle: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    marginTop: 4,
+  },
+  proposalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  proposalInfo: {
+    flex: 1,
+  },
+  proposalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  proposalVendor: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.text,
+  },
+  confidenceBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+  },
+  confidenceText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+  },
+  proposalAmount: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+    marginTop: 4,
+  },
+  proposalMeta: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  proposalSubject: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  proposalActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginLeft: spacing.md,
+  },
+  proposalButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  approveButton: {
+    backgroundColor: colors.success,
+  },
+  skipButton: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  // Settings styles
+  settingsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  settingsRowLeft: {
+    flex: 1,
+  },
+  settingsRowTitle: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.text,
+  },
+  settingsRowInactive: {
+    color: colors.textMuted,
+  },
+  settingsRowSubtitle: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  toggleButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.md,
+  },
+  toggleActive: {
+    backgroundColor: colors.successBg,
+  },
+  toggleInactive: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  toggleText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+  },
+  toggleTextActive: {
+    color: colors.success,
+  },
+  toggleTextInactive: {
+    color: colors.textMuted,
+  },
+  deleteRuleButton: {
+    padding: spacing.sm,
+  },
+  emptySubtext: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    marginTop: spacing.xs,
+    textAlign: 'center',
   },
 })
