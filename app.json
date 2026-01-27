@@ -30,6 +30,16 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "enableUserScriptSandboxing": false
+          }
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "23400fc2-ec4d-4aa4-9f73-06f713f6a054"
