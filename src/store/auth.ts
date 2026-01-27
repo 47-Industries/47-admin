@@ -35,14 +35,23 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       await api.setToken(response.token)
       await AsyncStorage.setItem(PORTAL_KEY, portalType)
 
+      const user = response.user
+
+      // Derive portal access from user role if not provided by API
+      const access: PortalAccess = response.portalAccess || {
+        admin: user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
+        partner: !!user.partnerId || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
+        client: !!user.clientId || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
+        affiliate: !!user.affiliateId || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
+      }
+
       // Validate portal access
-      const access = response.portalAccess
-      if (!access || !access[portalType]) {
+      if (!access[portalType]) {
         throw new Error(`You don't have access to the ${portalType} portal`)
       }
 
       set({
-        user: response.user,
+        user,
         token: response.token,
         isAuthenticated: true,
         isLoading: false,
@@ -99,10 +108,17 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       await api.setToken(token)
       const response = await api.getMe()
       const user = response.user
-      const access = response.portalAccess
+
+      // Derive portal access from user role if not provided by API
+      const access: PortalAccess = response.portalAccess || {
+        admin: user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
+        partner: !!user.partnerId || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
+        client: !!user.clientId || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
+        affiliate: !!user.affiliateId || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN',
+      }
 
       // Verify user still has access to saved portal
-      if (!access || !access[savedPortalType]) {
+      if (!access[savedPortalType]) {
         await api.setToken(null)
         await AsyncStorage.removeItem(TOKEN_KEY)
         await AsyncStorage.removeItem(PORTAL_KEY)
@@ -111,7 +127,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       }
 
       set({
-        user: response.user,
+        user,
         token,
         isAuthenticated: true,
         isLoading: false,
