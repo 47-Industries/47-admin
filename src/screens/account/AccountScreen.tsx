@@ -11,9 +11,10 @@ interface AccountScreenProps {
     goBack: () => void
   }
   hideHeader?: boolean
+  showAdminSections?: boolean
 }
 
-export function AccountScreen({ navigation, hideHeader }: AccountScreenProps) {
+export function AccountScreen({ navigation, hideHeader, showAdminSections }: AccountScreenProps) {
   const user = useAuthStore((state) => state.user)
   const portalType = useAuthStore((state) => state.portalType)
   const portalAccess = useAuthStore((state) => state.portalAccess)
@@ -131,6 +132,104 @@ export function AccountScreen({ navigation, hideHeader }: AccountScreenProps) {
             <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
+
+        {/* Admin: Catalog Section */}
+        {showAdminSections && (
+          <View style={styles.menuSection}>
+            <Text style={styles.sectionTitle}>Catalog</Text>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('Products')}
+            >
+              <View style={styles.menuItemLeft}>
+                <Ionicons name="cube-outline" size={20} color={colors.textSecondary} />
+                <Text style={styles.menuItemText}>Products</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('Categories')}
+            >
+              <View style={styles.menuItemLeft}>
+                <Ionicons name="pricetags-outline" size={20} color={colors.textSecondary} />
+                <Text style={styles.menuItemText}>Categories</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('Inventory')}
+            >
+              <View style={styles.menuItemLeft}>
+                <Ionicons name="layers-outline" size={20} color={colors.textSecondary} />
+                <Text style={styles.menuItemText}>Inventory</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Admin: Marketing Section */}
+        {showAdminSections && (
+          <View style={styles.menuSection}>
+            <Text style={styles.sectionTitle}>Marketing</Text>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('Marketing')}
+            >
+              <View style={styles.menuItemLeft}>
+                <Ionicons name="megaphone-outline" size={20} color={colors.textSecondary} />
+                <Text style={styles.menuItemText}>Campaigns</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('Email')}
+            >
+              <View style={styles.menuItemLeft}>
+                <Ionicons name="mail-outline" size={20} color={colors.textSecondary} />
+                <Text style={styles.menuItemText}>Email</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('Blog')}
+            >
+              <View style={styles.menuItemLeft}>
+                <Ionicons name="document-text-outline" size={20} color={colors.textSecondary} />
+                <Text style={styles.menuItemText}>Blog</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Admin: Settings Section */}
+        {showAdminSections && (
+          <View style={styles.menuSection}>
+            <Text style={styles.sectionTitle}>Settings</Text>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => navigation.navigate('Settings')}
+            >
+              <View style={styles.menuItemLeft}>
+                <Ionicons name="settings-outline" size={20} color={colors.textSecondary} />
+                <Text style={styles.menuItemText}>General Settings</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Switch Portal */}
         {availablePortals.length > 1 && (
