@@ -28,6 +28,8 @@ import { RecurringBillsScreen } from '../screens/RecurringBillsScreen'
 import { AccountScreen, ProfileEditScreen, ChangePasswordScreen } from '../screens/account'
 import { CategoriesScreen } from '../screens/CategoriesScreen'
 import { InvoicesScreen as AdminInvoicesScreen } from '../screens/admin/InvoicesScreen'
+import { InvoiceDetailScreen } from '../screens/admin/InvoiceDetailScreen'
+import { InvoiceCreateScreen } from '../screens/admin/InvoiceCreateScreen'
 import NotificationsScreen from '../screens/NotificationsScreen'
 import { TeamScreen } from '../screens/TeamScreen'
 import { ClientsScreen as AdminClientsScreen } from '../screens/admin/ClientsScreen'
@@ -40,6 +42,7 @@ import { PartnerLeadsScreen } from '../screens/admin/PartnerLeadsScreen'
 import { PartnerLeadDetailScreen } from '../screens/admin/PartnerLeadDetailScreen'
 import MarketingScreen from '../screens/MarketingScreen'
 import PortfolioScreen from '../screens/PortfolioScreen'
+import PortfolioDetailScreen from '../screens/PortfolioDetailScreen'
 import { colors, portalColors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
 type TabName = 'Home' | 'Sales' | 'Business' | 'People' | 'Account'
@@ -80,7 +83,7 @@ export default function AdminNavigator() {
 
   const getParentTab = (screenName: string): TabName | null => {
     // Sales: Orders, Invoices, Returns + Products, Categories
-    const salesScreens = ['OrderDetail', 'Returns', 'AdminInvoices', 'Products', 'ProductDetail', 'ProductCreate', 'Categories']
+    const salesScreens = ['OrderDetail', 'Returns', 'AdminInvoices', 'InvoiceDetail', 'Products', 'ProductDetail', 'ProductCreate', 'Categories']
     // Business: Requests (Inquiries, 3D Prints) + Packages + Portfolio + Finance (Expenses, Reports) + Analytics
     const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Portfolio', 'PortfolioDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills']
     // People: Clients, Partners, Team, Affiliates, Users
@@ -150,6 +153,8 @@ export default function AdminNavigator() {
           return <ScreenWrapper><CategoriesScreen navigation={navigation} /></ScreenWrapper>
         case 'AdminInvoices':
           return <ScreenWrapper><AdminInvoicesScreen navigation={navigation} /></ScreenWrapper>
+        case 'InvoiceDetail':
+          return <ScreenWrapper><InvoiceDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
         case 'Notifications':
           return <ScreenWrapper><NotificationsScreen navigation={navigation} /></ScreenWrapper>
         case 'Team':
@@ -175,7 +180,7 @@ export default function AdminNavigator() {
         case 'Portfolio':
           return <ScreenWrapper><PortfolioScreen navigation={navigation} /></ScreenWrapper>
         case 'PortfolioDetail':
-          return <ScreenWrapper><PortfolioScreen navigation={navigation} /></ScreenWrapper>
+          return <ScreenWrapper><PortfolioDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
       }
     }
 
