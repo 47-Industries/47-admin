@@ -21,6 +21,7 @@ interface PartnerDashboardScreenProps {
 
 export function PartnerDashboardScreen({ navigation, hideHeader }: PartnerDashboardScreenProps) {
   const partner = useAuthStore((state) => state.partner)
+  const user = useAuthStore((state) => state.user)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [dashboardData, setDashboardData] = useState<any>(null)
@@ -83,7 +84,7 @@ export function PartnerDashboardScreen({ navigation, hideHeader }: PartnerDashbo
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Welcome back,</Text>
-            <Text style={styles.name}>{partner?.name || 'Partner'}</Text>
+            <Text style={styles.name}>{user?.name || partner?.name || 'Partner'}</Text>
           </View>
           <View style={[styles.partnerBadge, { backgroundColor: `${accentColor}20` }]}>
             <Text style={[styles.partnerBadgeText, { color: accentColor }]}>

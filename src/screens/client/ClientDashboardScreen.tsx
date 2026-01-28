@@ -19,6 +19,7 @@ interface ClientDashboardScreenProps {
 
 export function ClientDashboardScreen({ navigation, hideHeader }: ClientDashboardScreenProps) {
   const client = useAuthStore((state) => state.client)
+  const user = useAuthStore((state) => state.user)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [dashboardData, setDashboardData] = useState<any>(null)
@@ -72,7 +73,7 @@ export function ClientDashboardScreen({ navigation, hideHeader }: ClientDashboar
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>Welcome back,</Text>
-            <Text style={styles.name}>{client?.name || 'Client'}</Text>
+            <Text style={styles.name}>{user?.name || client?.name || 'Client'}</Text>
           </View>
           {client?.clientNumber && (
             <View style={[styles.clientBadge, { backgroundColor: `${accentColor}20` }]}>
