@@ -311,7 +311,7 @@ class ApiService {
     if (params?.page) searchParams.set('page', params.page.toString())
     if (params?.limit) searchParams.set('limit', params.limit.toString())
     if (params?.search) searchParams.set('search', params.search)
-    if (params?.type) searchParams.set('type', params.type)
+    if (params?.type) searchParams.set('productType', params.type)
     return this.request<{ products: any[]; total: number }>(`/admin/products?${searchParams}`)
   }
 
