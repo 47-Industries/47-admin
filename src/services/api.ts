@@ -1474,6 +1474,26 @@ class ApiService {
     return this.request<{ segments: any[] }>('/admin/customers/segments')
   }
 
+  async createCustomerSegment(data: { name: string; description?: string; color?: string }) {
+    return this.request<any>('/admin/customers/segments', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateCustomerSegment(id: string, data: { name?: string; description?: string; color?: string }) {
+    return this.request<any>(`/admin/customers/segments/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteCustomerSegment(id: string) {
+    return this.request<{ success: boolean; memberCount: number }>(`/admin/customers/segments/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
   // Team Members
   async getTeamMembers(params?: { page?: number; limit?: number; status?: string; search?: string }) {
     const searchParams = new URLSearchParams()
