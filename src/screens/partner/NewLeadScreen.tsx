@@ -22,6 +22,12 @@ const interestOptions = [
   'Other',
 ]
 
+// Validation patterns
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const PHONE_REGEX = /^[\d\s\-\+\(\)]{7,20}$/
+
+type FormField = 'businessName' | 'contactName' | 'email' | 'phone' | 'interests'
+
 export function NewLeadScreen({ navigation }: NewLeadScreenProps) {
   const [businessName, setBusinessName] = useState('')
   const [contactName, setContactName] = useState('')
@@ -32,29 +38,137 @@ export function NewLeadScreen({ navigation }: NewLeadScreenProps) {
   const [estimatedValue, setEstimatedValue] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const [errors, setErrors] = useState<Partial<Record<FormField, string>>>({})
+  const [touched, setTouched] = useState<Partial<Record<FormField, boolean>>>({})
+
   const toggleInterest = (interest: string) => {
-    setInterests((prev) =>
-      prev.includes(interest)
-        ? prev.filter((i) => i !== interest)
-        : [...prev, interest]
-    )
+    const newInterests = interests.includes(interest)
+      ? interests.filter((i) => i !== interest)
+      : [...interests, interest]
+    setInterests(newInterests)
+
+    if (touched.interests) {
+      const error = newInterests.length === 0 ? 'Please select at least one interest' : undefined
+      setErrors(prev => ({ ...prev, interests: error }))
+    }
+  }
+
+  // Validate a single field
+  const validateField = (field: FormField, value: string | string[]): string | undefined => {
+    switch (field) {
+      case 'businessName':
+        if (!value || (typeof value === 'string' && !value.trim())) {
+          return 'Business name is required'
+        }
+        break
+      case 'contactName':
+        if (!value || (typeof value === 'string' && !value.trim())) {
+          return 'Contact name is required'
+        }
+        break
+      case 'email':
+        if (!value || (typeof value === 'string' && !value.trim())) {
+          return 'Email is required'
+        }
+        if (typeof value === 'string' && !EMAIL_REGEX.test(value.trim())) {
+          return 'Please enter a valid email address'
+        }
+        break
+      case 'phone':
+        if (value && typeof value === 'string' && value.trim()) {
+          if (!PHONE_REGEX.test(value.trim())) {
+            return 'Please enter a valid phone number'
+          }
+        }
+        break
+      case 'interests':
+        if (Array.isArray(value) && value.length === 0) {
+          return 'Please select at least one interest'
+        }
+        break
+    }
+    return undefined
+  }
+
+  // Validate entire form
+  const validateForm = (): boolean => {
+    const newErrors: Partial<Record<FormField, string>> = {}
+
+    const businessNameError = validateField('businessName', businessName)
+    if (businessNameError) newErrors.businessName = businessNameError
+
+    const contactNameError = validateField('contactName', contactName)
+    if (contactNameError) newErrors.contactName = contactNameError
+
+    const emailError = validateField('email', email)
+    if (emailError) newErrors.email = emailError
+
+    const phoneError = validateField('phone', phone)
+    if (phoneError) newErrors.phone = phoneError
+
+    const interestsError = validateField('interests', interests)
+    if (interestsError) newErrors.interests = interestsError
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  // Check if form is valid for button state
+  const isFormValid = (): boolean => {
+    if (!businessName.trim() || !contactName.trim() || !email.trim()) {
+      return false
+    }
+    if (!EMAIL_REGEX.test(email.trim())) {
+      return false
+    }
+    if (phone.trim() && !PHONE_REGEX.test(phone.trim())) {
+      return false
+    }
+    if (interests.length === 0) {
+      return false
+    }
+    return true
+  }
+
+  // Handle field blur for inline validation
+  const handleBlur = (field: FormField) => {
+    setTouched(prev => ({ ...prev, [field]: true }))
+    let value: string | string[]
+    switch (field) {
+      case 'businessName':
+        value = businessName
+        break
+      case 'contactName':
+        value = contactName
+        break
+      case 'email':
+        value = email
+        break
+      case 'phone':
+        value = phone
+        break
+      case 'interests':
+        value = interests
+        break
+      default:
+        value = ''
+    }
+    const error = validateField(field, value)
+    setErrors(prev => ({ ...prev, [field]: error }))
   }
 
   const handleSubmit = async () => {
-    if (!businessName.trim()) {
-      Alert.alert('Error', 'Business name is required')
-      return
-    }
-    if (!contactName.trim()) {
-      Alert.alert('Error', 'Contact name is required')
-      return
-    }
-    if (!email.trim()) {
-      Alert.alert('Error', 'Email is required')
-      return
-    }
-    if (interests.length === 0) {
-      Alert.alert('Error', 'Please select at least one interest')
+    // Mark all fields as touched
+    setTouched({
+      businessName: true,
+      contactName: true,
+      email: true,
+      phone: true,
+      interests: true,
+    })
+
+    if (!validateForm()) {
+      Alert.alert('Validation Error', 'Please fix the errors before submitting')
       return
     }
 
@@ -91,55 +205,107 @@ export function NewLeadScreen({ navigation }: NewLeadScreenProps) {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Business Name *</Text>
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>Business Name</Text>
+            <Text style={styles.requiredIndicator}>*</Text>
+          </View>
           <TextInput
-            style={styles.input}
+            style={[styles.input, touched.businessName && errors.businessName && styles.inputError]}
             value={businessName}
-            onChangeText={setBusinessName}
+            onChangeText={(text) => {
+              setBusinessName(text)
+              if (touched.businessName) {
+                const error = validateField('businessName', text)
+                setErrors(prev => ({ ...prev, businessName: error }))
+              }
+            }}
+            onBlur={() => handleBlur('businessName')}
             placeholder="Enter business name"
             placeholderTextColor={colors.textMuted}
           />
+          {touched.businessName && errors.businessName && (
+            <Text style={styles.errorText}>{errors.businessName}</Text>
+          )}
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Contact Name *</Text>
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>Contact Name</Text>
+            <Text style={styles.requiredIndicator}>*</Text>
+          </View>
           <TextInput
-            style={styles.input}
+            style={[styles.input, touched.contactName && errors.contactName && styles.inputError]}
             value={contactName}
-            onChangeText={setContactName}
+            onChangeText={(text) => {
+              setContactName(text)
+              if (touched.contactName) {
+                const error = validateField('contactName', text)
+                setErrors(prev => ({ ...prev, contactName: error }))
+              }
+            }}
+            onBlur={() => handleBlur('contactName')}
             placeholder="Enter contact person's name"
             placeholderTextColor={colors.textMuted}
           />
+          {touched.contactName && errors.contactName && (
+            <Text style={styles.errorText}>{errors.contactName}</Text>
+          )}
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Email *</Text>
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>Email</Text>
+            <Text style={styles.requiredIndicator}>*</Text>
+          </View>
           <TextInput
-            style={styles.input}
+            style={[styles.input, touched.email && errors.email && styles.inputError]}
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => {
+              setEmail(text)
+              if (touched.email) {
+                const error = validateField('email', text)
+                setErrors(prev => ({ ...prev, email: error }))
+              }
+            }}
+            onBlur={() => handleBlur('email')}
             placeholder="Enter email address"
             placeholderTextColor={colors.textMuted}
             keyboardType="email-address"
             autoCapitalize="none"
           />
+          {touched.email && errors.email && (
+            <Text style={styles.errorText}>{errors.email}</Text>
+          )}
         </View>
 
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Phone</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, touched.phone && errors.phone && styles.inputError]}
             value={phone}
-            onChangeText={setPhone}
+            onChangeText={(text) => {
+              setPhone(text)
+              if (touched.phone) {
+                const error = validateField('phone', text)
+                setErrors(prev => ({ ...prev, phone: error }))
+              }
+            }}
+            onBlur={() => handleBlur('phone')}
             placeholder="Enter phone number"
             placeholderTextColor={colors.textMuted}
             keyboardType="phone-pad"
           />
+          {touched.phone && errors.phone && (
+            <Text style={styles.errorText}>{errors.phone}</Text>
+          )}
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Interests *</Text>
-          <View style={styles.interestsGrid}>
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>Interests</Text>
+            <Text style={styles.requiredIndicator}>*</Text>
+          </View>
+          <View style={[styles.interestsGrid, touched.interests && errors.interests && styles.interestsError]}>
             {interestOptions.map((interest) => (
               <TouchableOpacity
                 key={interest}
@@ -147,7 +313,10 @@ export function NewLeadScreen({ navigation }: NewLeadScreenProps) {
                   styles.interestChip,
                   interests.includes(interest) && styles.interestChipActive,
                 ]}
-                onPress={() => toggleInterest(interest)}
+                onPress={() => {
+                  setTouched(prev => ({ ...prev, interests: true }))
+                  toggleInterest(interest)
+                }}
               >
                 <Text
                   style={[
@@ -160,6 +329,9 @@ export function NewLeadScreen({ navigation }: NewLeadScreenProps) {
               </TouchableOpacity>
             ))}
           </View>
+          {touched.interests && errors.interests && (
+            <Text style={styles.errorText}>{errors.interests}</Text>
+          )}
         </View>
 
         <View style={styles.inputGroup}>
@@ -192,14 +364,17 @@ export function NewLeadScreen({ navigation }: NewLeadScreenProps) {
         </View>
 
         <TouchableOpacity
-          style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+          style={[styles.submitButton, (loading || !isFormValid()) && styles.submitButtonDisabled]}
           onPress={handleSubmit}
-          disabled={loading}
+          disabled={loading || !isFormValid()}
         >
           <Text style={styles.submitButtonText}>
             {loading ? 'Submitting...' : 'Submit Lead'}
           </Text>
         </TouchableOpacity>
+        {!isFormValid() && (
+          <Text style={styles.submitHint}>Please fill in all required fields to continue</Text>
+        )}
 
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -246,7 +421,17 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
     color: colors.textSecondary,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: spacing.sm,
+  },
+  requiredIndicator: {
+    color: colors.error,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    marginLeft: 4,
   },
   input: {
     backgroundColor: colors.surface,
@@ -257,6 +442,14 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.md,
   },
+  inputError: {
+    borderColor: colors.error,
+  },
+  errorText: {
+    fontSize: fontSize.xs,
+    color: colors.error,
+    marginTop: spacing.xs,
+  },
   textArea: {
     minHeight: 100,
     paddingTop: spacing.md,
@@ -265,6 +458,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+  },
+  interestsError: {
+    borderWidth: 1,
+    borderColor: colors.error,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    marginHorizontal: -spacing.sm,
   },
   interestChip: {
     paddingHorizontal: spacing.md,
@@ -318,5 +518,11 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
     color: colors.text,
+  },
+  submitHint: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: spacing.sm,
   },
 })

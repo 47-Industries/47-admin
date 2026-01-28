@@ -39,6 +39,14 @@ interface ProductFormData {
   featured: boolean
 }
 
+// Validation constants
+const MAX_NAME_LENGTH = 100
+const MAX_DESCRIPTION_LENGTH = 2000
+const MAX_SKU_LENGTH = 50
+
+// URL validation regex
+const URL_REGEX = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/i
+
 export default function ProductCreateScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
@@ -60,7 +68,8 @@ export default function ProductCreateScreen({ navigation }: any) {
     featured: false,
   })
 
-  const [errors, setErrors] = useState<Partial<Record<keyof ProductFormData, string>>>({})
+  const [errors, setErrors] = useState<Partial<Record<keyof ProductFormData | 'images', string>>>({})
+  const [touched, setTouched] = useState<Partial<Record<keyof ProductFormData | 'images', boolean>>>({})
 
   useEffect(() => {
     fetchCategories()
@@ -80,37 +89,138 @@ export default function ProductCreateScreen({ navigation }: any) {
     }
   }
 
+  // Validate a single field
+  const validateField = (field: keyof ProductFormData | 'images', value: any): string | undefined => {
+    switch (field) {
+      case 'name':
+        if (!value || !value.trim()) {
+          return 'Product name is required'
+        }
+        if (value.length > MAX_NAME_LENGTH) {
+          return `Name must be ${MAX_NAME_LENGTH} characters or less`
+        }
+        break
+      case 'description':
+        if (!value || !value.trim()) {
+          return 'Description is required'
+        }
+        if (value.length > MAX_DESCRIPTION_LENGTH) {
+          return `Description must be ${MAX_DESCRIPTION_LENGTH} characters or less`
+        }
+        break
+      case 'price':
+        if (!value || !value.trim()) {
+          return 'Price is required'
+        }
+        const price = parseFloat(value)
+        if (isNaN(price)) {
+          return 'Please enter a valid price'
+        }
+        if (price < 0) {
+          return 'Price cannot be negative'
+        }
+        if (!/^\d+(\.\d{0,2})?$/.test(value.trim())) {
+          return 'Price must have at most 2 decimal places'
+        }
+        break
+      case 'comparePrice':
+        if (value && value.trim()) {
+          const comparePrice = parseFloat(value)
+          if (isNaN(comparePrice)) {
+            return 'Please enter a valid compare price'
+          }
+          if (comparePrice < 0) {
+            return 'Compare price cannot be negative'
+          }
+        }
+        break
+      case 'stock':
+        if (productType === 'PHYSICAL') {
+          if (!value || !value.trim()) {
+            return 'Stock quantity is required'
+          }
+          const stock = parseInt(value)
+          if (isNaN(stock)) {
+            return 'Please enter a valid stock quantity'
+          }
+          if (stock < 0) {
+            return 'Stock cannot be negative'
+          }
+        }
+        break
+      case 'sku':
+        if (value && value.length > MAX_SKU_LENGTH) {
+          return `SKU must be ${MAX_SKU_LENGTH} characters or less`
+        }
+        break
+      case 'categoryId':
+        if (!value) {
+          return 'Please select a category'
+        }
+        break
+    }
+    return undefined
+  }
+
+  // Validate image URLs
+  const validateImageUrl = (url: string): boolean => {
+    // For local URIs (from image picker), we accept them
+    if (url.startsWith('file://') || url.startsWith('content://') || url.startsWith('ph://')) {
+      return true
+    }
+    // For remote URLs, validate format
+    return URL_REGEX.test(url)
+  }
+
+  // Validate entire form
   const validateForm = (): boolean => {
-    const newErrors: Partial<Record<keyof ProductFormData, string>> = {}
+    const newErrors: Partial<Record<keyof ProductFormData | 'images', string>> = {}
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Product name is required'
-    }
-
-    if (!formData.description.trim()) {
-      newErrors.description = 'Description is required'
-    }
-
-    if (!formData.price.trim()) {
-      newErrors.price = 'Price is required'
-    } else if (isNaN(parseFloat(formData.price)) || parseFloat(formData.price) < 0) {
-      newErrors.price = 'Please enter a valid price'
-    }
-
-    if (!formData.categoryId) {
-      newErrors.categoryId = 'Please select a category'
-    }
-
-    if (productType === 'PHYSICAL') {
-      if (!formData.stock.trim()) {
-        newErrors.stock = 'Stock quantity is required'
-      } else if (isNaN(parseInt(formData.stock)) || parseInt(formData.stock) < 0) {
-        newErrors.stock = 'Please enter a valid stock quantity'
+    // Validate all fields
+    const fields: (keyof ProductFormData)[] = ['name', 'description', 'price', 'comparePrice', 'stock', 'sku', 'categoryId']
+    fields.forEach(field => {
+      const error = validateField(field, formData[field])
+      if (error) {
+        newErrors[field] = error
       }
+    })
+
+    // Validate images
+    const invalidImages = images.filter(img => !validateImageUrl(img))
+    if (invalidImages.length > 0) {
+      newErrors.images = 'One or more image URLs are invalid'
     }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
+  }
+
+  // Check if form is valid for button state (without setting errors)
+  const isFormValid = (): boolean => {
+    const fields: (keyof ProductFormData)[] = ['name', 'description', 'price', 'categoryId']
+    if (productType === 'PHYSICAL') {
+      fields.push('stock')
+    }
+
+    for (const field of fields) {
+      if (validateField(field, formData[field])) {
+        return false
+      }
+    }
+
+    // Check images
+    if (images.some(img => !validateImageUrl(img))) {
+      return false
+    }
+
+    return categories.length > 0
+  }
+
+  // Handle field blur for inline validation
+  const handleBlur = (field: keyof ProductFormData) => {
+    setTouched(prev => ({ ...prev, [field]: true }))
+    const error = validateField(field, formData[field])
+    setErrors(prev => ({ ...prev, [field]: error }))
   }
 
   const pickImage = async () => {
@@ -238,36 +348,64 @@ export default function ProductCreateScreen({ navigation }: any) {
         <Text style={styles.sectionTitle}>Basic Information</Text>
         <Card style={styles.card}>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Product Name *</Text>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>Product Name</Text>
+              <Text style={styles.requiredIndicator}>*</Text>
+            </View>
             <TextInput
-              style={[styles.input, errors.name && styles.inputError]}
+              style={[styles.input, touched.name && errors.name && styles.inputError]}
               value={formData.name}
               onChangeText={(text) => {
                 setFormData({ ...formData, name: text })
-                if (errors.name) setErrors({ ...errors, name: undefined })
+                if (touched.name) {
+                  const error = validateField('name', text)
+                  setErrors(prev => ({ ...prev, name: error }))
+                }
               }}
+              onBlur={() => handleBlur('name')}
               placeholder="Enter product name"
               placeholderTextColor={colors.textMuted}
+              maxLength={MAX_NAME_LENGTH}
             />
-            {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
+            <View style={styles.fieldFooter}>
+              {touched.name && errors.name ? (
+                <Text style={styles.errorText}>{errors.name}</Text>
+              ) : (
+                <Text style={styles.charCount}>{formData.name.length}/{MAX_NAME_LENGTH}</Text>
+              )}
+            </View>
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Description *</Text>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>Description</Text>
+              <Text style={styles.requiredIndicator}>*</Text>
+            </View>
             <TextInput
-              style={[styles.input, styles.textArea, errors.description && styles.inputError]}
+              style={[styles.input, styles.textArea, touched.description && errors.description && styles.inputError]}
               value={formData.description}
               onChangeText={(text) => {
                 setFormData({ ...formData, description: text })
-                if (errors.description) setErrors({ ...errors, description: undefined })
+                if (touched.description) {
+                  const error = validateField('description', text)
+                  setErrors(prev => ({ ...prev, description: error }))
+                }
               }}
+              onBlur={() => handleBlur('description')}
               placeholder="Enter product description"
               placeholderTextColor={colors.textMuted}
               multiline
               numberOfLines={4}
               textAlignVertical="top"
+              maxLength={MAX_DESCRIPTION_LENGTH}
             />
-            {errors.description && <Text style={styles.errorText}>{errors.description}</Text>}
+            <View style={styles.fieldFooter}>
+              {touched.description && errors.description ? (
+                <Text style={styles.errorText}>{errors.description}</Text>
+              ) : (
+                <Text style={styles.charCount}>{formData.description.length}/{MAX_DESCRIPTION_LENGTH}</Text>
+              )}
+            </View>
           </View>
         </Card>
 
@@ -276,37 +414,52 @@ export default function ProductCreateScreen({ navigation }: any) {
         <Card style={styles.card}>
           <View style={styles.row}>
             <View style={[styles.inputGroup, { flex: 1 }]}>
-              <Text style={styles.label}>Price *</Text>
-              <View style={styles.currencyInput}>
+              <View style={styles.labelRow}>
+                <Text style={styles.label}>Price</Text>
+                <Text style={styles.requiredIndicator}>*</Text>
+              </View>
+              <View style={[styles.currencyInput, touched.price && errors.price && styles.inputError]}>
                 <Text style={styles.currencySymbol}>$</Text>
                 <TextInput
-                  style={[styles.currencyTextInput, errors.price && styles.inputError]}
+                  style={styles.currencyTextInput}
                   value={formData.price}
                   onChangeText={(text) => {
                     setFormData({ ...formData, price: text })
-                    if (errors.price) setErrors({ ...errors, price: undefined })
+                    if (touched.price) {
+                      const error = validateField('price', text)
+                      setErrors(prev => ({ ...prev, price: error }))
+                    }
                   }}
+                  onBlur={() => handleBlur('price')}
                   placeholder="0.00"
                   placeholderTextColor={colors.textMuted}
                   keyboardType="decimal-pad"
                 />
               </View>
-              {errors.price && <Text style={styles.errorText}>{errors.price}</Text>}
+              {touched.price && errors.price && <Text style={styles.errorText}>{errors.price}</Text>}
             </View>
             <View style={{ width: spacing.md }} />
             <View style={[styles.inputGroup, { flex: 1 }]}>
               <Text style={styles.label}>Compare Price</Text>
-              <View style={styles.currencyInput}>
+              <View style={[styles.currencyInput, touched.comparePrice && errors.comparePrice && styles.inputError]}>
                 <Text style={styles.currencySymbol}>$</Text>
                 <TextInput
                   style={styles.currencyTextInput}
                   value={formData.comparePrice}
-                  onChangeText={(text) => setFormData({ ...formData, comparePrice: text })}
+                  onChangeText={(text) => {
+                    setFormData({ ...formData, comparePrice: text })
+                    if (touched.comparePrice) {
+                      const error = validateField('comparePrice', text)
+                      setErrors(prev => ({ ...prev, comparePrice: error }))
+                    }
+                  }}
+                  onBlur={() => handleBlur('comparePrice')}
                   placeholder="0.00"
                   placeholderTextColor={colors.textMuted}
                   keyboardType="decimal-pad"
                 />
               </View>
+              {touched.comparePrice && errors.comparePrice && <Text style={styles.errorText}>{errors.comparePrice}</Text>}
             </View>
           </View>
         </Card>
@@ -317,32 +470,48 @@ export default function ProductCreateScreen({ navigation }: any) {
           <View style={styles.row}>
             {productType === 'PHYSICAL' && (
               <View style={[styles.inputGroup, { flex: 1 }]}>
-                <Text style={styles.label}>Stock Quantity *</Text>
+                <View style={styles.labelRow}>
+                  <Text style={styles.label}>Stock Quantity</Text>
+                  <Text style={styles.requiredIndicator}>*</Text>
+                </View>
                 <TextInput
-                  style={[styles.input, errors.stock && styles.inputError]}
+                  style={[styles.input, touched.stock && errors.stock && styles.inputError]}
                   value={formData.stock}
                   onChangeText={(text) => {
                     setFormData({ ...formData, stock: text })
-                    if (errors.stock) setErrors({ ...errors, stock: undefined })
+                    if (touched.stock) {
+                      const error = validateField('stock', text)
+                      setErrors(prev => ({ ...prev, stock: error }))
+                    }
                   }}
+                  onBlur={() => handleBlur('stock')}
                   placeholder="0"
                   placeholderTextColor={colors.textMuted}
                   keyboardType="number-pad"
                 />
-                {errors.stock && <Text style={styles.errorText}>{errors.stock}</Text>}
+                {touched.stock && errors.stock && <Text style={styles.errorText}>{errors.stock}</Text>}
               </View>
             )}
             {productType === 'PHYSICAL' && <View style={{ width: spacing.md }} />}
             <View style={[styles.inputGroup, { flex: 1 }]}>
               <Text style={styles.label}>SKU</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, touched.sku && errors.sku && styles.inputError]}
                 value={formData.sku}
-                onChangeText={(text) => setFormData({ ...formData, sku: text })}
+                onChangeText={(text) => {
+                  setFormData({ ...formData, sku: text })
+                  if (touched.sku) {
+                    const error = validateField('sku', text)
+                    setErrors(prev => ({ ...prev, sku: error }))
+                  }
+                }}
+                onBlur={() => handleBlur('sku')}
                 placeholder="Enter SKU"
                 placeholderTextColor={colors.textMuted}
                 autoCapitalize="characters"
+                maxLength={MAX_SKU_LENGTH}
               />
+              {touched.sku && errors.sku && <Text style={styles.errorText}>{errors.sku}</Text>}
             </View>
           </View>
           {productType === 'DIGITAL' && (
@@ -357,17 +526,23 @@ export default function ProductCreateScreen({ navigation }: any) {
         <Text style={styles.sectionTitle}>Category</Text>
         <Card style={styles.card}>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Category *</Text>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>Category</Text>
+              <Text style={styles.requiredIndicator}>*</Text>
+            </View>
             <TouchableOpacity
-              style={[styles.pickerButton, errors.categoryId && styles.inputError]}
-              onPress={() => setShowCategoryPicker(true)}
+              style={[styles.pickerButton, touched.categoryId && errors.categoryId && styles.inputError]}
+              onPress={() => {
+                setTouched(prev => ({ ...prev, categoryId: true }))
+                setShowCategoryPicker(true)
+              }}
             >
               <Text style={selectedCategory ? styles.pickerButtonText : styles.pickerButtonPlaceholder}>
                 {selectedCategory ? selectedCategory.name : 'Select a category'}
               </Text>
               <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
             </TouchableOpacity>
-            {errors.categoryId && <Text style={styles.errorText}>{errors.categoryId}</Text>}
+            {touched.categoryId && errors.categoryId && <Text style={styles.errorText}>{errors.categoryId}</Text>}
           </View>
           {loadingCategories && (
             <View style={styles.loadingCategories}>
@@ -491,9 +666,12 @@ export default function ProductCreateScreen({ navigation }: any) {
             title={loading ? 'Creating...' : 'Create Product'}
             onPress={handleSubmit}
             loading={loading}
-            disabled={loading || categories.length === 0}
+            disabled={loading || !isFormValid()}
             style={styles.submitButton}
           />
+          {!isFormValid() && (
+            <Text style={styles.submitHint}>Please fill in all required fields to continue</Text>
+          )}
         </View>
 
         <View style={{ height: 40 }} />
@@ -591,7 +769,17 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
     color: colors.textSecondary,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: spacing.sm,
+  },
+  requiredIndicator: {
+    color: colors.error,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    marginLeft: 4,
   },
   input: {
     backgroundColor: colors.background,
@@ -613,6 +801,16 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     color: colors.error,
     marginTop: spacing.xs,
+  },
+  fieldFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: spacing.xs,
+  },
+  charCount: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginLeft: 'auto',
   },
   row: {
     flexDirection: 'row',
@@ -809,5 +1007,11 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     paddingVertical: spacing.lg,
+  },
+  submitHint: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: spacing.sm,
   },
 })

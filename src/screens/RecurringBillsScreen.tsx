@@ -66,6 +66,10 @@ export function RecurringBillsScreen({ navigation }: { navigation: any }) {
     vendorType: 'OTHER'
   })
 
+  type FormField = 'name' | 'vendor' | 'fixedAmount' | 'dueDay'
+  const [errors, setErrors] = useState<Partial<Record<FormField, string>>>({})
+  const [touched, setTouched] = useState<Partial<Record<FormField, boolean>>>({})
+
   const fetchData = async () => {
     try {
       const data = await api.getRecurringBills()
@@ -99,6 +103,103 @@ export function RecurringBillsScreen({ navigation }: { navigation: any }) {
       paymentMethod: null,
       vendorType: 'OTHER'
     })
+    setErrors({})
+    setTouched({})
+  }
+
+  // Validate a single field
+  const validateField = (field: FormField, value: string): string | undefined => {
+    switch (field) {
+      case 'name':
+        if (!value || !value.trim()) {
+          return 'Name is required'
+        }
+        break
+      case 'vendor':
+        if (!value || !value.trim()) {
+          return 'Vendor is required'
+        }
+        break
+      case 'fixedAmount':
+        if (formData.amountType === 'FIXED') {
+          if (!value || !value.trim()) {
+            return 'Fixed amount is required'
+          }
+          const amount = parseFloat(value)
+          if (isNaN(amount)) {
+            return 'Please enter a valid amount'
+          }
+          if (amount < 0) {
+            return 'Amount cannot be negative'
+          }
+          if (!/^\d+(\.\d{0,2})?$/.test(value.trim())) {
+            return 'Amount must have at most 2 decimal places'
+          }
+        }
+        break
+      case 'dueDay':
+        if (!value || !value.trim()) {
+          return 'Due day is required'
+        }
+        const dueDay = parseInt(value)
+        if (isNaN(dueDay)) {
+          return 'Please enter a valid day'
+        }
+        if (dueDay < 1 || dueDay > 31) {
+          return 'Due day must be between 1 and 31'
+        }
+        break
+    }
+    return undefined
+  }
+
+  // Validate entire form
+  const validateFormData = (): boolean => {
+    const newErrors: Partial<Record<FormField, string>> = {}
+
+    const nameError = validateField('name', formData.name)
+    if (nameError) newErrors.name = nameError
+
+    const vendorError = validateField('vendor', formData.vendor)
+    if (vendorError) newErrors.vendor = vendorError
+
+    const dueDayError = validateField('dueDay', formData.dueDay)
+    if (dueDayError) newErrors.dueDay = dueDayError
+
+    if (formData.amountType === 'FIXED') {
+      const amountError = validateField('fixedAmount', formData.fixedAmount)
+      if (amountError) newErrors.fixedAmount = amountError
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  // Check if form is valid for button state
+  const isFormValid = (): boolean => {
+    if (!formData.name.trim() || !formData.vendor.trim() || !formData.dueDay.trim()) {
+      return false
+    }
+
+    const dueDay = parseInt(formData.dueDay)
+    if (isNaN(dueDay) || dueDay < 1 || dueDay > 31) {
+      return false
+    }
+
+    if (formData.amountType === 'FIXED') {
+      if (!formData.fixedAmount.trim()) return false
+      const amount = parseFloat(formData.fixedAmount)
+      if (isNaN(amount) || amount < 0) return false
+    }
+
+    return true
+  }
+
+  // Handle field blur for inline validation
+  const handleFieldBlur = (field: FormField) => {
+    setTouched(prev => ({ ...prev, [field]: true }))
+    const error = validateField(field, formData[field])
+    setErrors(prev => ({ ...prev, [field]: error }))
   }
 
   const openEditModal = (bill: RecurringBill) => {
@@ -118,31 +219,24 @@ export function RecurringBillsScreen({ navigation }: { navigation: any }) {
   }
 
   const handleSave = async () => {
-    if (!formData.name || !formData.vendor || !formData.dueDay) {
-      Alert.alert('Error', 'Name, vendor, and due day are required')
-      return
-    }
+    // Mark all fields as touched
+    setTouched({ name: true, vendor: true, dueDay: true, fixedAmount: true })
 
-    if (formData.amountType === 'FIXED' && !formData.fixedAmount) {
-      Alert.alert('Error', 'Fixed amount is required for fixed bills')
-      return
-    }
-
-    const dueDay = parseInt(formData.dueDay)
-    if (isNaN(dueDay) || dueDay < 1 || dueDay > 28) {
-      Alert.alert('Error', 'Due day must be between 1 and 28')
+    if (!validateFormData()) {
+      Alert.alert('Validation Error', 'Please fix the errors before saving')
       return
     }
 
     setSubmitting(true)
     try {
+      const dueDayValue = parseInt(formData.dueDay)
       const data = {
         name: formData.name,
         vendor: formData.vendor,
         amountType: formData.amountType,
         fixedAmount: formData.amountType === 'FIXED' ? parseFloat(formData.fixedAmount) : undefined,
         frequency: formData.frequency,
-        dueDay,
+        dueDay: dueDayValue,
         emailPatterns: formData.emailPatterns ? formData.emailPatterns.split(',').map(p => p.trim().toLowerCase()) : [],
         paymentMethod: formData.paymentMethod,
         vendorType: formData.vendorType
@@ -342,23 +436,45 @@ export function RecurringBillsScreen({ navigation }: { navigation: any }) {
 
   const renderForm = () => (
     <>
-      <Text style={styles.inputLabel}>Name</Text>
+      <View style={styles.labelRow}>
+        <Text style={styles.inputLabel}>Name</Text>
+        <Text style={styles.requiredIndicator}>*</Text>
+      </View>
       <TextInput
-        style={styles.input}
+        style={[styles.input, touched.name && errors.name && styles.inputError]}
         placeholder="e.g., Electric Bill"
         placeholderTextColor={colors.textMuted}
         value={formData.name}
-        onChangeText={(text) => setFormData({ ...formData, name: text })}
+        onChangeText={(text) => {
+          setFormData({ ...formData, name: text })
+          if (touched.name) {
+            const error = validateField('name', text)
+            setErrors(prev => ({ ...prev, name: error }))
+          }
+        }}
+        onBlur={() => handleFieldBlur('name')}
       />
+      {touched.name && errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
 
-      <Text style={styles.inputLabel}>Vendor</Text>
+      <View style={styles.labelRow}>
+        <Text style={styles.inputLabel}>Vendor</Text>
+        <Text style={styles.requiredIndicator}>*</Text>
+      </View>
       <TextInput
-        style={styles.input}
+        style={[styles.input, touched.vendor && errors.vendor && styles.inputError]}
         placeholder="e.g., Duke Energy"
         placeholderTextColor={colors.textMuted}
         value={formData.vendor}
-        onChangeText={(text) => setFormData({ ...formData, vendor: text })}
+        onChangeText={(text) => {
+          setFormData({ ...formData, vendor: text })
+          if (touched.vendor) {
+            const error = validateField('vendor', text)
+            setErrors(prev => ({ ...prev, vendor: error }))
+          }
+        }}
+        onBlur={() => handleFieldBlur('vendor')}
       />
+      {touched.vendor && errors.vendor && <Text style={styles.errorText}>{errors.vendor}</Text>}
 
       <Text style={styles.inputLabel}>Type</Text>
       <TouchableOpacity style={styles.pickerButton} onPress={showVendorTypePicker}>
@@ -376,15 +492,29 @@ export function RecurringBillsScreen({ navigation }: { navigation: any }) {
 
       {formData.amountType === 'FIXED' && (
         <>
-          <Text style={styles.inputLabel}>Fixed Amount</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="0.00"
-            placeholderTextColor={colors.textMuted}
-            value={formData.fixedAmount}
-            onChangeText={(text) => setFormData({ ...formData, fixedAmount: text })}
-            keyboardType="decimal-pad"
-          />
+          <View style={styles.labelRow}>
+            <Text style={styles.inputLabel}>Fixed Amount</Text>
+            <Text style={styles.requiredIndicator}>*</Text>
+          </View>
+          <View style={[styles.currencyInputContainer, touched.fixedAmount && errors.fixedAmount && styles.inputError]}>
+            <Text style={styles.currencySymbol}>$</Text>
+            <TextInput
+              style={styles.currencyInput}
+              placeholder="0.00"
+              placeholderTextColor={colors.textMuted}
+              value={formData.fixedAmount}
+              onChangeText={(text) => {
+                setFormData({ ...formData, fixedAmount: text })
+                if (touched.fixedAmount) {
+                  const error = validateField('fixedAmount', text)
+                  setErrors(prev => ({ ...prev, fixedAmount: error }))
+                }
+              }}
+              onBlur={() => handleFieldBlur('fixedAmount')}
+              keyboardType="decimal-pad"
+            />
+          </View>
+          {touched.fixedAmount && errors.fixedAmount && <Text style={styles.errorText}>{errors.fixedAmount}</Text>}
         </>
       )}
 
@@ -394,15 +524,26 @@ export function RecurringBillsScreen({ navigation }: { navigation: any }) {
         <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
       </TouchableOpacity>
 
-      <Text style={styles.inputLabel}>Due Day (1-28)</Text>
+      <View style={styles.labelRow}>
+        <Text style={styles.inputLabel}>Due Day (1-31)</Text>
+        <Text style={styles.requiredIndicator}>*</Text>
+      </View>
       <TextInput
-        style={styles.input}
+        style={[styles.input, touched.dueDay && errors.dueDay && styles.inputError]}
         placeholder="e.g., 15"
         placeholderTextColor={colors.textMuted}
         value={formData.dueDay}
-        onChangeText={(text) => setFormData({ ...formData, dueDay: text })}
+        onChangeText={(text) => {
+          setFormData({ ...formData, dueDay: text })
+          if (touched.dueDay) {
+            const error = validateField('dueDay', text)
+            setErrors(prev => ({ ...prev, dueDay: error }))
+          }
+        }}
+        onBlur={() => handleFieldBlur('dueDay')}
         keyboardType="number-pad"
       />
+      {touched.dueDay && errors.dueDay && <Text style={styles.errorText}>{errors.dueDay}</Text>}
 
       <Text style={styles.inputLabel}>Payment Method</Text>
       <TouchableOpacity style={styles.pickerButton} onPress={showPaymentMethodPicker}>
@@ -491,8 +632,11 @@ export function RecurringBillsScreen({ navigation }: { navigation: any }) {
 
             <View style={styles.modalButtons}>
               <Button title="Cancel" variant="outline" onPress={() => setShowAddModal(false)} style={{ flex: 1 }} />
-              <Button title="Create" onPress={handleSave} loading={submitting} style={{ flex: 1, marginLeft: spacing.md }} />
+              <Button title="Create" onPress={handleSave} loading={submitting} disabled={submitting || !isFormValid()} style={{ flex: 1, marginLeft: spacing.md }} />
             </View>
+            {!isFormValid() && (
+              <Text style={styles.formHint}>Fill in all required fields to continue</Text>
+            )}
           </View>
         </ScrollView>
       </Modal>
@@ -529,8 +673,11 @@ export function RecurringBillsScreen({ navigation }: { navigation: any }) {
                   />
                 </>
               )}
-              <Button title="Save" onPress={handleSave} loading={submitting} style={{ flex: 1, marginLeft: spacing.sm }} />
+              <Button title="Save" onPress={handleSave} loading={submitting} disabled={submitting || !isFormValid()} style={{ flex: 1, marginLeft: spacing.sm }} />
             </View>
+            {!isFormValid() && (
+              <Text style={styles.formHint}>Fill in all required fields to continue</Text>
+            )}
           </View>
         </ScrollView>
       </Modal>
@@ -695,7 +842,17 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: spacing.sm,
+  },
+  requiredIndicator: {
+    color: colors.error,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    marginLeft: 4,
   },
   input: {
     backgroundColor: colors.background,
@@ -706,6 +863,35 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.md,
     marginBottom: spacing.lg,
+  },
+  inputError: {
+    borderColor: colors.error,
+  },
+  errorText: {
+    fontSize: fontSize.xs,
+    color: colors.error,
+    marginTop: -spacing.md,
+    marginBottom: spacing.md,
+  },
+  currencyInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.lg,
+  },
+  currencySymbol: {
+    paddingLeft: spacing.md,
+    fontSize: fontSize.md,
+    color: colors.textMuted,
+  },
+  currencyInput: {
+    flex: 1,
+    padding: spacing.md,
+    color: colors.text,
+    fontSize: fontSize.md,
   },
   inputHint: {
     fontSize: fontSize.xs,
@@ -731,5 +917,11 @@ const styles = StyleSheet.create({
   modalButtons: {
     flexDirection: 'row',
     marginTop: spacing.lg,
+  },
+  formHint: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: spacing.sm,
   },
 })
