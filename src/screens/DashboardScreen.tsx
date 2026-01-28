@@ -68,7 +68,10 @@ export function DashboardScreen({ navigation }: any) {
     try {
       const [statsData, liveData] = await Promise.all([
         api.getStats(),
-        api.getLiveAnalytics().catch(() => null),
+        api.getLiveAnalytics().catch((error) => {
+          console.error('Failed to fetch live analytics:', error)
+          return null
+        }),
       ])
       setStats(statsData)
       setLiveStats(liveData)
@@ -90,8 +93,8 @@ export function DashboardScreen({ navigation }: any) {
       try {
         const liveData = await api.getLiveAnalytics()
         setLiveStats(liveData)
-      } catch (e) {
-        // Silent fail
+      } catch (error) {
+        console.error('Failed to refresh live analytics:', error)
       }
     }, 30000)
     return () => clearInterval(interval)

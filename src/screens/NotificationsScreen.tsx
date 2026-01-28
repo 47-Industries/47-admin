@@ -133,6 +133,7 @@ export function NotificationsScreen({ navigation, hideHeader }: { navigation: an
         })
       } catch (fallbackError) {
         console.error('Fallback also failed:', fallbackError)
+        Alert.alert('Error', 'Failed to load notifications. Please try again later.')
       }
     } finally {
       setLoading(false)

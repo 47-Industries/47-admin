@@ -100,8 +100,9 @@ export default function ServicePackageDetailScreen({ navigation, route }: any) {
       try {
         const parsed = JSON.parse(features)
         return Array.isArray(parsed) ? parsed : []
-      } catch {
+      } catch (error) {
         // If it's not JSON, treat as newline-separated string
+        console.log('Features string is not JSON, parsing as newline-separated:', error)
         return features.split('\n').filter((f: string) => f.trim())
       }
     }

@@ -181,7 +181,10 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
     try {
       const [recurringData, skipData] = await Promise.all([
         api.getRecurringBills(),
-        api.getSkipRules().catch(() => ({ skipRules: [] }))
+        api.getSkipRules().catch((error) => {
+          console.error('Failed to fetch skip rules:', error)
+          return { skipRules: [] }
+        })
       ])
       setRecurringBills(recurringData.recurringBills || [])
       setSkipRules(skipData.skipRules || [])
@@ -198,7 +201,9 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
     // Also fetch approval count for badge
     api.getProposedBills({ status: 'PENDING', limit: 1 }).then(data => {
       setPendingApprovalCount(data.pendingCount || 0)
-    }).catch(() => {})
+    }).catch((error) => {
+      console.error('Failed to fetch pending approval count:', error)
+    })
   }, [currentPeriod])
 
   useEffect(() => {
