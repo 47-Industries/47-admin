@@ -1,9 +1,10 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '../../store/auth'
 import { colors, portalColors, spacing, borderRadius, fontSize, fontWeight } from '../../theme'
+import { ImageViewer } from '../../components/ImageViewer'
 
 interface AccountScreenProps {
   navigation: {
@@ -19,6 +20,7 @@ export function AccountScreen({ navigation, hideHeader }: AccountScreenProps) {
   const portalAccess = useAuthStore((state) => state.portalAccess)
   const logout = useAuthStore((state) => state.logout)
   const switchPortal = useAuthStore((state) => state.switchPortal)
+  const [viewingImage, setViewingImage] = useState<string | null>(null)
 
   const accentColor = portalType ? portalColors[portalType] : colors.primary
 
@@ -73,7 +75,11 @@ export function AccountScreen({ navigation, hideHeader }: AccountScreenProps) {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Profile Header */}
         <View style={styles.profileSection}>
-          <View style={[styles.avatarContainer, { borderColor: accentColor }]}>
+          <TouchableOpacity
+            style={[styles.avatarContainer, { borderColor: accentColor }]}
+            onPress={() => user?.image && setViewingImage(user.image)}
+            activeOpacity={user?.image ? 0.8 : 1}
+          >
             {user?.image ? (
               <Image source={{ uri: user.image }} style={styles.avatar} />
             ) : (
@@ -83,7 +89,7 @@ export function AccountScreen({ navigation, hideHeader }: AccountScreenProps) {
                 </Text>
               </View>
             )}
-          </View>
+          </TouchableOpacity>
           <Text style={styles.userName}>{user?.name || 'User'}</Text>
           <Text style={styles.userEmail}>{user?.email}</Text>
           <View style={[styles.portalBadge, { backgroundColor: `${accentColor}20` }]}>
@@ -245,6 +251,11 @@ export function AccountScreen({ navigation, hideHeader }: AccountScreenProps) {
 
         <Text style={styles.version}>47 Industries v1.0.0</Text>
       </ScrollView>
+      <ImageViewer
+        visible={!!viewingImage}
+        imageUrl={viewingImage}
+        onClose={() => setViewingImage(null)}
+      />
     </SafeAreaView>
   )
 }

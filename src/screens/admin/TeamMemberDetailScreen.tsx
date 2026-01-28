@@ -19,6 +19,7 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../../components/Card'
 import { Badge } from '../../components/Badge'
+import { ImageViewer } from '../../components/ImageViewer'
 import { api } from '../../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../theme'
 
@@ -75,6 +76,7 @@ export function TeamMemberDetailScreen({ navigation, route }: any) {
   const [showEditModal, setShowEditModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState<Partial<TeamMember>>({})
+  const [viewingImage, setViewingImage] = useState<string | null>(null)
 
   const fetchMember = async () => {
     try {
@@ -215,7 +217,9 @@ export function TeamMemberDetailScreen({ navigation, route }: any) {
         <Card style={styles.profileCard}>
           <View style={styles.profileHeader}>
             {member.profileImageUrl ? (
-              <Image source={{ uri: member.profileImageUrl }} style={styles.avatar} />
+              <TouchableOpacity onPress={() => setViewingImage(member.profileImageUrl!)} activeOpacity={0.8}>
+                <Image source={{ uri: member.profileImageUrl }} style={styles.avatar} />
+              </TouchableOpacity>
             ) : (
               <View style={[styles.avatar, styles.avatarPlaceholder]}>
                 <Text style={styles.avatarText}>{getInitials(member.name)}</Text>
@@ -415,6 +419,12 @@ export function TeamMemberDetailScreen({ navigation, route }: any) {
 
         <View style={{ height: spacing.xxl }} />
       </ScrollView>
+
+      <ImageViewer
+        visible={!!viewingImage}
+        imageUrl={viewingImage}
+        onClose={() => setViewingImage(null)}
+      />
 
       {/* Edit Modal */}
       <Modal

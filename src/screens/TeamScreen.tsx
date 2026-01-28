@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
+import { ImageViewer } from '../components/ImageViewer'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
@@ -66,6 +67,7 @@ export function TeamScreen({ navigation, hideHeader }: { navigation: any; hideHe
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
+  const [viewingImage, setViewingImage] = useState<string | null>(null)
 
   const fetchTeamMembers = useCallback(
     async (pageNum = 1, refresh = false) => {
@@ -184,7 +186,9 @@ export function TeamScreen({ navigation, hideHeader }: { navigation: any; hideHe
         <Card style={styles.memberCard}>
           <View style={styles.memberContent}>
             {profileImage ? (
-              <Image source={{ uri: profileImage }} style={styles.avatar} />
+              <TouchableOpacity onPress={() => setViewingImage(profileImage)} activeOpacity={0.8}>
+                <Image source={{ uri: profileImage }} style={styles.avatar} />
+              </TouchableOpacity>
             ) : (
               <View style={[styles.avatar, styles.avatarPlaceholder]}>
                 <Text style={styles.avatarText}>{getInitials(item.name)}</Text>
@@ -329,6 +333,11 @@ export function TeamScreen({ navigation, hideHeader }: { navigation: any; hideHe
             </View>
           ) : null
         }
+      />
+      <ImageViewer
+        visible={!!viewingImage}
+        imageUrl={viewingImage}
+        onClose={() => setViewingImage(null)}
       />
     </View>
   )
