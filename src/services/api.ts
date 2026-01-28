@@ -180,7 +180,28 @@ class ApiService {
   }
 
   async getPartnerContract() {
-    return this.request<{ contract: any }>('/account/partner/contract')
+    return this.request<{
+      contract: {
+        id: string
+        title: string
+        description?: string
+        fileUrl?: string
+        fileName?: string
+        status: 'DRAFT' | 'SENT' | 'SIGNED' | 'ACTIVE'
+        signedAt?: string
+        signedByName?: string
+        signatureUrl?: string
+        countersignedAt?: string
+        countersignedByName?: string
+        countersignatureUrl?: string
+        createdAt: string
+      } | null
+      commissionRates?: {
+        firstSaleRate: number
+        recurringRate: number
+        commissionType: string
+      }
+    }>('/account/partner/contract')
   }
 
   async signPartnerContract(signatureData: string) {
@@ -280,6 +301,67 @@ class ApiService {
     return this.request<{ success: boolean }>('/account/client/billing', {
       method: 'PATCH',
       body: JSON.stringify(data),
+    })
+  }
+
+  // Client Billing - Payment Methods
+  async getClientPaymentMethods() {
+    return this.request<{
+      paymentMethods: {
+        id: string
+        brand: string
+        last4: string
+        expMonth: number
+        expYear: number
+        isDefault: boolean
+      }[]
+      outstandingBalance: number
+      nextPaymentDate: string | null
+      nextPaymentAmount: number | null
+    }>('/account/client/billing/payment-methods')
+  }
+
+  async setDefaultPaymentMethod(paymentMethodId: string) {
+    return this.request<{ success: boolean }>('/account/client/billing/payment-methods/default', {
+      method: 'POST',
+      body: JSON.stringify({ paymentMethodId }),
+    })
+  }
+
+  async removePaymentMethod(paymentMethodId: string) {
+    return this.request<{ success: boolean }>(`/account/client/billing/payment-methods/${paymentMethodId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async getClientPaymentSetupUrl() {
+    return this.request<{ setupUrl: string }>('/account/client/billing/setup')
+  }
+
+  // Client Billing - History
+  async getClientBillingHistory(params?: { page?: number; limit?: number }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.limit) searchParams.set('limit', params.limit.toString())
+    return this.request<{
+      payments: {
+        id: string
+        invoiceNumber: string
+        amount: number
+        status: string
+        paidAt: string | null
+        receiptUrl: string | null
+        createdAt: string
+      }[]
+      total: number
+    }>(`/account/client/billing/history?${searchParams}`)
+  }
+
+  // Client Billing - Autopay
+  async toggleAutopay(enabled: boolean) {
+    return this.request<{ success: boolean; autopayEnabled: boolean }>('/account/client/billing/autopay', {
+      method: 'POST',
+      body: JSON.stringify({ enabled }),
     })
   }
 
@@ -444,6 +526,20 @@ class ApiService {
   async updateReturn(id: string, data: any) {
     return this.request<{ return: any }>(`/admin/returns/${id}`, {
       method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateReturnStatus(id: string, status: string, data?: { refundAmount?: number; notes?: string }) {
+    return this.request<{ return: any }>(`/admin/returns/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, ...data }),
+    })
+  }
+
+  async issueRefund(orderId: string, data: { amount: number; reason?: string }) {
+    return this.request<{ success: boolean; refundId: string; amount: number; order: any }>(`/admin/orders/${orderId}/refund`, {
+      method: 'POST',
       body: JSON.stringify(data),
     })
   }

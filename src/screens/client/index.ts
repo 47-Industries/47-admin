@@ -1,3 +1,5 @@
 export { ClientDashboardScreen } from './ClientDashboardScreen'
 export { InvoicesScreen } from './InvoicesScreen'
 export { ProjectsScreen } from './ProjectsScreen'
+export { ContractsScreen } from './ContractsScreen'
+export { BillingScreen } from './BillingScreen'

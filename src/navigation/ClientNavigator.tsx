@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { ClientDashboardScreen, InvoicesScreen, ProjectsScreen } from '../screens/client'
+import { ClientDashboardScreen, InvoicesScreen, ProjectsScreen, ContractsScreen, BillingScreen } from '../screens/client'
 import { AccountScreen, ProfileEditScreen, ChangePasswordScreen } from '../screens/account'
 import { colors, portalColors, spacing, fontSize } from '../theme'
 
@@ -66,6 +66,8 @@ export default function ClientNavigator() {
           return <ScreenWrapper><ProjectsScreen navigation={navigation} /></ScreenWrapper>
         case 'Invoices':
           return <ScreenWrapper><InvoicesScreen navigation={navigation} /></ScreenWrapper>
+        case 'Contracts':
+          return <ScreenWrapper><ContractsScreen navigation={navigation} /></ScreenWrapper>
         case 'ProfileEdit':
           return <ScreenWrapper><ProfileEditScreen navigation={navigation} /></ScreenWrapper>
         case 'ChangePassword':
@@ -134,7 +136,7 @@ export default function ClientNavigator() {
 }
 
 function BillingTabScreen({ navigation }: { navigation: any }) {
-  const [activeSection, setActiveSection] = useState<'invoices' | 'contracts'>('invoices')
+  const [activeSection, setActiveSection] = useState<'invoices' | 'contracts' | 'payment'>('invoices')
 
   return (
     <SafeAreaView style={styles.tabContainer} edges={['top']}>
@@ -143,24 +145,28 @@ function BillingTabScreen({ navigation }: { navigation: any }) {
           style={[styles.segment, activeSection === 'invoices' && styles.segmentActive]}
           onPress={() => setActiveSection('invoices')}
         >
-          <Ionicons name="receipt-outline" size={18} color={activeSection === 'invoices' ? '#fff' : colors.textMuted} />
+          <Ionicons name="receipt-outline" size={16} color={activeSection === 'invoices' ? '#fff' : colors.textMuted} />
           <Text style={[styles.segmentText, activeSection === 'invoices' && styles.segmentTextActive]}>Invoices</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.segment, activeSection === 'contracts' && styles.segmentActive]}
           onPress={() => setActiveSection('contracts')}
         >
-          <Ionicons name="document-text-outline" size={18} color={activeSection === 'contracts' ? '#fff' : colors.textMuted} />
+          <Ionicons name="document-text-outline" size={16} color={activeSection === 'contracts' ? '#fff' : colors.textMuted} />
           <Text style={[styles.segmentText, activeSection === 'contracts' && styles.segmentTextActive]}>Contracts</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.segment, activeSection === 'payment' && styles.segmentActive]}
+          onPress={() => setActiveSection('payment')}
+        >
+          <Ionicons name="card-outline" size={16} color={activeSection === 'payment' ? '#fff' : colors.textMuted} />
+          <Text style={[styles.segmentText, activeSection === 'payment' && styles.segmentTextActive]}>Payment</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.tabContent}>
         {activeSection === 'invoices' && <InvoicesScreen navigation={navigation} hideHeader />}
-        {activeSection === 'contracts' && (
-          <View style={styles.placeholder}>
-            <Text style={styles.placeholderText}>Contracts Coming Soon</Text>
-          </View>
-        )}
+        {activeSection === 'contracts' && <ContractsScreen navigation={navigation} hideHeader />}
+        {activeSection === 'payment' && <BillingScreen navigation={navigation} hideHeader />}
       </View>
     </SafeAreaView>
   )
@@ -235,14 +241,5 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     flex: 1,
-  },
-  placeholder: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  placeholderText: {
-    fontSize: fontSize.md,
-    color: colors.textMuted,
   },
 })

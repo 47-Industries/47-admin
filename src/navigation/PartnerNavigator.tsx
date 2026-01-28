@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { PartnerDashboardScreen, LeadsScreen, NewLeadScreen, CommissionsScreen, PayoutsScreen, PayoutSetupScreen, AffiliateLinksScreen, ContractScreen } from '../screens/partner'
+import { PartnerDashboardScreen, LeadsScreen, LeadDetailScreen, NewLeadScreen, CommissionsScreen, PayoutsScreen, PayoutSetupScreen, AffiliateLinksScreen, ContractScreen } from '../screens/partner'
 import { AccountScreen, ProfileEditScreen, ChangePasswordScreen } from '../screens/account'
 import { colors, portalColors, spacing, fontSize } from '../theme'
 
@@ -64,10 +64,14 @@ export default function PartnerNavigator() {
       switch (currentScreen.name) {
         case 'Leads':
           return <ScreenWrapper><LeadsScreen navigation={navigation} /></ScreenWrapper>
+        case 'LeadDetail':
+          return <ScreenWrapper><LeadDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
         case 'NewLead':
           return <ScreenWrapper><NewLeadScreen navigation={navigation} /></ScreenWrapper>
         case 'Commissions':
           return <ScreenWrapper><CommissionsScreen navigation={navigation} /></ScreenWrapper>
+        case 'Payouts':
+          return <ScreenWrapper><PayoutsScreen navigation={navigation} /></ScreenWrapper>
         case 'PayoutSetup':
           return <ScreenWrapper><PayoutSetupScreen navigation={navigation} /></ScreenWrapper>
         case 'AffiliateLinks':
