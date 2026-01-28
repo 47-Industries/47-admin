@@ -519,7 +519,7 @@ export function InvoicesScreen({ navigation, hideHeader }: InvoicesScreenProps) 
               title="No invoices found"
               description="Create your first invoice to get started"
               actionLabel="Create Invoice"
-              onAction={openCreateModal}
+              onAction={() => navigation.navigate('InvoiceCreate')}
             />
           ) : null
         }
