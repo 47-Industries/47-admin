@@ -5,8 +5,26 @@ import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
+import { VariantList } from '../components/VariantList'
+import { VariantEditor } from '../components/VariantEditor'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
+
+interface ProductVariant {
+  id: string
+  name: string
+  sku: string | null
+  price: number
+  stock: number
+  options: Record<string, string>
+  isActive: boolean
+}
+
+interface OptionType {
+  id: string
+  name: string
+  values: string[]
+}
 
 export default function ProductDetailScreen({ navigation, route }: any) {
   const { id } = route.params
@@ -17,6 +35,11 @@ export default function ProductDetailScreen({ navigation, route }: any) {
   const [showEditModal, setShowEditModal] = useState(false)
   const [showStockModal, setShowStockModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showVariantEditor, setShowVariantEditor] = useState(false)
+  const [editingVariant, setEditingVariant] = useState<ProductVariant | null>(null)
+  const [variants, setVariants] = useState<ProductVariant[]>([])
+  const [optionTypes, setOptionTypes] = useState<OptionType[]>([])
+  const [variantLoading, setVariantLoading] = useState(false)
   const [editData, setEditData] = useState({
     name: '',
     price: '',
@@ -29,12 +52,14 @@ export default function ProductDetailScreen({ navigation, route }: any) {
 
   useEffect(() => {
     fetchProduct()
+    fetchOptionTypes()
   }, [id])
 
   const fetchProduct = async () => {
     try {
       const data = await api.getProduct(id)
       setProduct(data.product)
+      setVariants(data.product.variants || [])
       setEditData({
         name: data.product.name,
         price: data.product.price.toString(),
@@ -47,6 +72,24 @@ export default function ProductDetailScreen({ navigation, route }: any) {
       Alert.alert('Error', 'Failed to load product details')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchVariants = async () => {
+    try {
+      const data = await api.getProductVariants(id)
+      setVariants(data.variants || [])
+    } catch (error) {
+      console.error('Failed to fetch variants:', error)
+    }
+  }
+
+  const fetchOptionTypes = async () => {
+    try {
+      const data = await api.getOptionTypes()
+      setOptionTypes(data.optionTypes || [])
+    } catch (error) {
+      console.error('Failed to fetch option types:', error)
     }
   }
 
@@ -150,6 +193,83 @@ export default function ProductDetailScreen({ navigation, route }: any) {
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0)
+  }
+
+  // Variant handlers
+  const handleAddVariant = () => {
+    setEditingVariant(null)
+    setShowVariantEditor(true)
+  }
+
+  const handleEditVariant = (variant: ProductVariant) => {
+    setEditingVariant(variant)
+    setShowVariantEditor(true)
+  }
+
+  const handleDeleteVariant = (variantId: string) => {
+    Alert.alert(
+      'Delete Variant',
+      'Are you sure you want to delete this variant? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setVariantLoading(true)
+            try {
+              await api.deleteProductVariant(id, variantId)
+              setVariants(variants.filter((v) => v.id !== variantId))
+              Alert.alert('Success', 'Variant deleted')
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to delete variant')
+            } finally {
+              setVariantLoading(false)
+            }
+          },
+        },
+      ]
+    )
+  }
+
+  const handleSaveVariant = async (data: {
+    options: Record<string, string>
+    sku: string
+    price: number
+    stock: number
+    isActive: boolean
+  }) => {
+    setVariantLoading(true)
+    try {
+      if (editingVariant) {
+        // Update existing variant
+        await api.updateProductVariant(id, editingVariant.id, {
+          options: data.options,
+          sku: data.sku || undefined,
+          price: data.price,
+          stock: data.stock,
+          isActive: data.isActive,
+        })
+        Alert.alert('Success', 'Variant updated')
+      } else {
+        // Create new variant
+        await api.createProductVariant(id, {
+          options: data.options,
+          sku: data.sku || undefined,
+          price: data.price,
+          stock: data.stock,
+        })
+        Alert.alert('Success', 'Variant created')
+      }
+      await fetchVariants()
+      setShowVariantEditor(false)
+      setEditingVariant(null)
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to save variant')
+      throw error
+    } finally {
+      setVariantLoading(false)
+    }
   }
 
   if (loading) {
@@ -301,41 +421,25 @@ export default function ProductDetailScreen({ navigation, route }: any) {
           </>
         )}
 
-        {/* Variants */}
-        {product.variants?.length > 0 && (
-          <>
-            <Text style={styles.sectionTitle}>Variants ({product.variants.length})</Text>
-            {product.variants.map((variant: any) => (
-              <Card key={variant.id} style={styles.variantCard}>
-                <View style={styles.variantHeader}>
-                  <Text style={styles.variantName}>{variant.name}</Text>
-                  <Badge text={variant.active ? 'Active' : 'Inactive'} variant={variant.active ? 'success' : 'error'} />
-                </View>
-                <View style={styles.variantDetails}>
-                  <View style={styles.variantDetail}>
-                    <Text style={styles.variantLabel}>SKU</Text>
-                    <Text style={styles.variantValue}>{variant.sku || '-'}</Text>
-                  </View>
-                  <View style={styles.variantDetail}>
-                    <Text style={styles.variantLabel}>Price</Text>
-                    <Text style={styles.variantValue}>{formatCurrency(Number(variant.price))}</Text>
-                  </View>
-                  <View style={styles.variantDetail}>
-                    <Text style={styles.variantLabel}>Stock</Text>
-                    <Text style={[styles.variantValue, { color: variant.stock > 0 ? colors.success : colors.error }]}>
-                      {variant.stock}
-                    </Text>
-                  </View>
-                </View>
-              </Card>
-            ))}
-          </>
-        )}
+        {/* Variants Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Variants ({variants.length})</Text>
+          <TouchableOpacity style={styles.addVariantButton} onPress={handleAddVariant}>
+            <Ionicons name="add" size={18} color={colors.text} />
+            <Text style={styles.addVariantButtonText}>Add Variant</Text>
+          </TouchableOpacity>
+        </View>
+        <VariantList
+          variants={variants}
+          onEdit={handleEditVariant}
+          onDelete={handleDeleteVariant}
+          formatCurrency={formatCurrency}
+        />
 
         {/* 3D Print Specs */}
         {product.material && (
           <>
-            <Text style={styles.sectionTitle}>3D Print Specifications</Text>
+            <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>3D Print Specifications</Text>
             <Card style={styles.specsCard}>
               <View style={styles.specRow}>
                 <Text style={styles.specLabel}>Material</Text>
@@ -463,7 +567,7 @@ export default function ProductDetailScreen({ navigation, route }: any) {
             </View>
             <Text style={styles.deleteModalTitle}>Delete Product?</Text>
             <Text style={styles.deleteModalMessage}>
-              Are you sure you want to delete "{product?.name}"? This action cannot be undone.
+              Are you sure you want to delete "{product?.name}"? This action cannot be undone and will also delete all variants.
             </Text>
             <View style={styles.deleteModalButtons}>
               <Button
@@ -484,6 +588,20 @@ export default function ProductDetailScreen({ navigation, route }: any) {
           </View>
         </View>
       </Modal>
+
+      {/* Variant Editor Modal */}
+      <VariantEditor
+        visible={showVariantEditor}
+        onClose={() => {
+          setShowVariantEditor(false)
+          setEditingVariant(null)
+        }}
+        onSave={handleSaveVariant}
+        variant={editingVariant}
+        optionTypes={optionTypes}
+        productPrice={Number(product.price)}
+        loading={variantLoading}
+      />
     </SafeAreaView>
   )
 }
@@ -608,11 +726,30 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginLeft: spacing.md,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
   sectionTitle: {
     fontSize: fontSize.lg,
     fontWeight: fontWeight.semibold,
     color: colors.text,
-    marginBottom: spacing.md,
+  },
+  addVariantButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    gap: spacing.xs,
+  },
+  addVariantButtonText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.text,
   },
   detailsCard: {
     padding: spacing.lg,
@@ -640,36 +777,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.textSecondary,
     lineHeight: 22,
-  },
-  variantCard: {
-    marginBottom: spacing.md,
-    padding: spacing.lg,
-  },
-  variantHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  variantName: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
-    color: colors.text,
-  },
-  variantDetails: {
-    flexDirection: 'row',
-    gap: spacing.lg,
-  },
-  variantDetail: {},
-  variantLabel: {
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
-    marginBottom: spacing.xs,
-  },
-  variantValue: {
-    fontSize: fontSize.sm,
-    color: colors.text,
-    fontWeight: fontWeight.medium,
   },
   specsCard: {
     padding: spacing.lg,

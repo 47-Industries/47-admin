@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
+import { Badge } from '../components/Badge'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
@@ -25,6 +26,20 @@ interface Category {
   name: string
   slug: string
   productType: 'PHYSICAL' | 'DIGITAL'
+}
+
+interface OptionType {
+  id: string
+  name: string
+  values: string[]
+}
+
+interface VariantDraft {
+  id: string // temp id for UI
+  options: Record<string, string>
+  sku: string
+  price: string
+  stock: string
 }
 
 interface ProductFormData {
@@ -55,6 +70,17 @@ export default function ProductCreateScreen({ navigation }: any) {
   const [images, setImages] = useState<string[]>([])
   const [uploadingImage, setUploadingImage] = useState(false)
   const [showCategoryPicker, setShowCategoryPicker] = useState(false)
+  const [optionTypes, setOptionTypes] = useState<OptionType[]>([])
+  const [hasVariants, setHasVariants] = useState(false)
+  const [variants, setVariants] = useState<VariantDraft[]>([])
+  const [showAddVariant, setShowAddVariant] = useState(false)
+  const [newVariant, setNewVariant] = useState<VariantDraft>({
+    id: '',
+    options: {},
+    sku: '',
+    price: '',
+    stock: '0',
+  })
 
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
@@ -73,7 +99,17 @@ export default function ProductCreateScreen({ navigation }: any) {
 
   useEffect(() => {
     fetchCategories()
+    fetchOptionTypes()
   }, [productType])
+
+  const fetchOptionTypes = async () => {
+    try {
+      const data = await api.getOptionTypes()
+      setOptionTypes(data.optionTypes || [])
+    } catch (error) {
+      console.error('Failed to fetch option types:', error)
+    }
+  }
 
   const fetchCategories = async () => {
     setLoadingCategories(true)
@@ -260,6 +296,37 @@ export default function ProductCreateScreen({ navigation }: any) {
 
   const removeImage = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  // Variant functions
+  const getVariantName = (options: Record<string, string>) => {
+    return Object.values(options).filter(Boolean).join(' / ') || 'New Variant'
+  }
+
+  const addVariant = () => {
+    if (Object.keys(newVariant.options).length === 0 && optionTypes.length > 0) {
+      Alert.alert('Error', 'Please select at least one option')
+      return
+    }
+
+    const variant: VariantDraft = {
+      ...newVariant,
+      id: Date.now().toString(),
+      price: newVariant.price || formData.price,
+    }
+    setVariants([...variants, variant])
+    setNewVariant({
+      id: '',
+      options: {},
+      sku: '',
+      price: '',
+      stock: '0',
+    })
+    setShowAddVariant(false)
+  }
+
+  const removeVariant = (id: string) => {
+    setVariants(variants.filter((v) => v.id !== id))
   }
 
   const handleSubmit = async () => {
@@ -623,6 +690,180 @@ export default function ProductCreateScreen({ navigation }: any) {
             </TouchableOpacity>
           </ScrollView>
           <Text style={styles.imageHint}>Tap to add product images (recommended: square images)</Text>
+        </Card>
+
+        {/* Variants Section */}
+        <Text style={styles.sectionTitle}>Variants</Text>
+        <Card style={styles.card}>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleInfo}>
+              <Ionicons name="layers-outline" size={20} color={colors.textMuted} />
+              <View style={styles.toggleTextContainer}>
+                <Text style={styles.toggleLabel}>Has Variants</Text>
+                <Text style={styles.toggleDescription}>Add different options like size or color</Text>
+              </View>
+            </View>
+            <Switch
+              value={hasVariants}
+              onValueChange={(value) => {
+                setHasVariants(value)
+                if (!value) {
+                  setVariants([])
+                }
+              }}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={colors.text}
+            />
+          </View>
+
+          {hasVariants && (
+            <View style={styles.variantsContainer}>
+              {optionTypes.length === 0 ? (
+                <View style={styles.noOptionTypesWarning}>
+                  <Ionicons name="warning-outline" size={20} color={colors.warning} />
+                  <Text style={styles.noOptionTypesText}>
+                    No option types defined. Create option types in the web admin first.
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  {variants.length > 0 && (
+                    <View style={styles.variantsList}>
+                      {variants.map((variant) => (
+                        <View key={variant.id} style={styles.variantItem}>
+                          <View style={styles.variantItemInfo}>
+                            <Text style={styles.variantItemName}>{getVariantName(variant.options)}</Text>
+                            <View style={styles.variantItemMeta}>
+                              <Text style={styles.variantItemMetaText}>
+                                ${variant.price || formData.price} | Stock: {variant.stock}
+                                {variant.sku ? ` | SKU: ${variant.sku}` : ''}
+                              </Text>
+                            </View>
+                          </View>
+                          <TouchableOpacity
+                            style={styles.variantItemRemove}
+                            onPress={() => removeVariant(variant.id)}
+                          >
+                            <Ionicons name="trash-outline" size={18} color={colors.error} />
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {showAddVariant ? (
+                    <View style={styles.addVariantForm}>
+                      <Text style={styles.addVariantFormTitle}>Add Variant</Text>
+
+                      {/* Option Selectors */}
+                      {optionTypes.map((optionType) => (
+                        <View key={optionType.id} style={styles.optionSelector}>
+                          <Text style={styles.optionSelectorLabel}>{optionType.name}</Text>
+                          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                            <View style={styles.optionValues}>
+                              {optionType.values.map((value) => (
+                                <TouchableOpacity
+                                  key={value}
+                                  style={[
+                                    styles.optionValue,
+                                    newVariant.options[optionType.name] === value && styles.optionValueActive,
+                                  ]}
+                                  onPress={() =>
+                                    setNewVariant({
+                                      ...newVariant,
+                                      options: { ...newVariant.options, [optionType.name]: value },
+                                    })
+                                  }
+                                >
+                                  <Text
+                                    style={[
+                                      styles.optionValueText,
+                                      newVariant.options[optionType.name] === value && styles.optionValueTextActive,
+                                    ]}
+                                  >
+                                    {value}
+                                  </Text>
+                                </TouchableOpacity>
+                              ))}
+                            </View>
+                          </ScrollView>
+                        </View>
+                      ))}
+
+                      {/* Variant Price */}
+                      <View style={styles.variantInputRow}>
+                        <View style={[styles.inputGroup, { flex: 1 }]}>
+                          <Text style={styles.label}>Price (optional)</Text>
+                          <View style={styles.currencyInput}>
+                            <Text style={styles.currencySymbol}>$</Text>
+                            <TextInput
+                              style={styles.currencyTextInput}
+                              value={newVariant.price}
+                              onChangeText={(text) => setNewVariant({ ...newVariant, price: text })}
+                              placeholder={formData.price || '0.00'}
+                              placeholderTextColor={colors.textMuted}
+                              keyboardType="decimal-pad"
+                            />
+                          </View>
+                        </View>
+                        <View style={{ width: spacing.md }} />
+                        <View style={[styles.inputGroup, { flex: 1 }]}>
+                          <Text style={styles.label}>Stock</Text>
+                          <TextInput
+                            style={styles.input}
+                            value={newVariant.stock}
+                            onChangeText={(text) => setNewVariant({ ...newVariant, stock: text })}
+                            placeholder="0"
+                            placeholderTextColor={colors.textMuted}
+                            keyboardType="number-pad"
+                          />
+                        </View>
+                      </View>
+
+                      {/* Variant SKU */}
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.label}>SKU (optional)</Text>
+                        <TextInput
+                          style={styles.input}
+                          value={newVariant.sku}
+                          onChangeText={(text) => setNewVariant({ ...newVariant, sku: text })}
+                          placeholder="e.g., PROD-001-SM-BLK"
+                          placeholderTextColor={colors.textMuted}
+                          autoCapitalize="characters"
+                        />
+                      </View>
+
+                      <View style={styles.addVariantFormButtons}>
+                        <TouchableOpacity
+                          style={styles.cancelVariantButton}
+                          onPress={() => {
+                            setShowAddVariant(false)
+                            setNewVariant({
+                              id: '',
+                              options: {},
+                              sku: '',
+                              price: '',
+                              stock: '0',
+                            })
+                          }}
+                        >
+                          <Text style={styles.cancelVariantButtonText}>Cancel</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.saveVariantButton} onPress={addVariant}>
+                          <Text style={styles.saveVariantButtonText}>Add Variant</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <TouchableOpacity style={styles.addVariantButton} onPress={() => setShowAddVariant(true)}>
+                      <Ionicons name="add" size={20} color={colors.primary} />
+                      <Text style={styles.addVariantButtonText}>Add Variant</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
+            </View>
+          )}
         </Card>
 
         {/* Status Toggles */}
@@ -1013,5 +1254,156 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     marginTop: spacing.sm,
+  },
+  // Variants styles
+  variantsContainer: {
+    marginTop: spacing.lg,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  noOptionTypesWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.warningBg,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    gap: spacing.md,
+  },
+  noOptionTypesText: {
+    flex: 1,
+    fontSize: fontSize.sm,
+    color: colors.warning,
+  },
+  variantsList: {
+    marginBottom: spacing.lg,
+    gap: spacing.sm,
+  },
+  variantItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  variantItemInfo: {
+    flex: 1,
+  },
+  variantItemName: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  variantItemMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  variantItemMetaText: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+  },
+  variantItemRemove: {
+    padding: spacing.sm,
+  },
+  addVariantButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.primary,
+    borderRadius: borderRadius.md,
+    gap: spacing.sm,
+  },
+  addVariantButtonText: {
+    fontSize: fontSize.sm,
+    color: colors.primary,
+    fontWeight: fontWeight.medium,
+  },
+  addVariantForm: {
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  addVariantFormTitle: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+    marginBottom: spacing.lg,
+  },
+  optionSelector: {
+    marginBottom: spacing.lg,
+  },
+  optionSelectorLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
+  },
+  optionValues: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  optionValue: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surfaceHover,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  optionValueActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  optionValueText: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+  },
+  optionValueTextActive: {
+    color: colors.text,
+    fontWeight: fontWeight.medium,
+  },
+  variantInputRow: {
+    flexDirection: 'row',
+    marginBottom: 0,
+  },
+  addVariantFormButtons: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+  },
+  cancelVariantButton: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+  cancelVariantButtonText: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    fontWeight: fontWeight.medium,
+  },
+  saveVariantButton: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.primary,
+  },
+  saveVariantButtonText: {
+    fontSize: fontSize.sm,
+    color: colors.text,
+    fontWeight: fontWeight.medium,
   },
 })
