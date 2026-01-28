@@ -140,6 +140,18 @@ class ApiService {
     }>('/account/partner/stripe-connect')
   }
 
+  // Zoho Email APIs (Admin only)
+  async getZohoConnectUrl() {
+    return this.request<{ authUrl: string }>('/admin/email/connect?source=mobile')
+  }
+
+  async getZohoStatus() {
+    return this.request<{
+      connected: boolean
+      status: 'CONNECTED' | 'TOKEN_EXPIRED' | 'NOT_CONNECTED'
+    }>('/admin/email/status')
+  }
+
   async getPartnerAffiliateStats() {
     return this.request<{ stats: any; links: any[] }>('/account/partner/affiliate/stats')
   }

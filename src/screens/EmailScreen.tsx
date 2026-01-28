@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react'
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Modal, TextInput, Alert, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, useWindowDimensions } from 'react-native'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Modal, TextInput, Alert, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, useWindowDimensions, Linking } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { WebView } from 'react-native-webview'
 import { Card } from '../components/Card'
@@ -44,6 +44,7 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
   const [showEmailDetail, setShowEmailDetail] = useState(false)
   const [selectedEmail, setSelectedEmail] = useState<any>(null)
   const [loadingContent, setLoadingContent] = useState(false)
+  const [connectingZoho, setConnectingZoho] = useState(false)
 
   // Compose state
   const [composeFrom, setComposeFrom] = useState('')
@@ -111,6 +112,29 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
     }, 30000)
     return () => clearInterval(interval)
   }, [fetchEmails])
+
+  // Connect to Zoho Mail
+  const handleConnectZoho = async () => {
+    setConnectingZoho(true)
+    try {
+      const response = await api.getZohoConnectUrl()
+      if (response.authUrl) {
+        await Linking.openURL(response.authUrl)
+        Alert.alert(
+          'Complete Setup in Browser',
+          'After authorizing Zoho, return here and pull down to refresh.',
+          [{ text: 'Got it' }]
+        )
+      } else {
+        Alert.alert('Error', 'Could not generate Zoho authorization link. Please try again.')
+      }
+    } catch (error: any) {
+      console.error('Zoho connect error:', error)
+      Alert.alert('Error', error.message || 'Failed to start Zoho connection. Please try again.')
+    } finally {
+      setConnectingZoho(false)
+    }
+  }
 
   const onRefresh = () => {
     setRefreshing(true)
@@ -243,16 +267,42 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
             <View style={{ width: 40 }} />
           </View>
         )}
-        <View style={styles.notConnected}>
+        <ScrollView
+          contentContainerStyle={styles.notConnected}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                setRefreshing(true)
+                fetchAccounts().finally(() => setRefreshing(false))
+              }}
+              tintColor={colors.primary}
+            />
+          }
+        >
           <Ionicons name="mail-unread-outline" size={64} color={colors.warning} />
           <Text style={styles.notConnectedTitle}>Email Not Connected</Text>
           <Text style={styles.notConnectedText}>
-            Connect your Zoho Mail account in the web admin to access your emails here.
+            Connect your Zoho Mail account to access and send emails from the app.
           </Text>
-          <TouchableOpacity style={styles.connectButton} onPress={() => fetchAccounts()}>
-            <Text style={styles.connectButtonText}>Retry</Text>
+          <TouchableOpacity
+            style={styles.connectButton}
+            onPress={handleConnectZoho}
+            disabled={connectingZoho}
+          >
+            {connectingZoho ? (
+              <ActivityIndicator color={colors.text} size="small" />
+            ) : (
+              <>
+                <Ionicons name="logo-google" size={18} color={colors.text} style={{ marginRight: spacing.sm }} />
+                <Text style={styles.connectButtonText}>Connect Zoho Mail</Text>
+              </>
+            )}
           </TouchableOpacity>
-        </View>
+          <Text style={styles.notConnectedHint}>
+            Pull down to refresh after connecting
+          </Text>
+        </ScrollView>
       </View>
     )
   }
@@ -661,10 +711,11 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.medium,
   },
   notConnected: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xxxl,
   },
   notConnectedTitle: {
     fontSize: fontSize.xl,
@@ -685,11 +736,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     backgroundColor: colors.primary,
     borderRadius: borderRadius.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 200,
+    minHeight: 48,
   },
   connectButtonText: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
     color: colors.text,
+  },
+  notConnectedHint: {
+    marginTop: spacing.lg,
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    textAlign: 'center',
   },
   mailboxSelector: {
     marginBottom: spacing.sm,
