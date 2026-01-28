@@ -124,6 +124,17 @@ class ApiService {
     return this.request<{ payouts: any[]; total: number }>(`/account/partner/payouts?${searchParams}`)
   }
 
+  // Stripe Connect for partner payouts
+  async createStripeConnectLink() {
+    return this.request<{ url: string }>('/account/partner/stripe-connect', {
+      method: 'POST',
+    })
+  }
+
+  async getStripeConnectDashboard() {
+    return this.request<{ url: string }>('/account/partner/stripe-connect/dashboard')
+  }
+
   async getPartnerAffiliateStats() {
     return this.request<{ stats: any; links: any[] }>('/account/partner/affiliate/stats')
   }

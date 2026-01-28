@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { PartnerDashboardScreen, LeadsScreen, NewLeadScreen, CommissionsScreen } from '../screens/partner'
+import { PartnerDashboardScreen, LeadsScreen, NewLeadScreen, CommissionsScreen, PayoutSetupScreen } from '../screens/partner'
 import { AccountScreen, ProfileEditScreen, ChangePasswordScreen } from '../screens/account'
 import { colors, portalColors, spacing, fontSize } from '../theme'
 
@@ -43,7 +43,7 @@ export default function PartnerNavigator() {
 
   const getParentTab = (screenName: string): TabName | null => {
     const referralScreens = ['Leads', 'LeadDetail', 'NewLead', 'AffiliateLinks']
-    const earningsScreens = ['Commissions', 'Payouts']
+    const earningsScreens = ['Commissions', 'Payouts', 'PayoutSetup']
     const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Contract']
 
     if (referralScreens.includes(screenName)) return 'Referrals'
@@ -68,6 +68,8 @@ export default function PartnerNavigator() {
           return <ScreenWrapper><NewLeadScreen navigation={navigation} /></ScreenWrapper>
         case 'Commissions':
           return <ScreenWrapper><CommissionsScreen navigation={navigation} /></ScreenWrapper>
+        case 'PayoutSetup':
+          return <ScreenWrapper><PayoutSetupScreen navigation={navigation} /></ScreenWrapper>
         case 'ProfileEdit':
           return <ScreenWrapper><ProfileEditScreen navigation={navigation} /></ScreenWrapper>
         case 'ChangePassword':
