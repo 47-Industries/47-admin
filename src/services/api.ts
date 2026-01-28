@@ -110,6 +110,13 @@ class ApiService {
     })
   }
 
+  async updatePartnerLeadNotes(id: string, notes: string) {
+    return this.request<{ lead: any }>(`/account/partner/leads/${id}/notes`, {
+      method: 'PATCH',
+      body: JSON.stringify({ notes }),
+    })
+  }
+
   async getPartnerCommissions(params?: { page?: number; status?: string }) {
     const searchParams = new URLSearchParams()
     if (params?.page) searchParams.set('page', params.page.toString())
@@ -160,7 +167,12 @@ class ApiService {
     return this.request<{ links: any[] }>('/account/partner/affiliate/links')
   }
 
-  async createPartnerAffiliateLink(data: { name: string; campaignId?: string }) {
+  async createPartnerAffiliateLink(data: {
+    platform: string
+    targetType: string
+    targetId?: string
+    name?: string
+  }) {
     return this.request<{ link: any }>('/account/partner/affiliate/links', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -237,6 +249,24 @@ class ApiService {
 
   async signClientContract(id: string, signatureData: string) {
     return this.request<{ contract: any }>(`/account/client/contracts/${id}/sign`, {
+      method: 'POST',
+      body: JSON.stringify({ signature: signatureData }),
+    })
+  }
+
+  async getClientAmendments(params?: { page?: number; status?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.status) searchParams.set('status', params.status)
+    return this.request<{ amendments: any[]; total?: number }>(`/account/client/amendments?${searchParams}`)
+  }
+
+  async getClientAmendment(id: string) {
+    return this.request<{ amendment: any }>(`/account/client/amendments/${id}`)
+  }
+
+  async signClientAmendment(id: string, signatureData: string) {
+    return this.request<{ amendment: any }>(`/account/client/amendments/${id}/sign`, {
       method: 'POST',
       body: JSON.stringify({ signature: signatureData }),
     })
@@ -937,6 +967,12 @@ class ApiService {
     })
   }
 
+  async deleteBlogPost(id: string) {
+    return this.request<{ success: boolean }>(`/admin/blog/posts/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
   async getBlogCategories() {
     return this.request<{ categories: any[] }>('/admin/blog/categories')
   }
@@ -1018,6 +1054,7 @@ class ApiService {
     items: { description: string; quantity: number; unitPrice: number }[]
     notes?: string
     dueDate?: string
+    taxRate?: number
   }) {
     return this.request<{ invoice: any }>('/admin/invoices', {
       method: 'POST',
@@ -1041,6 +1078,12 @@ class ApiService {
   async deleteAdminInvoice(id: string) {
     return this.request<{ success: boolean }>(`/admin/invoices/${id}`, {
       method: 'DELETE',
+    })
+  }
+
+  async sendAdminInvoiceReminder(id: string) {
+    return this.request<{ success: boolean }>(`/admin/invoices/${id}/reminder`, {
+      method: 'POST',
     })
   }
 

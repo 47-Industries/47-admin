@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { PartnerDashboardScreen, LeadsScreen, NewLeadScreen, CommissionsScreen, PayoutSetupScreen } from '../screens/partner'
+import { PartnerDashboardScreen, LeadsScreen, NewLeadScreen, CommissionsScreen, PayoutsScreen, PayoutSetupScreen, AffiliateLinksScreen, ContractScreen } from '../screens/partner'
 import { AccountScreen, ProfileEditScreen, ChangePasswordScreen } from '../screens/account'
 import { colors, portalColors, spacing, fontSize } from '../theme'
 
@@ -70,10 +70,14 @@ export default function PartnerNavigator() {
           return <ScreenWrapper><CommissionsScreen navigation={navigation} /></ScreenWrapper>
         case 'PayoutSetup':
           return <ScreenWrapper><PayoutSetupScreen navigation={navigation} /></ScreenWrapper>
+        case 'AffiliateLinks':
+          return <ScreenWrapper><AffiliateLinksScreen navigation={navigation} /></ScreenWrapper>
         case 'ProfileEdit':
           return <ScreenWrapper><ProfileEditScreen navigation={navigation} /></ScreenWrapper>
         case 'ChangePassword':
           return <ScreenWrapper><ChangePasswordScreen navigation={navigation} /></ScreenWrapper>
+        case 'Contract':
+          return <ScreenWrapper><ContractScreen navigation={navigation} /></ScreenWrapper>
       }
     }
 
@@ -160,11 +164,7 @@ function ReferralsTabScreen({ navigation }: { navigation: any }) {
       </View>
       <View style={styles.tabContent}>
         {activeSection === 'leads' && <LeadsScreen navigation={navigation} hideHeader />}
-        {activeSection === 'links' && (
-          <View style={styles.placeholder}>
-            <Text style={styles.placeholderText}>Affiliate Links Coming Soon</Text>
-          </View>
-        )}
+        {activeSection === 'links' && <AffiliateLinksScreen navigation={navigation} hideHeader />}
       </View>
     </SafeAreaView>
   )
@@ -193,11 +193,7 @@ function EarningsTabScreen({ navigation }: { navigation: any }) {
       </View>
       <View style={styles.tabContent}>
         {activeSection === 'commissions' && <CommissionsScreen navigation={navigation} hideHeader />}
-        {activeSection === 'payouts' && (
-          <View style={styles.placeholder}>
-            <Text style={styles.placeholderText}>Payouts Coming Soon</Text>
-          </View>
-        )}
+        {activeSection === 'payouts' && <PayoutsScreen navigation={navigation} hideHeader />}
       </View>
     </SafeAreaView>
   )
