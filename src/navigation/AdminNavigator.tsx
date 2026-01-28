@@ -18,7 +18,7 @@ import CustomRequestsScreen from '../screens/CustomRequestsScreen'
 import CustomRequestDetailScreen from '../screens/CustomRequestDetailScreen'
 import InquiryDetailScreen from '../screens/InquiryDetailScreen'
 import UserDetailScreen from '../screens/UserDetailScreen'
-import ReturnsScreen from '../screens/ReturnsScreen'
+import ReturnsScreen from '../screens/admin/ReturnsScreen'
 import AnalyticsScreen from '../screens/AnalyticsScreen'
 import ServicesScreen from '../screens/ServicesScreen'
 import EmailScreen from '../screens/EmailScreen'
@@ -43,6 +43,8 @@ import { PartnerLeadDetailScreen } from '../screens/admin/PartnerLeadDetailScree
 import MarketingScreen from '../screens/MarketingScreen'
 import PortfolioScreen from '../screens/PortfolioScreen'
 import PortfolioDetailScreen from '../screens/PortfolioDetailScreen'
+import BlogScreen from '../screens/BlogScreen'
+import BlogPostDetailScreen from '../screens/BlogPostDetailScreen'
 import { colors, portalColors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
 type TabName = 'Home' | 'Sales' | 'Business' | 'People' | 'Account'
@@ -83,13 +85,13 @@ export default function AdminNavigator() {
 
   const getParentTab = (screenName: string): TabName | null => {
     // Sales: Orders, Invoices, Returns + Products, Categories
-    const salesScreens = ['OrderDetail', 'Returns', 'AdminInvoices', 'InvoiceDetail', 'Products', 'ProductDetail', 'ProductCreate', 'Categories']
+    const salesScreens = ['OrderDetail', 'Returns', 'AdminInvoices', 'InvoiceDetail', 'InvoiceCreate', 'Products', 'ProductDetail', 'ProductCreate', 'Categories']
     // Business: Requests (Inquiries, 3D Prints) + Packages + Portfolio + Finance (Expenses, Reports) + Analytics
     const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Portfolio', 'PortfolioDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills']
     // People: Clients, Partners, Team, Affiliates, Users
     const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail']
-    // Account: Profile, Email, Settings, Notifications, Marketing
-    const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'Email', 'Marketing']
+    // Account: Profile, Email, Settings, Notifications, Marketing, Blog
+    const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'Email', 'Marketing', 'Blog', 'BlogPostDetail']
 
     if (salesScreens.includes(screenName)) return 'Sales'
     if (businessScreens.includes(screenName)) return 'Business'
@@ -155,6 +157,8 @@ export default function AdminNavigator() {
           return <ScreenWrapper><AdminInvoicesScreen navigation={navigation} /></ScreenWrapper>
         case 'InvoiceDetail':
           return <ScreenWrapper><InvoiceDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
+        case 'InvoiceCreate':
+          return <ScreenWrapper><InvoiceCreateScreen navigation={navigation} /></ScreenWrapper>
         case 'Notifications':
           return <ScreenWrapper><NotificationsScreen navigation={navigation} /></ScreenWrapper>
         case 'Team':
@@ -181,6 +185,10 @@ export default function AdminNavigator() {
           return <ScreenWrapper><PortfolioScreen navigation={navigation} /></ScreenWrapper>
         case 'PortfolioDetail':
           return <ScreenWrapper><PortfolioDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
+        case 'Blog':
+          return <ScreenWrapper><BlogScreen navigation={navigation} /></ScreenWrapper>
+        case 'BlogPostDetail':
+          return <ScreenWrapper><BlogPostDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
       }
     }
 

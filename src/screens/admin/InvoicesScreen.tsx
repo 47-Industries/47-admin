@@ -337,7 +337,7 @@ export function InvoicesScreen({ navigation, hideHeader }: InvoicesScreenProps) 
     const displayStatus = overdue ? 'OVERDUE' : item.status
 
     return (
-      <TouchableOpacity onPress={() => openDetailModal(item)} activeOpacity={0.7}>
+      <TouchableOpacity onPress={() => navigation.navigate('InvoiceDetail', { id: item.id })} activeOpacity={0.7}>
         <Card style={[styles.invoiceCard, overdue && styles.invoiceCardOverdue]}>
           <View style={styles.invoiceHeader}>
             <View>
@@ -428,7 +428,7 @@ export function InvoicesScreen({ navigation, hideHeader }: InvoicesScreenProps) 
       {!hideHeader && (
         <View style={styles.header}>
           <Text style={styles.title}>Invoices</Text>
-          <TouchableOpacity style={styles.createButton} onPress={openCreateModal}>
+          <TouchableOpacity style={styles.createButton} onPress={() => navigation.navigate('InvoiceCreate')}>
             <Ionicons name="add" size={24} color={colors.text} />
           </TouchableOpacity>
         </View>

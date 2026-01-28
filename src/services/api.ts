@@ -479,6 +479,51 @@ class ApiService {
     })
   }
 
+  // Product Variants
+  async getProductVariants(productId: string) {
+    return this.request<{ variants: any[] }>(`/admin/products/${productId}/variants`)
+  }
+
+  async createProductVariant(productId: string, data: {
+    options: Record<string, string>
+    price?: number
+    stock?: number
+    sku?: string
+    comparePrice?: number
+    image?: string
+  }) {
+    return this.request<any>(`/admin/products/${productId}/variants`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateProductVariant(productId: string, variantId: string, data: {
+    options?: Record<string, string>
+    price?: number
+    stock?: number
+    sku?: string
+    isActive?: boolean
+    comparePrice?: number
+    image?: string
+  }) {
+    return this.request<any>(`/admin/products/${productId}/variants/${variantId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteProductVariant(productId: string, variantId: string) {
+    return this.request<{ success: boolean }>(`/admin/products/${productId}/variants/${variantId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // Product Option Types
+  async getOptionTypes() {
+    return this.request<{ optionTypes: any[] }>('/admin/products/option-types')
+  }
+
   // Orders
   async getOrders(params?: { page?: number; limit?: number; status?: string; search?: string }) {
     const searchParams = new URLSearchParams()
