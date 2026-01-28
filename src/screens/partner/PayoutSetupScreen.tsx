@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   Linking,
+  RefreshControl,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -26,47 +27,73 @@ interface PayoutSetupScreenProps {
 export function PayoutSetupScreen({ navigation }: PayoutSetupScreenProps) {
   const partner = useAuthStore((state) => state.partner)
   const [loading, setLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [stripeStatus, setStripeStatus] = useState(partner?.stripeConnectStatus || 'NOT_CONNECTED')
 
-  const stripeStatus = partner?.stripeConnectStatus || 'NOT_CONNECTED'
   const isConnected = stripeStatus === 'CONNECTED'
-  const isPending = stripeStatus === 'PENDING_VERIFICATION'
+  const isPending = stripeStatus === 'PENDING_VERIFICATION' || stripeStatus === 'PENDING'
+
+  // Check Stripe status on mount and after returning from Stripe
+  const checkStripeStatus = useCallback(async () => {
+    try {
+      const response = await api.getStripeConnectStatus()
+      if (response.status) {
+        setStripeStatus(response.status)
+      }
+    } catch (error) {
+      console.error('Failed to check Stripe status:', error)
+    }
+  }, [])
+
+  useEffect(() => {
+    checkStripeStatus()
+  }, [checkStripeStatus])
+
+  const onRefresh = async () => {
+    setRefreshing(true)
+    await checkStripeStatus()
+    setRefreshing(false)
+  }
 
   const handleConnectStripe = async () => {
     setLoading(true)
     try {
       const response = await api.createStripeConnectLink()
-      if (response.url) {
-        await Linking.openURL(response.url)
+      if (response.onboardingUrl) {
+        // Open Stripe onboarding in browser
+        await Linking.openURL(response.onboardingUrl)
+        // Show reminder to come back and refresh
+        Alert.alert(
+          'Complete Setup in Browser',
+          'After completing the Stripe setup, return here and pull down to refresh your status.',
+          [{ text: 'Got it' }]
+        )
       } else {
-        Alert.alert('Error', 'Could not generate Stripe Connect link. Please try again or contact support.')
+        Alert.alert('Error', 'Could not generate Stripe Connect link. Please try again.')
       }
     } catch (error: any) {
       console.error('Stripe Connect error:', error)
-      Alert.alert(
-        'Setup Unavailable',
-        'Unable to start the payout setup process right now. Please try again later or set up payouts through the web portal at admin.47industries.com.',
-        [
-          { text: 'OK' },
-          { text: 'Open Web Portal', onPress: () => Linking.openURL('https://admin.47industries.com/partner') },
-        ]
-      )
+      // Handle phone number requirement
+      if (error.message?.includes('Phone number required') || error.code === 'PHONE_REQUIRED') {
+        Alert.alert(
+          'Phone Number Required',
+          'Please add your phone number to your profile before setting up payouts. This ensures verification codes are sent to you.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Update Profile', onPress: () => navigation.navigate('ProfileEdit') },
+          ]
+        )
+      } else {
+        Alert.alert('Error', error.message || 'Failed to start Stripe Connect setup. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  const handleOpenDashboard = async () => {
-    setLoading(true)
-    try {
-      const response = await api.getStripeConnectDashboard()
-      if (response.url) {
-        await Linking.openURL(response.url)
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Could not open Stripe dashboard. Please try again.')
-    } finally {
-      setLoading(false)
-    }
+  const handleContinueSetup = async () => {
+    // For pending accounts, create a new onboarding link
+    await handleConnectStripe()
   }
 
   const accentColor = portalColors.partner
@@ -81,7 +108,17 @@ export function PayoutSetupScreen({ navigation }: PayoutSetupScreenProps) {
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={portalColors.partner}
+          />
+        }
+      >
         {/* Status Card */}
         <Card style={styles.statusCard}>
           <View style={styles.statusHeader}>
@@ -153,21 +190,18 @@ export function PayoutSetupScreen({ navigation }: PayoutSetupScreenProps) {
         {/* Action Button */}
         {!isConnected && (
           <Button
-            title={isPending ? 'Continue Verification' : 'Connect Bank Account'}
-            onPress={handleConnectStripe}
+            title={isPending ? 'Continue Setup' : 'Connect Bank Account'}
+            onPress={isPending ? handleContinueSetup : handleConnectStripe}
             loading={loading}
             style={styles.connectButton}
           />
         )}
 
         {isConnected && (
-          <Button
-            title="Open Stripe Dashboard"
-            variant="outline"
-            onPress={handleOpenDashboard}
-            loading={loading}
-            style={styles.connectButton}
-          />
+          <Card style={styles.connectedCard}>
+            <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+            <Text style={styles.connectedText}>Your payouts are set up and ready!</Text>
+          </Card>
         )}
 
         {/* Alternative Options */}
@@ -370,6 +404,19 @@ const styles = StyleSheet.create({
   },
   ratesCard: {
     padding: spacing.lg,
+  },
+  connectedCard: {
+    padding: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  connectedText: {
+    flex: 1,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.success,
   },
   rateRow: {
     flexDirection: 'row',

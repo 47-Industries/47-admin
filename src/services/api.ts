@@ -126,13 +126,18 @@ class ApiService {
 
   // Stripe Connect for partner payouts
   async createStripeConnectLink() {
-    return this.request<{ url: string }>('/account/partner/stripe-connect', {
+    return this.request<{ success: boolean; onboardingUrl: string }>('/account/partner/stripe-connect', {
       method: 'POST',
     })
   }
 
-  async getStripeConnectDashboard() {
-    return this.request<{ url: string }>('/account/partner/stripe-connect/dashboard')
+  async getStripeConnectStatus() {
+    return this.request<{
+      connected: boolean
+      status: string | null
+      detailsSubmitted?: boolean
+      payoutsEnabled?: boolean
+    }>('/account/partner/stripe-connect')
   }
 
   async getPartnerAffiliateStats() {
