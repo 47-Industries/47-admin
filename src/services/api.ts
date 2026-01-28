@@ -1636,6 +1636,53 @@ class ApiService {
     if (params?.range) searchParams.set('period', params.range)
     return `${API_BASE_URL}/admin/reports/${type}/export?${searchParams}`
   }
+
+  // Tax Rates
+  async getTaxRates() {
+    return this.request<any[]>('/admin/tax/rates')
+  }
+
+  async createTaxRate(data: {
+    name: string
+    country: string
+    state?: string | null
+    city?: string | null
+    zipCode?: string | null
+    rate: number
+    isCompound?: boolean
+    includeShipping?: boolean
+    priority?: number
+    active?: boolean
+  }) {
+    return this.request<any>('/admin/tax/rates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateTaxRate(id: string, data: {
+    name: string
+    country: string
+    state?: string | null
+    city?: string | null
+    zipCode?: string | null
+    rate: number
+    isCompound?: boolean
+    includeShipping?: boolean
+    priority?: number
+    active?: boolean
+  }) {
+    return this.request<any>(`/admin/tax/rates/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteTaxRate(id: string) {
+    return this.request<{ success: boolean }>(`/admin/tax/rates/${id}`, {
+      method: 'DELETE',
+    })
+  }
 }
 
 export const api = new ApiService()

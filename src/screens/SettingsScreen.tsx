@@ -112,6 +112,13 @@ export function SettingsScreen({ navigation, hideHeader }: { navigation: any; hi
             subtitle="Zones, rates, and delivery options"
             onPress={() => navigation.navigate('ShippingSettings')}
           />
+          <View style={styles.divider} />
+          <SettingItem
+            icon="calculator-outline"
+            title="Tax Rates"
+            subtitle="Location-based tax configuration"
+            onPress={() => navigation.navigate('TaxSettings')}
+          />
         </Card>
 
         {/* Quick Links */}
