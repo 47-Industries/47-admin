@@ -103,6 +103,17 @@ export function SettingsScreen({ navigation, hideHeader }: { navigation: any; hi
           </View>
         </Card>
 
+        {/* Store Settings */}
+        <Text style={styles.sectionTitle}>Store Settings</Text>
+        <Card style={styles.settingsCard}>
+          <SettingItem
+            icon="airplane-outline"
+            title="Shipping"
+            subtitle="Zones, rates, and delivery options"
+            onPress={() => navigation.navigate('ShippingSettings')}
+          />
+        </Card>
+
         {/* Quick Links */}
         <Text style={styles.sectionTitle}>Quick Links</Text>
         <Card style={styles.settingsCard}>

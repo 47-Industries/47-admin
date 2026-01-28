@@ -1532,6 +1532,110 @@ class ApiService {
   async getAdminAffiliate(id: string) {
     return this.request<{ affiliate: any }>(`/admin/affiliates/${id}`)
   }
+
+  // Shipping Zones
+  async getShippingZones() {
+    return this.request<any[]>('/admin/shipping/zones')
+  }
+
+  async createShippingZone(data: {
+    name: string
+    countries: string[]
+    states?: string[]
+    zipCodes?: string
+    active?: boolean
+    priority?: number
+  }) {
+    return this.request<any>('/admin/shipping/zones', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateShippingZone(id: string, data: {
+    name?: string
+    countries?: string[]
+    states?: string[]
+    zipCodes?: string
+    active?: boolean
+    priority?: number
+  }) {
+    return this.request<any>(`/admin/shipping/zones/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteShippingZone(id: string) {
+    return this.request<{ success: boolean }>(`/admin/shipping/zones/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // Shipping Rates
+  async getShippingRates(zoneId: string) {
+    return this.request<any>(`/admin/shipping/zones/${zoneId}`)
+  }
+
+  async createShippingRate(zoneId: string, data: {
+    name: string
+    description?: string
+    baseRate: number
+    perItemRate?: number
+    perPoundRate?: number
+    freeShippingMin?: number
+    minDays?: number
+    maxDays?: number
+    carrier?: string
+    serviceCode?: string
+    active?: boolean
+    sortOrder?: number
+  }) {
+    return this.request<any>(`/admin/shipping/zones/${zoneId}/rates`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateShippingRate(zoneId: string, rateId: string, data: {
+    name?: string
+    description?: string
+    baseRate?: number
+    perItemRate?: number
+    perPoundRate?: number
+    freeShippingMin?: number
+    minDays?: number
+    maxDays?: number
+    carrier?: string
+    serviceCode?: string
+    active?: boolean
+    sortOrder?: number
+  }) {
+    return this.request<any>(`/admin/shipping/rates/${rateId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteShippingRate(zoneId: string, rateId: string) {
+    return this.request<{ success: boolean }>(`/admin/shipping/rates/${rateId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // Reports (with export support)
+  async getReport(type: 'sales' | 'inventory' | 'customers', params?: { range?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.range) searchParams.set('period', params.range)
+    return this.request<any>(`/admin/reports/${type}?${searchParams}`)
+  }
+
+  getReportExportUrl(type: 'sales' | 'inventory' | 'customers', format: 'csv' | 'pdf', params?: { range?: string }): string {
+    const searchParams = new URLSearchParams()
+    searchParams.set('format', format)
+    if (params?.range) searchParams.set('period', params.range)
+    return `${API_BASE_URL}/admin/reports/${type}/export?${searchParams}`
+  }
 }
 
 export const api = new ApiService()

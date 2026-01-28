@@ -38,6 +38,7 @@ import { ClientDetailScreen } from '../screens/admin/ClientDetailScreen'
 import { PartnerDetailScreen } from '../screens/admin/PartnerDetailScreen'
 import { TeamMemberDetailScreen } from '../screens/admin/TeamMemberDetailScreen'
 import { AffiliatesScreen } from '../screens/admin/AffiliatesScreen'
+import { ShippingSettingsScreen } from '../screens/admin/ShippingSettingsScreen'
 import { PartnerLeadsScreen } from '../screens/admin/PartnerLeadsScreen'
 import { PartnerLeadDetailScreen } from '../screens/admin/PartnerLeadDetailScreen'
 import MarketingScreen from '../screens/MarketingScreen'
@@ -91,7 +92,7 @@ export default function AdminNavigator() {
     // People: Clients, Partners, Team, Affiliates, Users
     const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail']
     // Account: Profile, Email, Settings, Notifications, Marketing, Blog
-    const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'Email', 'Marketing', 'Blog', 'BlogPostDetail']
+    const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'ShippingSettings', 'Email', 'Marketing', 'Blog', 'BlogPostDetail']
 
     if (salesScreens.includes(screenName)) return 'Sales'
     if (businessScreens.includes(screenName)) return 'Business'
@@ -137,6 +138,8 @@ export default function AdminNavigator() {
           return <ScreenWrapper><ExpensesScreen navigation={navigation} /></ScreenWrapper>
         case 'Settings':
           return <ScreenWrapper><SettingsScreen navigation={navigation} /></ScreenWrapper>
+        case 'ShippingSettings':
+          return <ScreenWrapper><ShippingSettingsScreen navigation={navigation} /></ScreenWrapper>
         case 'Services':
           return <ScreenWrapper><ServicesScreen navigation={navigation} /></ScreenWrapper>
         case 'Email':
