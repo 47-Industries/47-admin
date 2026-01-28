@@ -120,6 +120,9 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
       {!hideHeader && (
         <View style={styles.header}>
           <Text style={styles.title}>Products</Text>
+          <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('ProductCreate')}>
+            <Ionicons name="add" size={24} color={colors.text} />
+          </TouchableOpacity>
         </View>
       )}
 
@@ -144,17 +147,22 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
 
       {/* Type Filters */}
       <View style={styles.filtersContainer}>
-        {TYPE_FILTERS.map((filter) => (
-          <TouchableOpacity
-            key={filter.label}
-            style={[styles.filterChip, typeFilter === filter.value && styles.filterChipActive]}
-            onPress={() => setTypeFilter(filter.value)}
-          >
-            <Text style={[styles.filterChipText, typeFilter === filter.value && styles.filterChipTextActive]}>
-              {filter.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        <View style={styles.filtersRow}>
+          {TYPE_FILTERS.map((filter) => (
+            <TouchableOpacity
+              key={filter.label}
+              style={[styles.filterChip, typeFilter === filter.value && styles.filterChipActive]}
+              onPress={() => setTypeFilter(filter.value)}
+            >
+              <Text style={[styles.filterChipText, typeFilter === filter.value && styles.filterChipTextActive]}>
+                {filter.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <TouchableOpacity style={styles.addButtonSmall} onPress={() => navigation.navigate('ProductCreate')}>
+          <Ionicons name="add" size={20} color={colors.text} />
+        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -184,6 +192,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
   },
@@ -191,6 +202,14 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xxl,
     fontWeight: fontWeight.bold,
     color: colors.text,
+  },
+  addButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   searchContainer: {
     paddingHorizontal: spacing.xl,
@@ -214,9 +233,22 @@ const styles = StyleSheet.create({
   },
   filtersContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.xl,
     marginBottom: spacing.md,
+  },
+  filtersRow: {
+    flexDirection: 'row',
     gap: spacing.sm,
+  },
+  addButtonSmall: {
+    width: 36,
+    height: 36,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterChip: {
     paddingVertical: spacing.sm,
