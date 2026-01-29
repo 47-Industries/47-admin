@@ -1554,10 +1554,9 @@ class ApiService {
   }
 
   async updateAdminAffiliate(id: string, data: {
-    customCode?: string
-    tier?: string
     totalPoints?: number
     availablePoints?: number
+    isPartner?: boolean
   }) {
     return this.request<{ affiliate: any }>(`/admin/affiliates/${id}`, {
       method: 'PATCH',

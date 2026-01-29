@@ -36,7 +36,7 @@ const tierColors: Record<string, string> = {
   PLATINUM: '#e5e4e2',
 }
 
-const TIERS = ['BRONZE', 'SILVER', 'GOLD', 'PLATINUM']
+// Tiers are not stored in DB, just for display
 
 interface Affiliate {
   id: string
@@ -52,6 +52,7 @@ interface Affiliate {
   totalEarnings: number
   tier: string
   partnerEligible: boolean
+  isPartner: boolean
   createdAt: string
   user: {
     id: string
@@ -70,10 +71,9 @@ export function AffiliateDetailScreen({ navigation, route }: AffiliateDetailScre
   const [editModalVisible, setEditModalVisible] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editForm, setEditForm] = useState({
-    customCode: '',
-    tier: 'BRONZE',
     totalPoints: '',
     availablePoints: '',
+    isPartner: false,
   })
 
   const fetchAffiliate = async () => {
@@ -101,10 +101,9 @@ export function AffiliateDetailScreen({ navigation, route }: AffiliateDetailScre
   const openEditModal = () => {
     if (affiliate) {
       setEditForm({
-        customCode: affiliate.customCode || '',
-        tier: affiliate.tier || 'BRONZE',
         totalPoints: String(affiliate.totalPoints || 0),
         availablePoints: String(affiliate.availablePoints || 0),
+        isPartner: affiliate.isPartner || false,
       })
       setEditModalVisible(true)
     }
@@ -114,8 +113,6 @@ export function AffiliateDetailScreen({ navigation, route }: AffiliateDetailScre
     setSaving(true)
     try {
       await api.updateAdminAffiliate(id, {
-        customCode: editForm.customCode || undefined,
-        tier: editForm.tier,
         totalPoints: parseInt(editForm.totalPoints) || 0,
         availablePoints: parseInt(editForm.availablePoints) || 0,
       })
@@ -328,39 +325,6 @@ export function AffiliateDetailScreen({ navigation, route }: AffiliateDetailScre
           </View>
 
           <ScrollView style={styles.modalBody}>
-            <Text style={styles.fieldLabel}>Custom Code</Text>
-            <TextInput
-              style={styles.textInput}
-              value={editForm.customCode}
-              onChangeText={(text) => setEditForm({ ...editForm, customCode: text })}
-              placeholder="Custom affiliate code"
-              placeholderTextColor={colors.textMuted}
-              autoCapitalize="characters"
-            />
-
-            <Text style={styles.fieldLabel}>Tier</Text>
-            <View style={styles.tierRow}>
-              {TIERS.map((tier) => (
-                <TouchableOpacity
-                  key={tier}
-                  style={[
-                    styles.tierChip,
-                    editForm.tier === tier && { backgroundColor: tierColors[tier] + '40', borderColor: tierColors[tier] },
-                  ]}
-                  onPress={() => setEditForm({ ...editForm, tier })}
-                >
-                  <Text
-                    style={[
-                      styles.tierChipText,
-                      editForm.tier === tier && { color: tierColors[tier] },
-                    ]}
-                  >
-                    {tier}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
             <Text style={styles.fieldLabel}>Total Points</Text>
             <TextInput
               style={styles.textInput}
