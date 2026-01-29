@@ -1431,11 +1431,11 @@ const styles = StyleSheet.create({
   },
   sourceCountText: {
     fontSize: fontSize.xs,
-    color: colors.textMuted,
-    fontWeight: fontWeight.medium,
+    color: colors.textSecondary,
+    fontWeight: fontWeight.semibold,
   },
   sourceCountTextActive: {
-    color: colors.text,
+    color: '#ffffff',
   },
   // Filters
   filtersScroll: {
@@ -1462,12 +1462,13 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   filterChipText: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    fontWeight: fontWeight.medium,
   },
   filterChipTextActive: {
-    color: colors.text,
-    fontWeight: fontWeight.medium,
+    color: '#ffffff',
+    fontWeight: fontWeight.semibold,
   },
   // Folders
   foldersSection: {
