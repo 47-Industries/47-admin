@@ -1401,13 +1401,14 @@ const styles = StyleSheet.create({
   // Source Filters
   sourceFiltersScroll: {
     marginBottom: 8,
+    backgroundColor: 'transparent',
   },
   sourceFilterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 36,
-    paddingHorizontal: 14,
-    borderRadius: 18,
+    height: 40,
+    paddingHorizontal: 16,
+    borderRadius: 20,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -1439,19 +1440,21 @@ const styles = StyleSheet.create({
   // Filters
   filtersScroll: {
     marginBottom: 12,
+    backgroundColor: 'transparent',
   },
   filtersContainer: {
     paddingHorizontal: spacing.xl,
     gap: 8,
     flexDirection: 'row',
+    backgroundColor: 'transparent',
   },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 36,
-    paddingHorizontal: 14,
-    borderRadius: 18,
+    height: 40,
+    paddingHorizontal: 16,
+    borderRadius: 20,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
