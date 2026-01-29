@@ -1400,17 +1400,19 @@ const styles = StyleSheet.create({
   },
   // Source Filters
   sourceFiltersScroll: {
-    marginBottom: 10,
+    marginBottom: 12,
   },
   sourceFilterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 36,
+    minHeight: 38,
     paddingHorizontal: 14,
-    borderRadius: 18,
+    paddingVertical: 8,
+    borderRadius: 19,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+    marginRight: 10,
     gap: 6,
   },
   sourceColorDot: {
@@ -1437,20 +1439,21 @@ const styles = StyleSheet.create({
   },
   // Filters
   filtersScroll: {
-    marginBottom: 12,
+    marginBottom: 14,
   },
   filtersContainer: {
     paddingHorizontal: spacing.xl,
-    gap: 8,
+    gap: 10,
     flexDirection: 'row',
   },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 36,
-    paddingHorizontal: 14,
-    borderRadius: 18,
+    minHeight: 38,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 19,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -1460,8 +1463,9 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   filterChipText: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#e4e4e7',
+    lineHeight: 18,
   },
   filterChipTextActive: {
     color: '#ffffff',
