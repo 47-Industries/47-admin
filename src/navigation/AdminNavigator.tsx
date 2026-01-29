@@ -38,6 +38,7 @@ import { ClientDetailScreen } from '../screens/admin/ClientDetailScreen'
 import { PartnerDetailScreen } from '../screens/admin/PartnerDetailScreen'
 import { TeamMemberDetailScreen } from '../screens/admin/TeamMemberDetailScreen'
 import { AffiliatesScreen } from '../screens/admin/AffiliatesScreen'
+import { AffiliateDetailScreen } from '../screens/admin/AffiliateDetailScreen'
 import { ShippingSettingsScreen } from '../screens/admin/ShippingSettingsScreen'
 import { TaxSettingsScreen } from '../screens/admin/TaxSettingsScreen'
 import { PartnerLeadsScreen } from '../screens/admin/PartnerLeadsScreen'
@@ -184,6 +185,8 @@ export default function AdminNavigator() {
           return <ScreenWrapper><MarketingScreen navigation={navigation} /></ScreenWrapper>
         case 'Affiliates':
           return <ScreenWrapper><AffiliatesScreen navigation={navigation} /></ScreenWrapper>
+        case 'AffiliateDetail':
+          return <ScreenWrapper><AffiliateDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
         case 'PartnerLeads':
           return <ScreenWrapper><PartnerLeadsScreen navigation={navigation} /></ScreenWrapper>
         case 'PartnerLeadDetail':

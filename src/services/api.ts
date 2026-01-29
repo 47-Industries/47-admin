@@ -1553,6 +1553,24 @@ class ApiService {
     return this.request<{ affiliate: any }>(`/admin/affiliates/${id}`)
   }
 
+  async updateAdminAffiliate(id: string, data: {
+    customCode?: string
+    tier?: string
+    totalPoints?: number
+    availablePoints?: number
+  }) {
+    return this.request<{ affiliate: any }>(`/admin/affiliates/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteAdminAffiliate(id: string) {
+    return this.request<{ success: boolean }>(`/admin/affiliates/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
   // Shipping Zones
   async getShippingZones() {
     return this.request<any[]>('/admin/shipping/zones')
