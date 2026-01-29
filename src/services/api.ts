@@ -1644,7 +1644,16 @@ class ApiService {
   }
 
   // Documents
-  async getDocuments(params?: { folderId?: string; category?: string; year?: number; search?: string; teamMemberId?: string; page?: number; limit?: number }) {
+  async getDocuments(params?: {
+    folderId?: string
+    category?: string
+    year?: number
+    search?: string
+    teamMemberId?: string
+    page?: number
+    limit?: number
+    source?: 'all' | 'company' | 'contracts' | 'partner-contracts' | 'team' | 'requests'
+  }) {
     const searchParams = new URLSearchParams()
     if (params?.folderId) searchParams.set('folderId', params.folderId)
     if (params?.category) searchParams.set('category', params.category)
@@ -1653,7 +1662,19 @@ class ApiService {
     if (params?.teamMemberId) searchParams.set('teamMemberId', params.teamMemberId)
     if (params?.page) searchParams.set('page', params.page.toString())
     if (params?.limit) searchParams.set('limit', params.limit.toString())
-    return this.request<{ documents: any[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>(`/admin/documents?${searchParams}`)
+    if (params?.source) searchParams.set('source', params.source)
+    return this.request<{
+      documents: any[]
+      pagination: { page: number; limit: number; total: number; totalPages: number }
+      counts?: {
+        all: number
+        company: number
+        contracts: number
+        'partner-contracts': number
+        team: number
+        requests: number
+      }
+    }>(`/admin/documents?${searchParams}`)
   }
 
   async getDocument(id: string) {

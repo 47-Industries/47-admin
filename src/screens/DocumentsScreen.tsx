@@ -39,6 +39,49 @@ const CATEGORIES = [
   { value: 'OTHER', label: 'Other' },
 ]
 
+type DocumentSource = 'all' | 'company' | 'contracts' | 'partner-contracts' | 'team' | 'requests'
+
+const SOURCE_FILTERS: { value: DocumentSource; label: string; color: string }[] = [
+  { value: 'all', label: 'All', color: colors.textMuted },
+  { value: 'company', label: 'Company', color: colors.primary },
+  { value: 'contracts', label: 'Contracts', color: '#8b5cf6' },
+  { value: 'partner-contracts', label: 'Partner', color: colors.success },
+  { value: 'team', label: 'Team', color: '#f59e0b' },
+  { value: 'requests', label: 'Requests', color: '#06b6d4' },
+]
+
+function getSourceColor(source: string | undefined): string {
+  switch (source) {
+    case 'company': return colors.primary
+    case 'contracts': return '#8b5cf6'
+    case 'partner-contracts': return colors.success
+    case 'team': return '#f59e0b'
+    case 'requests': return '#06b6d4'
+    default: return colors.textMuted
+  }
+}
+
+function getSourceLabel(source: string | undefined): string {
+  switch (source) {
+    case 'company': return 'Company'
+    case 'contracts': return 'Contract'
+    case 'partner-contracts': return 'Partner'
+    case 'team': return 'Team'
+    case 'requests': return 'Request'
+    default: return ''
+  }
+}
+
+function getContractStatusVariant(status: string | undefined): 'default' | 'success' | 'warning' | 'error' | 'primary' {
+  switch (status) {
+    case 'SIGNED': return 'success'
+    case 'SENT': return 'warning'
+    case 'DRAFT': return 'default'
+    case 'ACTIVE': return 'success'
+    default: return 'default'
+  }
+}
+
 const FOLDER_COLORS = [
   '#3b82f6',
   '#10b981',
@@ -119,6 +162,23 @@ interface Document {
   createdAt: string
   folder?: { id: string; name: string; color: string | null }
   downloadUrl?: string
+  // Multi-source fields
+  source?: string
+  status?: string
+  clientName?: string
+  partnerName?: string
+  teamMemberName?: string
+  contractValue?: number
+  documentType?: string
+}
+
+interface SourceCounts {
+  all: number
+  company: number
+  contracts: number
+  'partner-contracts': number
+  team: number
+  requests: number
 }
 
 export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; hideHeader?: boolean }) {
@@ -135,6 +195,15 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
   ])
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
+  const [sourceFilter, setSourceFilter] = useState<DocumentSource>('all')
+  const [sourceCounts, setSourceCounts] = useState<SourceCounts>({
+    all: 0,
+    company: 0,
+    contracts: 0,
+    'partner-contracts': 0,
+    team: 0,
+    requests: 0,
+  })
 
   // Modals
   const [detailModalVisible, setDetailModalVisible] = useState(false)
@@ -170,6 +239,7 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
       const params: any = {
         page: pageNum,
         limit: 20,
+        source: sourceFilter,
       }
       if (currentFolderId) params.folderId = currentFolderId
       else params.folderId = 'root'
@@ -185,6 +255,11 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
         setDocuments(prev => [...prev, ...newDocs])
       }
 
+      // Update source counts if provided
+      if (data.counts) {
+        setSourceCounts(data.counts)
+      }
+
       setHasMore(newDocs.length === 20)
       setPage(pageNum)
     } catch (error) {
@@ -193,7 +268,7 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
       setLoading(false)
       setRefreshing(false)
     }
-  }, [currentFolderId, search, categoryFilter])
+  }, [currentFolderId, search, categoryFilter, sourceFilter])
 
   const fetchFolders = useCallback(async () => {
     try {
@@ -216,7 +291,7 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
     setLoading(true)
     fetchDocuments(1, true)
     fetchFolders()
-  }, [currentFolderId, search, categoryFilter])
+  }, [currentFolderId, search, categoryFilter, sourceFilter])
 
   const onRefresh = () => {
     setRefreshing(true)
@@ -448,25 +523,55 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
 
   const renderDocumentItem = ({ item }: { item: Document }) => {
     const icon = getFileIcon(item.fileType)
+    const sourceColor = getSourceColor(item.source)
+
+    // Get subtitle based on source
+    let subtitle: string | null = null
+    if (item.source === 'contracts' && item.clientName) {
+      subtitle = item.clientName
+    } else if (item.source === 'partner-contracts' && item.partnerName) {
+      subtitle = item.partnerName
+    } else if (item.source === 'team' && item.teamMemberName) {
+      subtitle = item.teamMemberName
+    }
+
     return (
       <TouchableOpacity onPress={() => openDocumentDetail(item)} activeOpacity={0.7}>
         <Card style={styles.documentCard}>
           <View style={styles.documentContent}>
             <View style={[styles.fileIconContainer, { backgroundColor: `${icon.color}15` }]}>
               <Ionicons name={icon.name as any} size={24} color={icon.color} />
+              {/* Source indicator dot */}
+              {item.source && item.source !== 'company' && (
+                <View style={[styles.sourceDot, { backgroundColor: sourceColor }]} />
+              )}
             </View>
             <View style={styles.documentInfo}>
-              <Text style={styles.documentName} numberOfLines={1}>{item.name}</Text>
+              <View style={styles.documentNameRow}>
+                <Text style={styles.documentName} numberOfLines={1}>{item.name}</Text>
+              </View>
+              {subtitle && (
+                <Text style={styles.documentSubtitle} numberOfLines={1}>{subtitle}</Text>
+              )}
               <View style={styles.documentMeta}>
                 <Text style={styles.documentSize}>{formatFileSize(item.fileSize)}</Text>
                 <Text style={styles.documentDot}>  </Text>
                 <Text style={styles.documentDate}>{formatDate(item.createdAt)}</Text>
               </View>
-              {item.category && (
-                <View style={styles.documentBadgeRow}>
+              <View style={styles.documentBadgeRow}>
+                {/* Status badge for contracts */}
+                {(item.source === 'contracts' || item.source === 'partner-contracts') && item.status && (
+                  <Badge text={item.status} variant={getContractStatusVariant(item.status)} />
+                )}
+                {/* Category badge */}
+                {item.category && (
                   <Badge text={item.category} variant={getCategoryBadgeVariant(item.category)} />
-                </View>
-              )}
+                )}
+                {/* Document type badge for team docs */}
+                {item.source === 'team' && item.documentType && (
+                  <Badge text={item.documentType} variant="default" />
+                )}
+              </View>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </View>
@@ -590,6 +695,48 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
         </View>
       </View>
 
+      {/* Source Filter Chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.sourceFiltersScroll}
+        contentContainerStyle={styles.filtersContainer}
+      >
+        {SOURCE_FILTERS.map(src => {
+          const count = sourceCounts[src.value] || 0
+          const isActive = sourceFilter === src.value
+          return (
+            <TouchableOpacity
+              key={src.value}
+              style={[
+                styles.sourceFilterChip,
+                isActive && { backgroundColor: src.color, borderColor: src.color },
+              ]}
+              onPress={() => setSourceFilter(src.value)}
+            >
+              {!isActive && src.value !== 'all' && (
+                <View style={[styles.sourceColorDot, { backgroundColor: src.color }]} />
+              )}
+              <Text
+                style={[
+                  styles.filterChipText,
+                  isActive && styles.filterChipTextActive,
+                ]}
+              >
+                {src.label}
+              </Text>
+              {count > 0 && (
+                <View style={[styles.sourceCountBadge, isActive && styles.sourceCountBadgeActive]}>
+                  <Text style={[styles.sourceCountText, isActive && styles.sourceCountTextActive]}>
+                    {count > 99 ? '99+' : count}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )
+        })}
+      </ScrollView>
+
       {/* Category Filter Chips */}
       <ScrollView
         horizontal
@@ -684,6 +831,18 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
                 <Text style={styles.detailOriginalName}>{selectedDocument.fileName}</Text>
               </View>
 
+              {/* Source Badge */}
+              {selectedDocument.source && (
+                <View style={styles.sourceIndicatorRow}>
+                  <View style={[styles.sourceIndicatorBadge, { backgroundColor: `${getSourceColor(selectedDocument.source)}20` }]}>
+                    <View style={[styles.sourceIndicatorDot, { backgroundColor: getSourceColor(selectedDocument.source) }]} />
+                    <Text style={[styles.sourceIndicatorText, { color: getSourceColor(selectedDocument.source) }]}>
+                      {getSourceLabel(selectedDocument.source)}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
               {/* Metadata */}
               <Card style={styles.detailCard}>
                 <View style={styles.detailRow}>
@@ -720,6 +879,57 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
                   </View>
                 )}
               </Card>
+
+              {/* Source-specific information */}
+              {(selectedDocument.source === 'contracts' || selectedDocument.source === 'partner-contracts') && (
+                <Card style={styles.detailCard}>
+                  <Text style={styles.detailSectionTitle}>Contract Details</Text>
+                  {selectedDocument.clientName && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Client</Text>
+                      <Text style={styles.detailValue}>{selectedDocument.clientName}</Text>
+                    </View>
+                  )}
+                  {selectedDocument.partnerName && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Partner</Text>
+                      <Text style={styles.detailValue}>{selectedDocument.partnerName}</Text>
+                    </View>
+                  )}
+                  {selectedDocument.status && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Status</Text>
+                      <Badge text={selectedDocument.status} variant={getContractStatusVariant(selectedDocument.status)} />
+                    </View>
+                  )}
+                  {selectedDocument.contractValue !== undefined && selectedDocument.contractValue !== null && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Value</Text>
+                      <Text style={styles.detailValue}>
+                        ${selectedDocument.contractValue.toLocaleString()}
+                      </Text>
+                    </View>
+                  )}
+                </Card>
+              )}
+
+              {selectedDocument.source === 'team' && (
+                <Card style={styles.detailCard}>
+                  <Text style={styles.detailSectionTitle}>Team Document Details</Text>
+                  {selectedDocument.teamMemberName && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Team Member</Text>
+                      <Text style={styles.detailValue}>{selectedDocument.teamMemberName}</Text>
+                    </View>
+                  )}
+                  {selectedDocument.documentType && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Document Type</Text>
+                      <Text style={styles.detailValue}>{selectedDocument.documentType}</Text>
+                    </View>
+                  )}
+                </Card>
+              )}
 
               {selectedDocument.description && (
                 <Card style={styles.detailCard}>
@@ -1188,6 +1398,45 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.md,
   },
+  // Source Filters
+  sourceFiltersScroll: {
+    maxHeight: 44,
+    marginBottom: spacing.xs,
+  },
+  sourceFilterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.xs,
+  },
+  sourceColorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  sourceCountBadge: {
+    backgroundColor: colors.surfaceHover,
+    paddingHorizontal: spacing.xs + 2,
+    paddingVertical: 2,
+    borderRadius: borderRadius.full,
+    marginLeft: spacing.xs,
+  },
+  sourceCountBadgeActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  sourceCountText: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    fontWeight: fontWeight.medium,
+  },
+  sourceCountTextActive: {
+    color: colors.text,
+  },
   // Filters
   filtersScroll: {
     maxHeight: 44,
@@ -1288,15 +1537,36 @@ const styles = StyleSheet.create({
     marginLeft: spacing.md,
     marginRight: spacing.sm,
   },
+  documentNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   documentName: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
     color: colors.text,
+    flex: 1,
+  },
+  documentSubtitle: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
   documentMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: spacing.xs,
+  },
+  sourceDot: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: colors.surface,
   },
   documentSize: {
     fontSize: fontSize.sm,
@@ -1311,6 +1581,9 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   documentBadgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
     marginTop: spacing.xs,
   },
   // Empty & loading
@@ -1415,6 +1688,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
+  },
+  detailSectionTitle: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  sourceIndicatorRow: {
+    alignItems: 'flex-start',
+    marginBottom: spacing.md,
+  },
+  sourceIndicatorBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.full,
+    gap: spacing.sm,
+  },
+  sourceIndicatorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  sourceIndicatorText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
   },
   tagsRow: {
     flexDirection: 'row',
