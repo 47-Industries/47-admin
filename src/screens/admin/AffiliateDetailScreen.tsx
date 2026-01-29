@@ -29,30 +29,23 @@ interface AffiliateDetailScreenProps {
   }
 }
 
-const tierColors: Record<string, string> = {
-  BRONZE: '#cd7f32',
-  SILVER: '#c0c0c0',
-  GOLD: '#ffd700',
-  PLATINUM: '#e5e4e2',
-}
-
-// Tiers are not stored in DB, just for display
 
 interface Affiliate {
   id: string
   affiliateCode: string
-  customCode?: string
   totalPoints: number
   availablePoints: number
-  redeemedPoints: number
+  pointsRedeemed: number
   totalReferrals: number
   successfulReferrals: number
   proConversions: number
-  proDaysEarned: number
+  proTimeEarnedDays: number
   totalEarnings: number
-  tier: string
-  partnerEligible: boolean
+  pendingEarnings: number
+  motorevProBonus: number
+  retentionBonus: number
   isPartner: boolean
+  rewardPreference: string
   createdAt: string
   user: {
     id: string
@@ -73,6 +66,13 @@ export function AffiliateDetailScreen({ navigation, route }: AffiliateDetailScre
   const [editForm, setEditForm] = useState({
     totalPoints: '',
     availablePoints: '',
+    pointsRedeemed: '',
+    totalReferrals: '',
+    proTimeEarnedDays: '',
+    totalEarnings: '',
+    pendingEarnings: '',
+    motorevProBonus: '',
+    retentionBonus: '',
     isPartner: false,
   })
 
@@ -103,6 +103,13 @@ export function AffiliateDetailScreen({ navigation, route }: AffiliateDetailScre
       setEditForm({
         totalPoints: String(affiliate.totalPoints || 0),
         availablePoints: String(affiliate.availablePoints || 0),
+        pointsRedeemed: String(affiliate.pointsRedeemed || 0),
+        totalReferrals: String(affiliate.totalReferrals || 0),
+        proTimeEarnedDays: String(affiliate.proTimeEarnedDays || 0),
+        totalEarnings: String(affiliate.totalEarnings || 0),
+        pendingEarnings: String(affiliate.pendingEarnings || 0),
+        motorevProBonus: String(affiliate.motorevProBonus || 1),
+        retentionBonus: String(affiliate.retentionBonus || 0.25),
         isPartner: affiliate.isPartner || false,
       })
       setEditModalVisible(true)
@@ -115,6 +122,14 @@ export function AffiliateDetailScreen({ navigation, route }: AffiliateDetailScre
       await api.updateAdminAffiliate(id, {
         totalPoints: parseInt(editForm.totalPoints) || 0,
         availablePoints: parseInt(editForm.availablePoints) || 0,
+        pointsRedeemed: parseInt(editForm.pointsRedeemed) || 0,
+        totalReferrals: parseInt(editForm.totalReferrals) || 0,
+        proTimeEarnedDays: parseInt(editForm.proTimeEarnedDays) || 0,
+        totalEarnings: parseFloat(editForm.totalEarnings) || 0,
+        pendingEarnings: parseFloat(editForm.pendingEarnings) || 0,
+        motorevProBonus: parseFloat(editForm.motorevProBonus) || 0,
+        retentionBonus: parseFloat(editForm.retentionBonus) || 0,
+        isPartner: editForm.isPartner,
       })
       setEditModalVisible(false)
       fetchAffiliate()
@@ -210,20 +225,19 @@ export function AffiliateDetailScreen({ navigation, route }: AffiliateDetailScre
               <Text style={styles.profileEmail}>{affiliate.user?.email}</Text>
               <View style={styles.codeRow}>
                 <Text style={styles.affiliateCode}>
-                  {affiliate.customCode || affiliate.affiliateCode}
+                  {affiliate.affiliateCode}
                 </Text>
               </View>
             </View>
           </View>
           <View style={styles.badgeRow}>
-            <Badge
-              text={affiliate.tier}
-              variant="default"
-              style={{ backgroundColor: tierColors[affiliate.tier] + '30' }}
-            />
-            {affiliate.partnerEligible && (
-              <Badge text="Partner Eligible" variant="success" />
+            {affiliate.isPartner && (
+              <Badge text="Partner" variant="success" />
             )}
+            <Badge
+              text={affiliate.rewardPreference || 'PRO_TIME'}
+              variant="default"
+            />
           </View>
         </Card>
 
@@ -240,7 +254,7 @@ export function AffiliateDetailScreen({ navigation, route }: AffiliateDetailScre
               <Text style={styles.statLabel}>Available</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>{affiliate.redeemedPoints}</Text>
+              <Text style={styles.statValue}>{affiliate.pointsRedeemed}</Text>
               <Text style={styles.statLabel}>Redeemed</Text>
             </View>
             <View style={styles.statBox}>
@@ -260,14 +274,26 @@ export function AffiliateDetailScreen({ navigation, route }: AffiliateDetailScre
 
         {/* Earnings Card */}
         <Card style={styles.infoCard}>
-          <Text style={styles.sectionTitle}>Rewards</Text>
+          <Text style={styles.sectionTitle}>Rewards & Earnings</Text>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Pro Days Earned</Text>
-            <Text style={styles.infoValue}>{affiliate.proDaysEarned || 0} days</Text>
+            <Text style={styles.infoValue}>{affiliate.proTimeEarnedDays || 0} days</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Total Earnings</Text>
             <Text style={styles.infoValue}>${(affiliate.totalEarnings || 0).toFixed(2)}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Pending Earnings</Text>
+            <Text style={styles.infoValue}>${(affiliate.pendingEarnings || 0).toFixed(2)}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>MotoRev Pro Bonus</Text>
+            <Text style={styles.infoValue}>${(affiliate.motorevProBonus || 0).toFixed(2)}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Retention Bonus</Text>
+            <Text style={styles.infoValue}>${(affiliate.retentionBonus || 0).toFixed(2)}</Text>
           </View>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Member Since</Text>
@@ -283,13 +309,13 @@ export function AffiliateDetailScreen({ navigation, route }: AffiliateDetailScre
               <View key={referral.id} style={styles.referralRow}>
                 <View>
                   <Text style={styles.referralName}>
-                    {referral.referredUser?.name || referral.referredUser?.email || 'Unknown'}
+                    {referral.eventType || 'Referral'}
                   </Text>
                   <Text style={styles.referralDate}>{formatDate(referral.createdAt)}</Text>
                 </View>
                 <Badge
-                  text={referral.status}
-                  variant={referral.status === 'CONVERTED' ? 'success' : 'default'}
+                  text={referral.convertedAt ? 'Converted' : 'Pending'}
+                  variant={referral.convertedAt ? 'success' : 'default'}
                 />
               </View>
             ))}
@@ -325,6 +351,9 @@ export function AffiliateDetailScreen({ navigation, route }: AffiliateDetailScre
           </View>
 
           <ScrollView style={styles.modalBody}>
+            {/* Points Section */}
+            <Text style={styles.sectionLabel}>Points</Text>
+
             <Text style={styles.fieldLabel}>Total Points</Text>
             <TextInput
               style={styles.textInput}
@@ -344,6 +373,100 @@ export function AffiliateDetailScreen({ navigation, route }: AffiliateDetailScre
               placeholderTextColor={colors.textMuted}
               keyboardType="number-pad"
             />
+
+            <Text style={styles.fieldLabel}>Points Redeemed</Text>
+            <TextInput
+              style={styles.textInput}
+              value={editForm.pointsRedeemed}
+              onChangeText={(text) => setEditForm({ ...editForm, pointsRedeemed: text })}
+              placeholder="0"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="number-pad"
+            />
+
+            {/* Stats Section */}
+            <Text style={styles.sectionLabel}>Statistics</Text>
+
+            <Text style={styles.fieldLabel}>Total Referrals</Text>
+            <TextInput
+              style={styles.textInput}
+              value={editForm.totalReferrals}
+              onChangeText={(text) => setEditForm({ ...editForm, totalReferrals: text })}
+              placeholder="0"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="number-pad"
+            />
+
+            <Text style={styles.fieldLabel}>Pro Days Earned</Text>
+            <TextInput
+              style={styles.textInput}
+              value={editForm.proTimeEarnedDays}
+              onChangeText={(text) => setEditForm({ ...editForm, proTimeEarnedDays: text })}
+              placeholder="0"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="number-pad"
+            />
+
+            {/* Earnings Section */}
+            <Text style={styles.sectionLabel}>Earnings</Text>
+
+            <Text style={styles.fieldLabel}>Total Earnings ($)</Text>
+            <TextInput
+              style={styles.textInput}
+              value={editForm.totalEarnings}
+              onChangeText={(text) => setEditForm({ ...editForm, totalEarnings: text })}
+              placeholder="0.00"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="decimal-pad"
+            />
+
+            <Text style={styles.fieldLabel}>Pending Earnings ($)</Text>
+            <TextInput
+              style={styles.textInput}
+              value={editForm.pendingEarnings}
+              onChangeText={(text) => setEditForm({ ...editForm, pendingEarnings: text })}
+              placeholder="0.00"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="decimal-pad"
+            />
+
+            {/* Commission Rates Section */}
+            <Text style={styles.sectionLabel}>Commission Rates</Text>
+
+            <Text style={styles.fieldLabel}>MotoRev Pro Bonus ($)</Text>
+            <TextInput
+              style={styles.textInput}
+              value={editForm.motorevProBonus}
+              onChangeText={(text) => setEditForm({ ...editForm, motorevProBonus: text })}
+              placeholder="1.00"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="decimal-pad"
+            />
+
+            <Text style={styles.fieldLabel}>Retention Bonus ($)</Text>
+            <TextInput
+              style={styles.textInput}
+              value={editForm.retentionBonus}
+              onChangeText={(text) => setEditForm({ ...editForm, retentionBonus: text })}
+              placeholder="0.25"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="decimal-pad"
+            />
+
+            {/* Partner Status Section */}
+            <Text style={styles.sectionLabel}>Status</Text>
+
+            <TouchableOpacity
+              style={styles.toggleRow}
+              onPress={() => setEditForm({ ...editForm, isPartner: !editForm.isPartner })}
+            >
+              <Text style={styles.toggleLabel}>Partner Status</Text>
+              <View style={[styles.toggleSwitch, editForm.isPartner && styles.toggleSwitchActive]}>
+                <View style={[styles.toggleKnob, editForm.isPartner && styles.toggleKnobActive]} />
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.modalBottomSpacer} />
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
@@ -564,21 +687,52 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.md,
   },
-  tierRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    flexWrap: 'wrap',
+  sectionLabel: {
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    color: colors.primary,
+    marginTop: spacing.xl,
+    marginBottom: spacing.sm,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
-  tierChip: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.full,
+  toggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    marginTop: spacing.sm,
+  },
+  toggleLabel: {
+    fontSize: fontSize.md,
+    color: colors.text,
+  },
+  toggleSwitch: {
+    width: 50,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+    justifyContent: 'center',
+    paddingHorizontal: 2,
   },
-  tierChipText: {
-    fontSize: fontSize.sm,
-    color: colors.text,
+  toggleSwitchActive: {
+    backgroundColor: colors.success,
+    borderColor: colors.success,
+  },
+  toggleKnob: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.textMuted,
+  },
+  toggleKnobActive: {
+    backgroundColor: colors.text,
+    alignSelf: 'flex-end',
+  },
+  modalBottomSpacer: {
+    height: 100,
   },
 })
