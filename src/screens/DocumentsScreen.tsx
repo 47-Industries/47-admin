@@ -1400,15 +1400,15 @@ const styles = StyleSheet.create({
   },
   // Source Filters
   sourceFiltersScroll: {
-    marginBottom: 12,
+    marginBottom: 16,
+    minHeight: 48,
   },
   sourceFilterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 38,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 19,
+    height: 42,
+    paddingHorizontal: 16,
+    borderRadius: 21,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -1439,7 +1439,8 @@ const styles = StyleSheet.create({
   },
   // Filters
   filtersScroll: {
-    marginBottom: 14,
+    marginBottom: 16,
+    minHeight: 48,
   },
   filtersContainer: {
     paddingHorizontal: spacing.xl,
@@ -1450,10 +1451,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 38,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 19,
+    height: 42,
+    paddingHorizontal: 18,
+    borderRadius: 21,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -1465,7 +1465,6 @@ const styles = StyleSheet.create({
   filterChipText: {
     fontSize: 14,
     color: '#e4e4e7',
-    lineHeight: 18,
   },
   filterChipTextActive: {
     color: '#ffffff',
