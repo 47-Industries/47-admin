@@ -1400,15 +1400,14 @@ const styles = StyleSheet.create({
   },
   // Source Filters
   sourceFiltersScroll: {
-    marginBottom: 8,
-    backgroundColor: 'transparent',
+    marginBottom: 10,
   },
   sourceFilterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 40,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    height: 36,
+    paddingHorizontal: 14,
+    borderRadius: 18,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -1420,19 +1419,18 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   sourceCountBadge: {
-    backgroundColor: colors.surfaceHover,
-    paddingHorizontal: spacing.xs + 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: borderRadius.full,
-    marginLeft: spacing.xs,
+    borderRadius: 10,
+    marginLeft: 4,
   },
   sourceCountBadgeActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
   },
   sourceCountText: {
-    fontSize: 12,
-    lineHeight: 16,
-    color: '#d4d4d8',
+    fontSize: 11,
+    color: '#a1a1aa',
   },
   sourceCountTextActive: {
     color: '#ffffff',
@@ -1440,21 +1438,19 @@ const styles = StyleSheet.create({
   // Filters
   filtersScroll: {
     marginBottom: 12,
-    backgroundColor: 'transparent',
   },
   filtersContainer: {
     paddingHorizontal: spacing.xl,
     gap: 8,
     flexDirection: 'row',
-    backgroundColor: 'transparent',
   },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 40,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    height: 36,
+    paddingHorizontal: 14,
+    borderRadius: 18,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -1465,7 +1461,7 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontSize: 13,
-    color: '#ffffff',
+    color: '#e4e4e7',
   },
   filterChipTextActive: {
     color: '#ffffff',
