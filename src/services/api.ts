@@ -1643,6 +1643,86 @@ class ApiService {
     })
   }
 
+  // Documents
+  async getDocuments(params?: { folderId?: string; category?: string; year?: number; search?: string; teamMemberId?: string; page?: number; limit?: number }) {
+    const searchParams = new URLSearchParams()
+    if (params?.folderId) searchParams.set('folderId', params.folderId)
+    if (params?.category) searchParams.set('category', params.category)
+    if (params?.year) searchParams.set('year', params.year.toString())
+    if (params?.search) searchParams.set('search', params.search)
+    if (params?.teamMemberId) searchParams.set('teamMemberId', params.teamMemberId)
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.limit) searchParams.set('limit', params.limit.toString())
+    return this.request<{ documents: any[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>(`/admin/documents?${searchParams}`)
+  }
+
+  async getDocument(id: string) {
+    return this.request<any>(`/admin/documents/${id}`)
+  }
+
+  async uploadDocument(formData: FormData) {
+    const token = await this.getToken()
+    const headers: HeadersInit = {}
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+    // Do NOT set Content-Type - let fetch set it with boundary for multipart
+    const response = await fetch(`${API_BASE_URL}/admin/documents`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Upload failed' }))
+      throw new Error(error.error || 'Upload failed')
+    }
+    return response.json()
+  }
+
+  async updateDocument(id: string, data: any) {
+    return this.request<any>(`/admin/documents/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteDocument(id: string) {
+    return this.request<{ success: boolean }>(`/admin/documents/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // Document Folders
+  async getDocumentFolders(flat?: boolean) {
+    const searchParams = new URLSearchParams()
+    if (flat) searchParams.set('flat', 'true')
+    return this.request<{ folders: any[] }>(`/admin/documents/folders?${searchParams}`)
+  }
+
+  async getDocumentFolder(id: string) {
+    return this.request<any>(`/admin/documents/folders/${id}`)
+  }
+
+  async createDocumentFolder(data: { name: string; description?: string; parentId?: string; color?: string }) {
+    return this.request<any>('/admin/documents/folders', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateDocumentFolder(id: string, data: any) {
+    return this.request<any>(`/admin/documents/folders/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteDocumentFolder(id: string) {
+    return this.request<{ success: boolean }>(`/admin/documents/folders/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
   // Reports (with export support)
   async getReport(type: 'sales' | 'inventory' | 'customers', params?: { range?: string }) {
     const searchParams = new URLSearchParams()

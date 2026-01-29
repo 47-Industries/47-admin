@@ -47,6 +47,7 @@ import PortfolioScreen from '../screens/PortfolioScreen'
 import PortfolioDetailScreen from '../screens/PortfolioDetailScreen'
 import BlogScreen from '../screens/BlogScreen'
 import BlogPostDetailScreen from '../screens/BlogPostDetailScreen'
+import { DocumentsScreen } from '../screens/DocumentsScreen'
 import { colors, portalColors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
 type TabName = 'Home' | 'Sales' | 'Business' | 'People' | 'Account'
@@ -89,7 +90,7 @@ export default function AdminNavigator() {
     // Sales: Orders, Invoices, Returns + Products, Categories
     const salesScreens = ['OrderDetail', 'Returns', 'AdminInvoices', 'InvoiceDetail', 'InvoiceCreate', 'Products', 'ProductDetail', 'ProductCreate', 'Categories']
     // Business: Requests (Inquiries, 3D Prints) + Packages + Portfolio + Finance (Expenses, Reports) + Analytics
-    const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Portfolio', 'PortfolioDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills']
+    const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Portfolio', 'PortfolioDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills', 'Documents']
     // People: Clients, Partners, Team, Affiliates, Users
     const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail']
     // Account: Profile, Email, Settings, Notifications, Marketing, Blog
@@ -195,6 +196,8 @@ export default function AdminNavigator() {
           return <ScreenWrapper><BlogScreen navigation={navigation} /></ScreenWrapper>
         case 'BlogPostDetail':
           return <ScreenWrapper><BlogPostDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
+        case 'Documents':
+          return <ScreenWrapper><DocumentsScreen navigation={navigation} /></ScreenWrapper>
       }
     }
 
@@ -356,7 +359,7 @@ function SalesTabScreen({ navigation }: { navigation: any }) {
 }
 
 // Business Tab - Services, Finance, and Analytics as top-level categories
-type BusinessCategory = 'services' | 'finance' | 'analytics'
+type BusinessCategory = 'services' | 'finance' | 'analytics' | 'documents'
 type ServiceSection = 'inquiries' | 'packages' | 'portfolio'
 type FinanceSection = 'expenses' | 'reports'
 
@@ -369,6 +372,7 @@ function BusinessTabScreen({ navigation }: { navigation: any }) {
     services: { icon: 'construct-outline', label: 'Services' },
     finance: { icon: 'wallet-outline', label: 'Finance' },
     analytics: { icon: 'analytics-outline', label: 'Analytics' },
+    documents: { icon: 'document-text-outline', label: 'Documents' },
   }
 
   return (
@@ -448,6 +452,8 @@ function BusinessTabScreen({ navigation }: { navigation: any }) {
         {category === 'finance' && financeSection === 'reports' && <ReportsScreen navigation={navigation} hideHeader />}
 
         {category === 'analytics' && <AnalyticsScreen navigation={navigation} hideHeader />}
+
+        {category === 'documents' && <DocumentsScreen navigation={navigation} hideHeader />}
       </View>
     </SafeAreaView>
   )
