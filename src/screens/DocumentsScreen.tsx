@@ -1431,7 +1431,7 @@ const styles = StyleSheet.create({
   },
   sourceCountText: {
     fontSize: fontSize.xs,
-    color: colors.textSecondary,
+    color: '#d4d4d8',
     fontWeight: fontWeight.semibold,
   },
   sourceCountTextActive: {
@@ -1463,7 +1463,7 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontSize: fontSize.md,
-    color: colors.textSecondary,
+    color: '#e4e4e7',
     fontWeight: fontWeight.medium,
   },
   filterChipTextActive: {
