@@ -1429,9 +1429,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   sourceCountText: {
-    fontSize: fontSize.xs,
+    fontSize: 12,
+    lineHeight: 16,
     color: '#d4d4d8',
-    fontWeight: fontWeight.semibold,
   },
   sourceCountTextActive: {
     color: '#ffffff',
@@ -1461,12 +1461,11 @@ const styles = StyleSheet.create({
   },
   filterChipText: {
     fontSize: 14,
-    color: '#e4e4e7',
-    fontWeight: '500',
+    lineHeight: 20,
+    color: '#ffffff',
   },
   filterChipTextActive: {
     color: '#ffffff',
-    fontWeight: '600',
   },
   // Folders
   foldersSection: {
