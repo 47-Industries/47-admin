@@ -1400,19 +1400,18 @@ const styles = StyleSheet.create({
   },
   // Source Filters
   sourceFiltersScroll: {
-    maxHeight: 44,
     marginBottom: spacing.xs,
   },
   sourceFilterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderRadius: borderRadius.full,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    gap: spacing.xs,
+    gap: 6,
   },
   sourceColorDot: {
     width: 8,
@@ -1439,19 +1438,18 @@ const styles = StyleSheet.create({
   },
   // Filters
   filtersScroll: {
-    maxHeight: 44,
     marginBottom: spacing.sm,
   },
   filtersContainer: {
     paddingHorizontal: spacing.xl,
-    gap: spacing.sm,
+    gap: 8,
     flexDirection: 'row',
   },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderRadius: borderRadius.full,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -1462,13 +1460,13 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   filterChipText: {
-    fontSize: fontSize.md,
+    fontSize: 14,
     color: '#e4e4e7',
-    fontWeight: fontWeight.medium,
+    fontWeight: '500',
   },
   filterChipTextActive: {
     color: '#ffffff',
-    fontWeight: fontWeight.semibold,
+    fontWeight: '600',
   },
   // Folders
   foldersSection: {
