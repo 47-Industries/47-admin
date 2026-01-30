@@ -14,6 +14,7 @@ export default function App() {
 
   const player = useVideoPlayer(videoSource, player => {
     player.loop = false
+    player.muted = true
     player.play()
   })
 
@@ -52,9 +53,15 @@ const styles = StyleSheet.create({
   splashContainer: {
     flex: 1,
     backgroundColor: '#0a0a0a',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   video: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     width: width,
     height: height,
   },
