@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { View, StyleSheet, Dimensions } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -7,43 +7,64 @@ import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av'
 import { Navigation } from './src/navigation'
 
 // Prevent the splash screen from auto-hiding
-SplashScreen.preventAutoHideAsync()
+SplashScreen.preventAutoHideAsync().catch(() => {})
 
 const { width, height } = Dimensions.get('window')
 
 export default function App() {
   const [showSplashVideo, setShowSplashVideo] = useState(true)
-  const [appIsReady, setAppIsReady] = useState(false)
+  const videoRef = useRef<Video>(null)
+  const hasFinished = useRef(false)
+
+  const finishSplash = () => {
+    if (hasFinished.current) return
+    hasFinished.current = true
+    setShowSplashVideo(false)
+  }
 
   useEffect(() => {
-    // Hide the native splash screen once our component mounts
-    SplashScreen.hideAsync()
+    // Hide the native splash screen
+    SplashScreen.hideAsync().catch(() => {})
+
+    // Fallback timeout - if video doesn't finish in 6 seconds, show app anyway
+    const timeout = setTimeout(() => {
+      console.log('Splash timeout reached')
+      finishSplash()
+    }, 6000)
+
+    return () => clearTimeout(timeout)
   }, [])
 
-  const onPlaybackStatusUpdate = useCallback((status: AVPlaybackStatus) => {
+  const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
     if (status.isLoaded && status.didJustFinish) {
-      setShowSplashVideo(false)
-      setAppIsReady(true)
+      console.log('Video finished')
+      finishSplash()
     }
-  }, [])
+  }
 
-  const onVideoError = useCallback(() => {
-    // If video fails to load, just show the app
-    setShowSplashVideo(false)
-    setAppIsReady(true)
-  }, [])
+  const onVideoLoad = () => {
+    console.log('Video loaded')
+  }
+
+  const onVideoError = (error: string) => {
+    console.log('Video error:', error)
+    finishSplash()
+  }
 
   if (showSplashVideo) {
     return (
       <View style={styles.splashContainer}>
-        <StatusBar style="light" />
+        <StatusBar style="light" hidden />
         <Video
+          ref={videoRef}
           source={require('./assets/splash-video.mp4')}
           style={styles.video}
           resizeMode={ResizeMode.COVER}
-          shouldPlay
+          shouldPlay={true}
           isLooping={false}
+          isMuted={true}
           onPlaybackStatusUpdate={onPlaybackStatusUpdate}
+          onLoad={onVideoLoad}
           onError={onVideoError}
         />
       </View>
@@ -62,6 +83,8 @@ const styles = StyleSheet.create({
   splashContainer: {
     flex: 1,
     backgroundColor: '#0a0a0a',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   video: {
     width: width,
@@ -69,5 +92,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
+    right: 0,
+    bottom: 0,
   },
 })
