@@ -8,8 +8,6 @@
     "userInterfaceStyle": "dark",
     "owner": "47-industries",
     "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
       "backgroundColor": "#0a0a0a"
     },
     "ios": {
