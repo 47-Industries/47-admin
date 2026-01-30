@@ -1,16 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { View, StyleSheet, Dimensions } from 'react-native'
+import { View, StyleSheet, Animated, Dimensions } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import * as SplashScreen from 'expo-splash-screen'
 import { useVideoPlayer, VideoView } from 'expo-video'
 import { Navigation } from './src/navigation'
 
-const { width, height } = Dimensions.get('window')
+// Keep native splash hidden - we control everything
+SplashScreen.preventAutoHideAsync().catch(() => {})
 
+const { width, height } = Dimensions.get('window')
 const videoSource = require('./assets/splash-video.mp4')
 
 export default function App() {
+  const [appReady, setAppReady] = useState(false)
   const [showSplash, setShowSplash] = useState(true)
+  const fadeAnim = useRef(new Animated.Value(1)).current
 
   const player = useVideoPlayer(videoSource, player => {
     player.loop = false
@@ -19,49 +24,72 @@ export default function App() {
   })
 
   useEffect(() => {
-    // Hide splash after video duration (4 seconds + buffer)
-    const timer = setTimeout(() => {
-      setShowSplash(false)
-    }, 4200)
+    // Hide native splash immediately
+    SplashScreen.hideAsync().catch(() => {})
 
-    return () => clearTimeout(timer)
+    // Mark app as ready after a short delay (simulating preload)
+    const readyTimer = setTimeout(() => {
+      setAppReady(true)
+    }, 1000)
+
+    // After video duration, fade out and show app
+    const splashTimer = setTimeout(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }).start(() => {
+        setShowSplash(false)
+      })
+    }, 4000)
+
+    return () => {
+      clearTimeout(readyTimer)
+      clearTimeout(splashTimer)
+    }
   }, [])
 
-  if (showSplash) {
-    return (
-      <View style={styles.splashContainer}>
-        <StatusBar style="light" hidden />
-        <VideoView
-          style={styles.video}
-          player={player}
-          nativeControls={false}
-          contentFit="contain"
-        />
-      </View>
-    )
-  }
-
   return (
-    <SafeAreaProvider>
-      <StatusBar style="light" />
-      <Navigation />
-    </SafeAreaProvider>
+    <View style={styles.container}>
+      <StatusBar style="light" hidden={showSplash} />
+
+      {/* App content - always mounted for preloading */}
+      <View style={[styles.appContainer, { opacity: appReady ? 1 : 0 }]}>
+        <SafeAreaProvider>
+          <Navigation />
+        </SafeAreaProvider>
+      </View>
+
+      {/* Splash overlay with fade */}
+      {showSplash && (
+        <Animated.View style={[styles.splashContainer, { opacity: fadeAnim }]}>
+          <VideoView
+            style={styles.video}
+            player={player}
+            nativeControls={false}
+            contentFit="cover"
+          />
+        </Animated.View>
+      )}
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  splashContainer: {
+  container: {
     flex: 1,
     backgroundColor: '#0a0a0a',
-    alignItems: 'center',
-    justifyContent: 'center',
+  },
+  appContainer: {
+    flex: 1,
+  },
+  splashContainer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#0a0a0a',
+    zIndex: 10,
   },
   video: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    flex: 1,
     width: width,
     height: height,
   },
