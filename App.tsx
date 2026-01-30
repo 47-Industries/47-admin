@@ -3,21 +3,11 @@ import { View, StyleSheet, Animated, Dimensions } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import * as SplashScreen from 'expo-splash-screen'
-import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from 'expo-av'
-import { useVideoPlayer, VideoView } from 'expo-video'
+import { useVideoPlayer, VideoView, AudioMixingMode } from 'expo-video'
 import { Navigation } from './src/navigation'
 
 // Keep native splash hidden - we control everything
 SplashScreen.preventAutoHideAsync().catch(() => {})
-
-// Configure audio to not interrupt other apps (music, podcasts, etc.)
-Audio.setAudioModeAsync({
-  playsInSilentModeOnIOS: false,
-  staysActiveInBackground: false,
-  interruptionModeIOS: InterruptionModeIOS.MixWithOthers,
-  interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
-  shouldDuckAndroid: false,
-}).catch(() => {})
 
 const { width, height } = Dimensions.get('window')
 const videoSource = require('./assets/splash-video.mp4')
@@ -30,6 +20,7 @@ export default function App() {
   const player = useVideoPlayer(videoSource, player => {
     player.loop = false
     player.muted = true
+    player.audioMixingMode = AudioMixingMode.MixWithOthers
     player.play()
   })
 
