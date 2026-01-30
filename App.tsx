@@ -3,7 +3,7 @@ import { View, StyleSheet, Animated, Dimensions } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import * as SplashScreen from 'expo-splash-screen'
-import { useVideoPlayer, VideoView, AudioMixingMode } from 'expo-video'
+import { useVideoPlayer, VideoView } from 'expo-video'
 import { Navigation } from './src/navigation'
 
 // Keep native splash hidden - we control everything
@@ -20,7 +20,7 @@ export default function App() {
   const player = useVideoPlayer(videoSource, player => {
     player.loop = false
     player.muted = true
-    player.audioMixingMode = AudioMixingMode.MixWithOthers
+    player.audioMixingMode = 'mixWithOthers'
     player.play()
   })
 
