@@ -35,7 +35,7 @@ export default function App() {
           style={styles.video}
           player={player}
           nativeControls={false}
-          contentFit="cover"
+          contentFit="contain"
         />
       </View>
     )
