@@ -38,7 +38,8 @@
             "enableUserScriptSandboxing": false
           }
         }
-      ]
+      ],
+      "expo-video"
     ],
     "extra": {
       "eas": {

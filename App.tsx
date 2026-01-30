@@ -1,17 +1,24 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { View, StyleSheet, Dimensions } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { Video, ResizeMode } from 'expo-av'
+import { useVideoPlayer, VideoView } from 'expo-video'
 import { Navigation } from './src/navigation'
 
 const { width, height } = Dimensions.get('window')
 
+const videoSource = require('./assets/splash-video.mp4')
+
 export default function App() {
   const [showSplash, setShowSplash] = useState(true)
 
+  const player = useVideoPlayer(videoSource, player => {
+    player.loop = false
+    player.play()
+  })
+
   useEffect(() => {
-    // Video is 4 seconds, hide splash after it finishes
+    // Hide splash after video duration (4 seconds + buffer)
     const timer = setTimeout(() => {
       setShowSplash(false)
     }, 4200)
@@ -23,13 +30,11 @@ export default function App() {
     return (
       <View style={styles.splashContainer}>
         <StatusBar style="light" hidden />
-        <Video
-          source={require('./assets/splash-video.mp4')}
+        <VideoView
           style={styles.video}
-          resizeMode={ResizeMode.COVER}
-          shouldPlay
-          isLooping={false}
-          isMuted
+          player={player}
+          nativeControls={false}
+          contentFit="cover"
         />
       </View>
     )
