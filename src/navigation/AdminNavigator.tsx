@@ -103,8 +103,8 @@ export default function AdminNavigator() {
   const currentScreen = screenStack[screenStack.length - 1]
 
   const getParentTab = (screenName: string): TabName | null => {
-    // Sales: Orders, Invoices, Returns, External Orders + Products, Categories, Brands, Collections, Customer Designs
-    const salesScreens = ['OrderDetail', 'Returns', 'AdminInvoices', 'InvoiceDetail', 'InvoiceCreate', 'Products', 'ProductDetail', 'ProductCreate', 'Categories', 'Brands', 'Collections', 'CollectionDetail', 'ExternalOrders', 'ExternalOrderDetail', 'CustomerDesigns', 'CustomerDesignDetail']
+    // Sales: Orders, Invoices, Returns, External Orders + Products, Categories, Brands, Collections, Inventory, Customer Designs
+    const salesScreens = ['OrderDetail', 'Returns', 'AdminInvoices', 'InvoiceDetail', 'InvoiceCreate', 'Products', 'ProductDetail', 'ProductCreate', 'Categories', 'Brands', 'Collections', 'CollectionDetail', 'Inventory', 'ExternalOrders', 'ExternalOrderDetail', 'CustomerDesigns', 'CustomerDesignDetail']
     // Business: Requests (Inquiries, 3D Prints) + Packages + Portfolio + Finance (Expenses, Reports) + Analytics + Operations (Print Queue)
     const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Portfolio', 'PortfolioDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills', 'Documents', 'PrintQueue']
     // People: Clients, Partners, Team, Affiliates, Users
