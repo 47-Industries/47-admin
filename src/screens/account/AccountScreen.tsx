@@ -165,6 +165,22 @@ export function AccountScreen({ navigation, hideHeader }: AccountScreenProps) {
           </TouchableOpacity>
         </View>
 
+        {/* Tools */}
+        <View style={styles.menuSection}>
+          <Text style={styles.sectionTitle}>Tools</Text>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('BusinessCards')}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="card-outline" size={20} color={colors.textSecondary} />
+              <Text style={styles.menuItemText}>Business Cards</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          </TouchableOpacity>
+        </View>
+
         {/* Settings */}
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>Settings</Text>

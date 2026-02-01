@@ -54,6 +54,10 @@ import { ExternalOrdersScreen } from '../screens/admin/ExternalOrdersScreen'
 import { ExternalOrderDetailScreen } from '../screens/admin/ExternalOrderDetailScreen'
 import BusinessCardsScreen from '../screens/admin/BusinessCardsScreen'
 import CardGeneratorScreen from '../screens/admin/CardGeneratorScreen'
+import { CollectionsScreen } from '../screens/CollectionsScreen'
+import CollectionDetailScreen from '../screens/CollectionDetailScreen'
+import CustomerDesignsScreen from '../screens/CustomerDesignsScreen'
+import CustomerDesignDetailScreen from '../screens/CustomerDesignDetailScreen'
 import { colors, portalColors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
 type TabName = 'Home' | 'Sales' | 'Business' | 'People' | 'Account'
@@ -93,8 +97,8 @@ export default function AdminNavigator() {
   const currentScreen = screenStack[screenStack.length - 1]
 
   const getParentTab = (screenName: string): TabName | null => {
-    // Sales: Orders, Invoices, Returns, External Orders + Products, Categories, Brands
-    const salesScreens = ['OrderDetail', 'Returns', 'AdminInvoices', 'InvoiceDetail', 'InvoiceCreate', 'Products', 'ProductDetail', 'ProductCreate', 'Categories', 'Brands', 'ExternalOrders', 'ExternalOrderDetail']
+    // Sales: Orders, Invoices, Returns, External Orders + Products, Categories, Brands, Collections, Customer Designs
+    const salesScreens = ['OrderDetail', 'Returns', 'AdminInvoices', 'InvoiceDetail', 'InvoiceCreate', 'Products', 'ProductDetail', 'ProductCreate', 'Categories', 'Brands', 'Collections', 'CollectionDetail', 'ExternalOrders', 'ExternalOrderDetail', 'CustomerDesigns', 'CustomerDesignDetail']
     // Business: Requests (Inquiries, 3D Prints) + Packages + Portfolio + Finance (Expenses, Reports) + Analytics
     const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Portfolio', 'PortfolioDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills', 'Documents']
     // People: Clients, Partners, Team, Affiliates, Users
@@ -216,6 +220,10 @@ export default function AdminNavigator() {
           return <ScreenWrapper><BusinessCardsScreen navigation={navigation} /></ScreenWrapper>
         case 'CardGenerator':
           return <ScreenWrapper><CardGeneratorScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
+        case 'Collections':
+          return <ScreenWrapper><CollectionsScreen navigation={navigation} /></ScreenWrapper>
+        case 'CollectionDetail':
+          return <ScreenWrapper><CollectionDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
       }
     }
 
