@@ -162,8 +162,10 @@ export function UsersScreen({ navigation, hideHeader }: { navigation: any; hideH
 
   const renderUser = ({ item }: { item: User }) => {
     if (!item) return null
+    // Navigate to CustomerDetail for customers, UserDetail for admins
+    const screenName = userType === 'customers' ? 'CustomerDetail' : 'UserDetail'
     return (
-    <TouchableOpacity onPress={() => navigation.navigate('UserDetail', { id: item.id })} activeOpacity={0.7}>
+    <TouchableOpacity onPress={() => navigation.navigate(screenName, { id: item.id })} activeOpacity={0.7}>
       <Card style={styles.userCard}>
         <View style={styles.userContent}>
           <View style={[styles.avatar, (item.role === 'ADMIN' || item.role === 'SUPER_ADMIN') && styles.adminAvatar]}>

@@ -18,6 +18,7 @@ import CustomRequestsScreen from '../screens/CustomRequestsScreen'
 import CustomRequestDetailScreen from '../screens/CustomRequestDetailScreen'
 import InquiryDetailScreen from '../screens/InquiryDetailScreen'
 import UserDetailScreen from '../screens/UserDetailScreen'
+import CustomerDetailScreen from '../screens/CustomerDetailScreen'
 import ReturnsScreen from '../screens/admin/ReturnsScreen'
 import AnalyticsScreen from '../screens/AnalyticsScreen'
 import ServicesScreen from '../screens/ServicesScreen'
@@ -58,6 +59,9 @@ import { CollectionsScreen } from '../screens/CollectionsScreen'
 import CollectionDetailScreen from '../screens/CollectionDetailScreen'
 import CustomerDesignsScreen from '../screens/CustomerDesignsScreen'
 import CustomerDesignDetailScreen from '../screens/CustomerDesignDetailScreen'
+import EmailSignaturesScreen from '../screens/admin/EmailSignaturesScreen'
+import { PartnerApplicationsScreen } from '../screens/admin/PartnerApplicationsScreen'
+import InventoryScreen from '../screens/InventoryScreen'
 import { colors, portalColors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
 type TabName = 'Home' | 'Sales' | 'Business' | 'People' | 'Account'
@@ -102,9 +106,9 @@ export default function AdminNavigator() {
     // Business: Requests (Inquiries, 3D Prints) + Packages + Portfolio + Finance (Expenses, Reports) + Analytics
     const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Portfolio', 'PortfolioDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills', 'Documents']
     // People: Clients, Partners, Team, Affiliates, Users
-    const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail']
-    // Account: Profile, Email, Settings, Notifications, Marketing, Blog, Business Cards
-    const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'ShippingSettings', 'TaxSettings', 'Email', 'Marketing', 'Blog', 'BlogPostDetail', 'BusinessCards', 'CardGenerator']
+    const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'CustomerDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail']
+    // Account: Profile, Email, Settings, Notifications, Marketing, Blog, Business Cards, Email Signatures
+    const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'ShippingSettings', 'TaxSettings', 'Email', 'EmailSignatures', 'Marketing', 'Blog', 'BlogPostDetail', 'BusinessCards', 'CardGenerator']
 
     if (salesScreens.includes(screenName)) return 'Sales'
     if (businessScreens.includes(screenName)) return 'Business'
@@ -142,6 +146,8 @@ export default function AdminNavigator() {
           return <ScreenWrapper><ServicePackageDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
         case 'UserDetail':
           return <ScreenWrapper><UserDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
+        case 'CustomerDetail':
+          return <ScreenWrapper><CustomerDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
         case 'Returns':
           return <ScreenWrapper><ReturnsScreen navigation={navigation} /></ScreenWrapper>
         case 'Users':
@@ -228,6 +234,8 @@ export default function AdminNavigator() {
           return <ScreenWrapper><CustomerDesignsScreen navigation={navigation} /></ScreenWrapper>
         case 'CustomerDesignDetail':
           return <ScreenWrapper><CustomerDesignDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
+        case 'EmailSignatures':
+          return <ScreenWrapper><EmailSignaturesScreen navigation={navigation} /></ScreenWrapper>
       }
     }
 
@@ -293,9 +301,9 @@ export default function AdminNavigator() {
   )
 }
 
-// Sales Tab - Products-focused: Products, Categories, Brands + Orders, Invoices, Returns, External Orders
+// Sales Tab - Products-focused: Products, Categories, Brands, Inventory + Orders, Invoices, Returns, External Orders
 type SalesCategory = 'catalog' | 'sales'
-type CatalogSection = 'products' | 'categories' | 'brands' | 'collections'
+type CatalogSection = 'products' | 'categories' | 'brands' | 'collections' | 'inventory'
 type SalesSection = 'orders' | 'designs' | 'invoices' | 'returns' | 'external'
 
 function SalesTabScreen({ navigation }: { navigation: any }) {
