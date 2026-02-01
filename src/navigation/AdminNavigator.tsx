@@ -109,8 +109,8 @@ export default function AdminNavigator() {
     const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Portfolio', 'PortfolioDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills', 'Documents', 'PrintQueue']
     // People: Clients, Partners, Team, Affiliates, Users
     const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'CustomerDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail', 'PartnerApplications']
-    // Account: Profile, Email, Settings, Notifications, Marketing, Blog, Business Cards, Email Signatures
-    const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'ShippingSettings', 'TaxSettings', 'Email', 'EmailSignatures', 'Marketing', 'Blog', 'BlogPostDetail', 'BusinessCards', 'CardGenerator']
+    // Account: Profile, Email, Settings, Notifications, Marketing, Blog, Business Cards, Email Signatures, OAuth
+    const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'ShippingSettings', 'TaxSettings', 'Email', 'EmailSignatures', 'Marketing', 'Blog', 'BlogPostDetail', 'BusinessCards', 'CardGenerator', 'OAuthApplications']
 
     if (salesScreens.includes(screenName)) return 'Sales'
     if (businessScreens.includes(screenName)) return 'Business'
@@ -541,7 +541,7 @@ function BusinessTabScreen({ navigation }: { navigation: any }) {
 
 // People Tab - Clients, Partners, Team
 function PeopleTabScreen({ navigation }: { navigation: any }) {
-  const [activeSection, setActiveSection] = useState<'clients' | 'partners' | 'leads' | 'team' | 'affiliates'>('clients')
+  const [activeSection, setActiveSection] = useState<'clients' | 'partners' | 'applications' | 'leads' | 'team' | 'affiliates'>('clients')
 
   return (
     <SafeAreaView style={styles.tabContainer} edges={['top']}>

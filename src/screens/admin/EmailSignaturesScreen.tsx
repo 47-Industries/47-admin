@@ -59,6 +59,7 @@ export default function EmailSignaturesScreen({ navigation }: { navigation: any 
   // Preview modal state
   const [showPreview, setShowPreview] = useState(false)
   const [previewSignature, setPreviewSignature] = useState<Signature | null>(null)
+  const [previewMode, setPreviewMode] = useState<'html' | 'plain'>('html')
 
   const { height: windowHeight } = useWindowDimensions()
 
@@ -172,9 +173,39 @@ export default function EmailSignaturesScreen({ navigation }: { navigation: any 
     }
   }
 
+  const handleDuplicate = async (signature: Signature) => {
+    try {
+      await api.createEmailSignature({
+        name: `${signature.name} (Copy)`,
+        content: signature.content,
+        isDefault: false,
+        forAddress: signature.forAddress,
+      })
+      fetchSignatures()
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to duplicate signature')
+    }
+  }
+
   const openPreview = (signature: Signature) => {
     setPreviewSignature(signature)
+    setPreviewMode('html')
     setShowPreview(true)
+  }
+
+  const getPlainText = (html: string) => {
+    // Strip HTML tags and decode entities
+    return html
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n\n')
+      .replace(/<\/div>/gi, '\n')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .trim()
   }
 
   const getPreviewHtml = (content: string) => {
@@ -230,6 +261,7 @@ export default function EmailSignaturesScreen({ navigation }: { navigation: any 
                 { text: 'Edit', onPress: () => openEditModal(item) },
                 { text: 'Preview', onPress: () => openPreview(item) },
                 ...(!item.isDefault ? [{ text: 'Set as Default', onPress: () => handleSetDefault(item) }] : []),
+                { text: 'Duplicate', onPress: () => handleDuplicate(item) },
                 { text: 'Delete', style: 'destructive' as const, onPress: () => handleDelete(item) },
                 { text: 'Cancel', style: 'cancel' as const },
               ]
@@ -536,13 +568,34 @@ export default function EmailSignaturesScreen({ navigation }: { navigation: any 
                   For: {previewSignature.forAddress}
                 </Text>
               )}
+              {/* HTML/Plain text toggle */}
+              <View style={styles.previewToggle}>
+                <TouchableOpacity
+                  style={[styles.previewToggleButton, previewMode === 'html' && styles.previewToggleButtonActive]}
+                  onPress={() => setPreviewMode('html')}
+                >
+                  <Text style={[styles.previewToggleText, previewMode === 'html' && styles.previewToggleTextActive]}>HTML</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.previewToggleButton, previewMode === 'plain' && styles.previewToggleButtonActive]}
+                  onPress={() => setPreviewMode('plain')}
+                >
+                  <Text style={[styles.previewToggleText, previewMode === 'plain' && styles.previewToggleTextActive]}>Plain Text</Text>
+                </TouchableOpacity>
+              </View>
               <View style={styles.previewDivider} />
               <View style={styles.previewWebViewContainer}>
-                <WebView
-                  source={{ html: getPreviewHtml(previewSignature.content) }}
-                  style={styles.previewWebView}
-                  showsVerticalScrollIndicator={false}
-                />
+                {previewMode === 'html' ? (
+                  <WebView
+                    source={{ html: getPreviewHtml(previewSignature.content) }}
+                    style={styles.previewWebView}
+                    showsVerticalScrollIndicator={false}
+                  />
+                ) : (
+                  <ScrollView style={styles.plainTextScroll} showsVerticalScrollIndicator={false}>
+                    <Text style={styles.plainText}>{getPlainText(previewSignature.content)}</Text>
+                  </ScrollView>
+                )}
               </View>
             </View>
           )}
@@ -887,5 +940,41 @@ const styles = StyleSheet.create({
   previewWebView: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  previewToggle: {
+    flexDirection: 'row',
+    marginBottom: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  previewToggleButton: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.sm,
+  },
+  previewToggleButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  previewToggleText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.textMuted,
+  },
+  previewToggleTextActive: {
+    color: '#fff',
+  },
+  plainTextScroll: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: spacing.lg,
+  },
+  plainText: {
+    fontSize: fontSize.md,
+    lineHeight: 22,
+    color: '#000',
   },
 })

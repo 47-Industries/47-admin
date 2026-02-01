@@ -155,6 +155,17 @@ export function AccountScreen({ navigation, hideHeader }: AccountScreenProps) {
 
           <TouchableOpacity
             style={styles.menuItem}
+            onPress={() => navigation.navigate('EmailSignatures')}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="create-outline" size={20} color={colors.textSecondary} />
+              <Text style={styles.menuItemText}>Email Signatures</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
             onPress={() => navigation.navigate('Marketing')}
           >
             <View style={styles.menuItemLeft}>
