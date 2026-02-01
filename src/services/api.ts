@@ -450,17 +450,23 @@ class ApiService {
     page?: number
     limit?: number
     search?: string
-    type?: string
-    fulfillment?: string
+    productType?: 'PHYSICAL' | 'DIGITAL' | string
+    fulfillmentType?: 'PRINTFUL' | 'SELF_FULFILLED' | string
+    excludeFulfillment?: string
     brand?: string
+    category?: string
+    status?: 'active' | 'inactive' | string
   }) {
     const searchParams = new URLSearchParams()
     if (params?.page) searchParams.set('page', params.page.toString())
     if (params?.limit) searchParams.set('limit', params.limit.toString())
     if (params?.search) searchParams.set('search', params.search)
-    if (params?.type) searchParams.set('type', params.type)
-    if (params?.fulfillment) searchParams.set('fulfillment', params.fulfillment)
+    if (params?.productType) searchParams.set('productType', params.productType)
+    if (params?.fulfillmentType) searchParams.set('fulfillmentType', params.fulfillmentType)
+    if (params?.excludeFulfillment) searchParams.set('excludeFulfillment', params.excludeFulfillment)
     if (params?.brand) searchParams.set('brand', params.brand)
+    if (params?.category) searchParams.set('category', params.category)
+    if (params?.status) searchParams.set('status', params.status)
     return this.request<{ products: any[]; total: number }>(`/admin/products?${searchParams}`)
   }
 

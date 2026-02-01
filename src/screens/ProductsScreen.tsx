@@ -20,30 +20,32 @@ import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 import { Product } from '../types'
 
-type ProductTab = 'physical' | 'apparel'
+type ProductTab = 'physical' | 'apparel' | 'digital'
 
-// Extended Product type for apparel products
-interface ApparelProduct extends Product {
+// Extended Product type for all products
+interface ExtendedProduct extends Product {
   fulfillmentType?: 'SELF_FULFILLED' | 'PRINTFUL' | null
+  productType?: 'PHYSICAL' | 'DIGITAL' | null
   brand?: string | null
   gender?: string | null
 }
 
 export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hideHeader?: boolean }) {
   const [activeTab, setActiveTab] = useState<ProductTab>('physical')
-  const [products, setProducts] = useState<ApparelProduct[]>([])
+  const [products, setProducts] = useState<ExtendedProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [search, setSearch] = useState('')
 
-  // Apparel-specific state
+  // Filter state
   const [syncing, setSyncing] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [brandFilter, setBrandFilter] = useState<string>('')
   const [brands, setBrands] = useState<string[]>([])
   const [bulkLoading, setBulkLoading] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
 
   const fetchProducts = async (pageNum = 1, refresh = false) => {
     try {
@@ -53,39 +55,39 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
         search: search || undefined,
       }
 
+      // Add status filter
+      if (statusFilter !== 'all') {
+        params.status = statusFilter
+      }
+
       if (activeTab === 'physical') {
-        params.type = 'PHYSICAL'
-      } else {
-        // Apparel tab - filter by Printful products
-        params.type = 'apparel'
-        params.fulfillment = 'printful'
+        // Physical products: PHYSICAL type, exclude Printful (self-fulfilled only)
+        params.productType = 'PHYSICAL'
+        params.excludeFulfillment = 'PRINTFUL'
+      } else if (activeTab === 'apparel') {
+        // Apparel products: Printful fulfilled
+        params.productType = 'PHYSICAL'
+        params.fulfillmentType = 'PRINTFUL'
         if (brandFilter) {
           params.brand = brandFilter
         }
+      } else if (activeTab === 'digital') {
+        // Digital products
+        params.productType = 'DIGITAL'
       }
 
       const data = await api.getProducts(params)
-      const newProducts = (data.products || []) as ApparelProduct[]
-
-      // Filter based on tab
-      let filteredProducts = newProducts
-      if (activeTab === 'physical') {
-        // Physical tab: exclude Printful products
-        filteredProducts = newProducts.filter((p) => p.fulfillmentType !== 'PRINTFUL')
-      } else {
-        // Apparel tab: only Printful products
-        filteredProducts = newProducts.filter((p) => p.fulfillmentType === 'PRINTFUL')
-      }
+      const newProducts = (data.products || []) as ExtendedProduct[]
 
       if (refresh || pageNum === 1) {
-        setProducts(filteredProducts)
+        setProducts(newProducts)
         // Extract unique brands for apparel tab
         if (activeTab === 'apparel') {
-          const uniqueBrands = [...new Set(filteredProducts.map((p) => p.brand).filter(Boolean))] as string[]
+          const uniqueBrands = [...new Set(newProducts.map((p) => p.brand).filter(Boolean))] as string[]
           setBrands(uniqueBrands.sort())
         }
       } else {
-        setProducts((prev) => [...prev, ...filteredProducts])
+        setProducts((prev) => [...prev, ...newProducts])
       }
 
       setHasMore(newProducts.length === 20)
@@ -103,10 +105,10 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
     setSelectedIds(new Set())
     setBrandFilter('')
     fetchProducts(1, true)
-  }, [activeTab, search])
+  }, [activeTab, search, statusFilter])
 
   useEffect(() => {
-    if (activeTab === 'apparel') {
+    if (activeTab === 'apparel' && brandFilter !== undefined) {
       setLoading(true)
       fetchProducts(1, true)
     }
@@ -198,7 +200,7 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
     )
   }
 
-  const renderProduct = ({ item }: { item: ApparelProduct }) => {
+  const renderProduct = ({ item }: { item: ExtendedProduct }) => {
     const isSelected = selectedIds.has(item.id)
 
     return (
@@ -232,6 +234,7 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
               <Text style={styles.productCategory}>
                 {item.category?.name || 'Uncategorized'}
                 {activeTab === 'apparel' && item.brand && ` - ${item.brand}`}
+                {activeTab === 'digital' && ' - Digital Download'}
               </Text>
               <View style={styles.productMeta}>
                 <Text style={styles.productPrice}>{formatCurrency(Number(item.price))}</Text>
@@ -285,7 +288,7 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
         >
           <Ionicons
             name="cube-outline"
-            size={18}
+            size={16}
             color={activeTab === 'physical' ? colors.text : colors.textMuted}
             style={styles.tabIcon}
           />
@@ -297,12 +300,50 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
         >
           <Ionicons
             name="shirt-outline"
-            size={18}
+            size={16}
             color={activeTab === 'apparel' ? colors.text : colors.textMuted}
             style={styles.tabIcon}
           />
           <Text style={[styles.tabText, activeTab === 'apparel' && styles.tabTextActive]}>Apparel</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'digital' && styles.tabActiveDigital]}
+          onPress={() => setActiveTab('digital')}
+        >
+          <Ionicons
+            name="cloud-download-outline"
+            size={16}
+            color={activeTab === 'digital' ? colors.text : colors.textMuted}
+            style={styles.tabIcon}
+          />
+          <Text style={[styles.tabText, activeTab === 'digital' && styles.tabTextActive]}>Digital</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Status Filter */}
+      <View style={styles.statusFilterContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statusFilterContent}>
+          <TouchableOpacity
+            style={[styles.statusChip, statusFilter === 'all' && styles.statusChipActive]}
+            onPress={() => setStatusFilter('all')}
+          >
+            <Text style={[styles.statusChipText, statusFilter === 'all' && styles.statusChipTextActive]}>All</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.statusChip, statusFilter === 'active' && styles.statusChipActiveGreen]}
+            onPress={() => setStatusFilter('active')}
+          >
+            <View style={[styles.statusDot, { backgroundColor: colors.success }]} />
+            <Text style={[styles.statusChipText, statusFilter === 'active' && styles.statusChipTextActive]}>Active</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.statusChip, statusFilter === 'inactive' && styles.statusChipActiveRed]}
+            onPress={() => setStatusFilter('inactive')}
+          >
+            <View style={[styles.statusDot, { backgroundColor: colors.error }]} />
+            <Text style={[styles.statusChipText, statusFilter === 'inactive' && styles.statusChipTextActive]}>Inactive</Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
 
       {/* Search */}
@@ -413,10 +454,12 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
         </View>
       )}
 
-      {/* Physical Tab: Add Button */}
-      {activeTab === 'physical' && (
+      {/* Physical/Digital Tab: Add Button */}
+      {(activeTab === 'physical' || activeTab === 'digital') && (
         <View style={styles.filtersContainer}>
-          <View style={styles.filtersRow} />
+          <View style={styles.filtersRow}>
+            <Text style={styles.productCountText}>{products.length} products</Text>
+          </View>
           <TouchableOpacity style={styles.addButtonSmall} onPress={() => navigation.navigate('ProductCreate')}>
             <Ionicons name="add" size={20} color={colors.text} />
           </TouchableOpacity>
@@ -435,15 +478,20 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
           !loading ? (
             <View style={styles.empty}>
               <Ionicons
-                name={activeTab === 'apparel' ? 'shirt-outline' : 'cube-outline'}
+                name={activeTab === 'apparel' ? 'shirt-outline' : activeTab === 'digital' ? 'cloud-download-outline' : 'cube-outline'}
                 size={48}
                 color={colors.textMuted}
               />
               <Text style={styles.emptyText}>
-                {activeTab === 'apparel' ? 'No apparel products found' : 'No products found'}
+                {activeTab === 'apparel' ? 'No apparel products found' :
+                 activeTab === 'digital' ? 'No digital products found' :
+                 'No physical products found'}
               </Text>
               {activeTab === 'apparel' && (
                 <Text style={styles.emptySubtext}>Sync products from Printful to get started</Text>
+              )}
+              {activeTab === 'digital' && (
+                <Text style={styles.emptySubtext}>Create a digital product to get started</Text>
               )}
             </View>
           ) : null
@@ -501,6 +549,9 @@ const styles = StyleSheet.create({
   tabActiveApparel: {
     backgroundColor: colors.warning,
   },
+  tabActiveDigital: {
+    backgroundColor: '#8b5cf6',
+  },
   tabIcon: {
     marginRight: spacing.xs,
   },
@@ -515,6 +566,53 @@ const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: spacing.xl,
     marginBottom: spacing.md,
+  },
+  statusFilterContainer: {
+    marginBottom: spacing.md,
+  },
+  statusFilterContent: {
+    paddingHorizontal: spacing.xl,
+    gap: spacing.sm,
+  },
+  statusChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  statusChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  statusChipActiveGreen: {
+    backgroundColor: colors.success,
+    borderColor: colors.success,
+  },
+  statusChipActiveRed: {
+    backgroundColor: colors.error,
+    borderColor: colors.error,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: spacing.xs,
+  },
+  statusChipText: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+  },
+  statusChipTextActive: {
+    color: colors.text,
+    fontWeight: fontWeight.medium,
+  },
+  productCountText: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
   },
   searchBox: {
     flexDirection: 'row',
