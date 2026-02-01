@@ -208,7 +208,9 @@ interface Document {
   fileName: string
   fileSize: number
   fileType: string | null
-  fileUrl: string
+  // SECURITY: fileUrl is deprecated and should never be used for downloads
+  // Always use the /download endpoint via api.getDocumentDownloadUrl()
+  fileUrl?: string // Kept for backward compatibility but NEVER use directly
   category: string | null
   tags: string[]
   year: number | null
@@ -392,11 +394,24 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
     }
   }
 
-  const handleDownload = () => {
-    if (selectedDocument?.downloadUrl) {
-      Linking.openURL(selectedDocument.downloadUrl)
-    } else if (selectedDocument?.fileUrl) {
-      Linking.openURL(selectedDocument.fileUrl)
+  const handleDownload = async () => {
+    if (!selectedDocument) return
+
+    // Always use the secure download endpoint
+    // SECURITY: Never use fileUrl directly as it may be a public URL
+    try {
+      setLoadingDetail(true)
+      const { downloadUrl } = await api.getDocumentDownloadUrl(selectedDocument.id)
+      if (downloadUrl) {
+        Linking.openURL(downloadUrl)
+      } else {
+        Alert.alert('Error', 'Could not generate download URL')
+      }
+    } catch (error: any) {
+      console.error('Failed to get download URL:', error)
+      Alert.alert('Error', error.message || 'Failed to get download URL')
+    } finally {
+      setLoadingDetail(false)
     }
   }
 

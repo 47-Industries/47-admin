@@ -1801,6 +1801,19 @@ class ApiService {
     return this.request<any>(`/admin/documents/${id}`)
   }
 
+  /**
+   * Get a secure, time-limited download URL for a document.
+   * This is the ONLY way to get a download URL - never use fileUrl directly.
+   * The returned URL expires after 1 hour.
+   */
+  async getDocumentDownloadUrl(id: string) {
+    return this.request<{
+      downloadUrl: string
+      fileName: string | null
+      expiresIn: number
+    }>(`/admin/documents/${id}/download`)
+  }
+
   async uploadDocument(formData: FormData) {
     const token = await this.getToken()
     const headers: HeadersInit = {}
