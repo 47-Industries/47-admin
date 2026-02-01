@@ -1905,6 +1905,28 @@ class ApiService {
       method: 'DELETE',
     })
   }
+
+  // External Orders (BookFade integration)
+  async getExternalOrders(params?: { page?: number; limit?: number; status?: string; search?: string; source?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.limit) searchParams.set('limit', params.limit.toString())
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.search) searchParams.set('search', params.search)
+    if (params?.source) searchParams.set('source', params.source)
+    return this.request<{ orders: any[]; total: number }>(`/admin/external-orders?${searchParams}`)
+  }
+
+  async getExternalOrder(id: string) {
+    return this.request<{ order: any }>(`/admin/external-orders/${id}`)
+  }
+
+  async updateExternalOrderStatus(id: string, status: string) {
+    return this.request<{ order: any }>(`/admin/external-orders/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    })
+  }
 }
 
 export const api = new ApiService()

@@ -299,6 +299,10 @@ export interface Product {
   featured: boolean
   active: boolean
   productType: 'PHYSICAL' | 'DIGITAL'
+  fulfillmentType?: 'SELF_FULFILLED' | 'PRINTFUL' | null
+  brand?: string | null
+  gender?: string | null
+  manufacturer?: string | null
 }
 
 export interface Category {
