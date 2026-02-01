@@ -1906,6 +1906,43 @@ class ApiService {
     })
   }
 
+  // Customer Designs
+  async getCustomerDesigns(params?: { page?: number; limit?: number; status?: string; search?: string; source?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.limit) searchParams.set('limit', params.limit.toString())
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.search) searchParams.set('search', params.search)
+    if (params?.source) searchParams.set('source', params.source)
+    return this.request<{
+      designs: any[]
+      pagination: { page: number; limit: number; total: number; totalPages: number }
+    }>(`/admin/designs?${searchParams}`)
+  }
+
+  async getCustomerDesign(id: string) {
+    return this.request<{ design: any; relatedOrders: any[] }>(`/admin/designs/${id}`)
+  }
+
+  async updateCustomerDesign(id: string, data: {
+    status?: string
+    designNotes?: string
+    gcodePath?: string
+    designFile?: string
+    previewImage?: string
+  }) {
+    return this.request<{ design: any }>(`/admin/designs/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async archiveCustomerDesign(id: string) {
+    return this.request<{ design: any }>(`/admin/designs/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
   // External Orders (BookFade integration)
   async getExternalOrders(params?: { page?: number; limit?: number; status?: string; search?: string; source?: string }) {
     const searchParams = new URLSearchParams()
@@ -1926,6 +1963,65 @@ class ApiService {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     })
+  }
+
+  // Business Cards
+  async getBusinessCardQueue() {
+    return this.request<{ queue: any[] }>('/admin/business-cards/queue')
+  }
+
+  async getBusinessCardDesigns(params?: { brand?: string; limit?: number }) {
+    const searchParams = new URLSearchParams()
+    if (params?.brand) searchParams.set('brand', params.brand)
+    if (params?.limit) searchParams.set('limit', params.limit.toString())
+    return this.request<{ designs: any[] }>(`/admin/business-cards/designs?${searchParams}`)
+  }
+
+  async generateBusinessCard(data: {
+    name: string
+    title?: string
+    company?: string
+    email?: string
+    phone?: string
+    website?: string
+    profileImage?: string
+    logoImage?: string
+    backgroundImage?: string
+    themeColor?: string
+    layout?: string
+    brand?: string
+    qrCode?: { enabled: boolean; url: string; label: string }
+  }) {
+    return this.request<{ front: string; back: string; layout: string }>('/admin/business-cards/generate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async saveBusinessCardDesign(data: {
+    name: string
+    brand: string | null
+    cardData: Record<string, unknown>
+  }) {
+    return this.request<{ design: any }>('/admin/business-cards/designs', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteBusinessCardDesign(id: string) {
+    return this.request<{ success: boolean }>(`/admin/business-cards/designs/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // BookFade Integration (for Business Cards)
+  async getBookFadeBarber(username: string) {
+    return this.request<{ barber: any }>(`/admin/bookfade/barbers?slug=${encodeURIComponent(username)}`)
+  }
+
+  async searchBookFadeBarbers(query: string) {
+    return this.request<{ barbers: any[] }>(`/admin/bookfade/barbers?search=${encodeURIComponent(query)}`)
   }
 }
 

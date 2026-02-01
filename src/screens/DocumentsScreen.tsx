@@ -144,7 +144,62 @@ interface Folder {
   color: string | null
   _count?: { documents: number }
   children?: Folder[]
+  isVirtual?: boolean
+  path?: string
 }
+
+interface VirtualFolder {
+  id: string
+  name: string
+  color: string
+  icon: string
+  children: VirtualFolder[]
+  parentId: string | null
+}
+
+// Virtual folder structure for organizing documents
+const VIRTUAL_FOLDER_STRUCTURE: VirtualFolder[] = [
+  {
+    id: 'virtual_client_contracts',
+    name: 'Client Contracts',
+    color: '#8b5cf6',
+    icon: 'briefcase-outline',
+    parentId: null,
+    children: [],
+  },
+  {
+    id: 'virtual_team_documents',
+    name: 'Team Documents',
+    color: '#f59e0b',
+    icon: 'people-outline',
+    parentId: null,
+    children: [],
+  },
+  {
+    id: 'virtual_partner_contracts',
+    name: 'Partner Contracts',
+    color: '#10b981',
+    icon: 'handshake-outline',
+    parentId: null,
+    children: [],
+  },
+  {
+    id: 'virtual_taxes',
+    name: 'Taxes',
+    color: '#3b82f6',
+    icon: 'calculator-outline',
+    parentId: null,
+    children: [],
+  },
+  {
+    id: 'virtual_requests',
+    name: 'Requests',
+    color: '#06b6d4',
+    icon: 'cube-outline',
+    parentId: null,
+    children: [],
+  },
+]
 
 interface Document {
   id: string
@@ -233,6 +288,13 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
   const [editDescription, setEditDescription] = useState('')
   const [editCategory, setEditCategory] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+
+  // File replacement state
+  const [replacingFile, setReplacingFile] = useState(false)
+
+  // Virtual folder hierarchy
+  const [virtualFolders, setVirtualFolders] = useState<VirtualFolder[]>([])
+  const [expandedVirtualFolders, setExpandedVirtualFolders] = useState<Set<string>>(new Set())
 
   const fetchDocuments = useCallback(async (pageNum = 1, refresh = false) => {
     try {
@@ -388,6 +450,98 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleReplaceFile = async () => {
+    if (!selectedDocument) return
+    if (!DocumentPicker) {
+      Alert.alert(
+        'Not Available',
+        'expo-document-picker is not installed. Run: npx expo install expo-document-picker'
+      )
+      return
+    }
+
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        copyToCacheDirectory: true,
+      })
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const file = result.assets[0]
+
+        Alert.alert(
+          'Replace File',
+          `Replace "${selectedDocument.fileName}" with "${file.name}"?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Replace',
+              onPress: async () => {
+                setReplacingFile(true)
+                try {
+                  const formData = new FormData()
+                  formData.append('file', {
+                    uri: file.uri,
+                    name: file.name || 'file',
+                    type: file.mimeType || 'application/octet-stream',
+                  } as any)
+
+                  const updatedDoc = await api.replaceDocumentFile(selectedDocument.id, formData)
+                  setSelectedDocument(updatedDoc)
+                  fetchDocuments(1, true)
+                  Alert.alert('Success', 'File replaced successfully')
+                } catch (error: any) {
+                  Alert.alert('Error', error.message || 'Failed to replace file')
+                } finally {
+                  setReplacingFile(false)
+                }
+              },
+            },
+          ]
+        )
+      }
+    } catch (error) {
+      console.error('File picker error:', error)
+    }
+  }
+
+  const handleDeleteWithConfirmation = () => {
+    if (!selectedDocument) return
+    Alert.alert(
+      'Delete Document',
+      `Are you sure you want to permanently delete "${selectedDocument.name}"?\n\nThis action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.deleteDocument(selectedDocument.id)
+              setDetailModalVisible(false)
+              setSelectedDocument(null)
+              fetchDocuments(1, true)
+              Alert.alert('Deleted', 'Document has been deleted')
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to delete document')
+            }
+          },
+        },
+      ]
+    )
+  }
+
+  const toggleVirtualFolder = (folderId: string) => {
+    setExpandedVirtualFolders(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(folderId)) {
+        newSet.delete(folderId)
+      } else {
+        newSet.add(folderId)
+      }
+      return newSet
+    })
   }
 
   const handlePickFile = async () => {
@@ -580,9 +734,83 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
     )
   }
 
+  // Get icon name for virtual folder type
+  const getVirtualFolderIcon = (folderId: string): string => {
+    if (folderId.includes('client_contracts')) return 'briefcase-outline'
+    if (folderId.includes('team')) return 'people-outline'
+    if (folderId.includes('partner')) return 'handshake-outline'
+    if (folderId.includes('taxes')) return 'calculator-outline'
+    if (folderId.includes('requests')) return 'cube-outline'
+    return 'folder-outline'
+  }
+
+  // Render virtual folder item
+  const renderVirtualFolderItem = (folder: typeof VIRTUAL_FOLDER_STRUCTURE[0], level: number = 0) => {
+    const isExpanded = expandedVirtualFolders.has(folder.id)
+    const hasChildren = folder.children && folder.children.length > 0
+
+    return (
+      <View key={folder.id}>
+        <TouchableOpacity
+          style={[
+            styles.virtualFolderItem,
+            { marginLeft: level * 16 },
+          ]}
+          onPress={() => {
+            if (hasChildren) {
+              toggleVirtualFolder(folder.id)
+            } else {
+              // Filter by this virtual folder
+              setSourceFilter(
+                folder.id.includes('client_contracts') ? 'contracts' :
+                folder.id.includes('partner') ? 'partner-contracts' :
+                folder.id.includes('team') ? 'team' :
+                folder.id.includes('requests') ? 'requests' : 'all'
+              )
+            }
+          }}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.virtualFolderIconContainer, { backgroundColor: `${folder.color}20` }]}>
+            <Ionicons
+              name={getVirtualFolderIcon(folder.id) as any}
+              size={18}
+              color={folder.color}
+            />
+          </View>
+          <Text style={styles.virtualFolderName} numberOfLines={1}>
+            {folder.name}
+          </Text>
+          {hasChildren && (
+            <Ionicons
+              name={isExpanded ? 'chevron-down' : 'chevron-forward'}
+              size={16}
+              color={colors.textMuted}
+            />
+          )}
+        </TouchableOpacity>
+
+        {/* Render children if expanded */}
+        {isExpanded && folder.children && folder.children.map(child =>
+          renderVirtualFolderItem(child, level + 1)
+        )}
+      </View>
+    )
+  }
+
   const ListHeader = () => (
     <View>
-      {/* Folders Grid */}
+      {/* Virtual Folder Hierarchy - shown when no custom folder is selected */}
+      {!currentFolderId && sourceFilter === 'all' && (
+        <View style={styles.virtualFoldersSection}>
+          <Text style={styles.sectionLabel}>Browse by Category</Text>
+          <Card style={styles.virtualFoldersCard}>
+            {VIRTUAL_FOLDER_STRUCTURE.map(folder => renderVirtualFolderItem(folder, 0))}
+          </Card>
+        </View>
+      )}
+
+      {/* Custom Folders Grid */}
       {folders.length > 0 && (
         <View style={styles.foldersSection}>
           <Text style={styles.sectionLabel}>Folders</Text>
@@ -807,12 +1035,12 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Document Details</Text>
             <View style={styles.modalActions}>
-              <TouchableOpacity onPress={openEditModal} style={styles.modalActionBtn}>
-                <Ionicons name="create-outline" size={22} color={colors.primary} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleDeleteDocument} style={styles.modalActionBtn}>
-                <Ionicons name="trash-outline" size={22} color={colors.error} />
-              </TouchableOpacity>
+              {/* Only show edit button for company documents */}
+              {(!selectedDocument?.source || selectedDocument?.source === 'company') && (
+                <TouchableOpacity onPress={openEditModal} style={styles.modalActionBtn}>
+                  <Ionicons name="create-outline" size={22} color={colors.primary} />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
@@ -843,8 +1071,13 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
                 </View>
               )}
 
-              {/* Metadata */}
+              {/* File Metadata Card */}
               <Card style={styles.detailCard}>
+                <Text style={styles.detailSectionTitle}>File Information</Text>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>File Name</Text>
+                  <Text style={styles.detailValue} numberOfLines={1}>{selectedDocument.fileName}</Text>
+                </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Size</Text>
                   <Text style={styles.detailValue}>{formatFileSize(selectedDocument.fileSize)}</Text>
@@ -853,10 +1086,15 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
                   <Text style={styles.detailLabel}>Type</Text>
                   <Text style={styles.detailValue}>{selectedDocument.fileType || 'Unknown'}</Text>
                 </View>
-                <View style={styles.detailRow}>
+                <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
                   <Text style={styles.detailLabel}>Uploaded</Text>
                   <Text style={styles.detailValue}>{formatDate(selectedDocument.createdAt)}</Text>
                 </View>
+              </Card>
+
+              {/* Document Details Card */}
+              <Card style={styles.detailCard}>
+                <Text style={styles.detailSectionTitle}>Document Details</Text>
                 {selectedDocument.category && (
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Category</Text>
@@ -872,10 +1110,19 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
                     </View>
                   </View>
                 )}
-                {selectedDocument.visibility && (
+                {selectedDocument.year && (
                   <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Year</Text>
+                    <Text style={styles.detailValue}>{selectedDocument.year}</Text>
+                  </View>
+                )}
+                {selectedDocument.visibility && (
+                  <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
                     <Text style={styles.detailLabel}>Visibility</Text>
-                    <Text style={styles.detailValue}>{selectedDocument.visibility}</Text>
+                    <Badge
+                      text={selectedDocument.visibility}
+                      variant={selectedDocument.visibility === 'ADMIN' ? 'error' : selectedDocument.visibility === 'TEAM' ? 'warning' : 'success'}
+                    />
                   </View>
                 )}
               </Card>
@@ -903,7 +1150,7 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
                     </View>
                   )}
                   {selectedDocument.contractValue !== undefined && selectedDocument.contractValue !== null && (
-                    <View style={styles.detailRow}>
+                    <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
                       <Text style={styles.detailLabel}>Value</Text>
                       <Text style={styles.detailValue}>
                         ${selectedDocument.contractValue.toLocaleString()}
@@ -923,7 +1170,7 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
                     </View>
                   )}
                   {selectedDocument.documentType && (
-                    <View style={styles.detailRow}>
+                    <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
                       <Text style={styles.detailLabel}>Document Type</Text>
                       <Text style={styles.detailValue}>{selectedDocument.documentType}</Text>
                     </View>
@@ -933,14 +1180,14 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
 
               {selectedDocument.description && (
                 <Card style={styles.detailCard}>
-                  <Text style={styles.detailLabel}>Description</Text>
+                  <Text style={styles.detailSectionTitle}>Description</Text>
                   <Text style={[styles.detailValue, { marginTop: spacing.xs }]}>{selectedDocument.description}</Text>
                 </Card>
               )}
 
               {selectedDocument.tags && selectedDocument.tags.length > 0 && (
                 <Card style={styles.detailCard}>
-                  <Text style={styles.detailLabel}>Tags</Text>
+                  <Text style={styles.detailSectionTitle}>Tags</Text>
                   <View style={styles.tagsRow}>
                     {selectedDocument.tags.map((tag: string, i: number) => (
                       <View key={i} style={styles.tagChip}>
@@ -951,17 +1198,55 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
                 </Card>
               )}
 
-              {/* Download button */}
-              <TouchableOpacity style={styles.downloadButton} onPress={handleDownload}>
-                {loadingDetail ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <Ionicons name="download-outline" size={20} color="#fff" />
-                    <Text style={styles.downloadButtonText}>Download File</Text>
-                  </>
+              {/* Action Buttons */}
+              <View style={styles.detailActionsContainer}>
+                {/* Download button */}
+                <TouchableOpacity
+                  style={styles.downloadButton}
+                  onPress={handleDownload}
+                  disabled={loadingDetail}
+                >
+                  {loadingDetail ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <Ionicons name="download-outline" size={20} color="#fff" />
+                      <Text style={styles.downloadButtonText}>Download</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                {/* Replace File button - only for company documents */}
+                {(!selectedDocument.source || selectedDocument.source === 'company') && (
+                  <TouchableOpacity
+                    style={styles.replaceButton}
+                    onPress={handleReplaceFile}
+                    disabled={replacingFile}
+                  >
+                    {replacingFile ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <>
+                        <Ionicons name="swap-horizontal-outline" size={20} color={colors.primary} />
+                        <Text style={styles.replaceButtonText}>Replace File</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
                 )}
-              </TouchableOpacity>
+              </View>
+
+              {/* Delete button - only for company documents */}
+              {(!selectedDocument.source || selectedDocument.source === 'company') && (
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={handleDeleteWithConfirmation}
+                >
+                  <Ionicons name="trash-outline" size={20} color={colors.error} />
+                  <Text style={styles.deleteButtonText}>Delete Document</Text>
+                </TouchableOpacity>
+              )}
+
+              <View style={{ height: spacing.xxxl }} />
             </ScrollView>
           )}
         </View>
@@ -1469,6 +1754,35 @@ const styles = StyleSheet.create({
   filterChipTextActive: {
     color: '#ffffff',
   },
+  // Virtual Folders
+  virtualFoldersSection: {
+    marginBottom: spacing.lg,
+  },
+  virtualFoldersCard: {
+    marginHorizontal: spacing.xl,
+    padding: spacing.sm,
+  },
+  virtualFolderItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
+    gap: spacing.md,
+  },
+  virtualFolderIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: borderRadius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  virtualFolderName: {
+    flex: 1,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.text,
+  },
   // Folders
   foldersSection: {
     marginBottom: spacing.sm,
@@ -1732,7 +2046,13 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     color: colors.textSecondary,
   },
+  detailActionsContainer: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+  },
   downloadButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1740,13 +2060,45 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     paddingVertical: spacing.lg,
     borderRadius: borderRadius.md,
-    marginTop: spacing.lg,
-    marginBottom: spacing.xxxl,
   },
   downloadButtonText: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
     color: '#fff',
+  },
+  replaceButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  replaceButtonText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    color: colors.primary,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.errorBg,
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.md,
+    marginTop: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.error,
+  },
+  deleteButtonText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    color: colors.error,
   },
   // Form fields
   fieldLabel: {
