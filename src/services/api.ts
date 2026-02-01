@@ -626,6 +626,44 @@ class ApiService {
     })
   }
 
+  async createUser(data: {
+    name?: string
+    email: string
+    phone?: string
+    password: string
+    role?: 'CUSTOMER' | 'ADMIN' | 'SUPER_ADMIN'
+    sendWelcomeEmail?: boolean
+  }) {
+    return this.request<{ user: any }>('/admin/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteUser(id: string) {
+    return this.request<{ success: boolean }>(`/admin/users/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async resetUserPassword(userId: string, data: { newPassword: string; sendNotification?: boolean }) {
+    return this.request<{ success: boolean; notificationSent?: boolean }>(`/admin/users/${userId}/reset-password`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async uploadUserSignature(userId: string, data: { signatureDataUrl?: string; initialsDataUrl?: string; title?: string }) {
+    return this.request<{ signatureUrl: string | null; initialsUrl: string | null; title: string | null }>(`/admin/users/${userId}/signature`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async getAdminUsers() {
+    return this.request<{ admins: any[] }>('/admin/users/admins')
+  }
+
   // Custom 3D Print Requests
   async getCustomRequests(params?: { page?: number; limit?: number; status?: string; search?: string }) {
     const searchParams = new URLSearchParams()

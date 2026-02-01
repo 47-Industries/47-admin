@@ -13,6 +13,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Switch,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
@@ -21,7 +22,7 @@ import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 import { User } from '../types'
 
-type UserType = 'customers' | 'admins'
+type RoleFilter = 'ALL' | 'CUSTOMER' | 'ADMIN' | 'SUPER_ADMIN'
 
 interface CustomerSegment {
   id: string
@@ -42,13 +43,15 @@ const SEGMENT_COLORS = [
 ]
 
 export function UsersScreen({ navigation, hideHeader }: { navigation: any; hideHeader?: boolean }) {
-  const [userType, setUserType] = useState<UserType>('customers')
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('ALL')
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
-  const [counts, setCounts] = useState({ customers: 0, admins: 0 })
+  const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [counts, setCounts] = useState({ all: 0, customers: 0, admins: 0 })
 
   // Segments
   const [segments, setSegments] = useState<CustomerSegment[]>([])
@@ -57,10 +60,30 @@ export function UsersScreen({ navigation, hideHeader }: { navigation: any; hideH
   const [editingSegment, setEditingSegment] = useState<CustomerSegment | null>(null)
   const [showEditSegmentModal, setShowEditSegmentModal] = useState(false)
 
-  const fetchUsers = async (pageNum = 1, refresh = false, type = userType) => {
+  // Create User Modal
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false)
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  const fetchUsers = async (pageNum = 1, refresh = false, filter = roleFilter, search = debouncedSearch) => {
     try {
-      const role = type === 'admins' ? 'ADMIN' : 'USER'
-      const data = await api.getUsers({ page: pageNum, limit: 20, role })
+      let role: string | undefined
+      if (filter === 'CUSTOMER') role = 'USER'
+      else if (filter === 'ADMIN') role = 'ADMIN'
+      else if (filter === 'SUPER_ADMIN') role = 'SUPER_ADMIN'
+
+      const data = await api.getUsers({
+        page: pageNum,
+        limit: 20,
+        role,
+        search: search || undefined
+      })
       const newUsers = data.users || []
 
       if (refresh || pageNum === 1) {
@@ -71,16 +94,28 @@ export function UsersScreen({ navigation, hideHeader }: { navigation: any; hideH
 
       setHasMore(newUsers.length === 20)
       setPage(pageNum)
-
-      // Update counts if available
-      if (data.counts) {
-        setCounts(data.counts)
-      }
     } catch (error) {
       console.error('Failed to fetch users:', error)
     } finally {
       setLoading(false)
       setRefreshing(false)
+    }
+  }
+
+  const fetchCounts = async () => {
+    try {
+      const [allData, customersData, adminsData] = await Promise.all([
+        api.getUsers({ page: 1, limit: 1 }),
+        api.getUsers({ page: 1, limit: 1, role: 'USER' }),
+        api.getUsers({ page: 1, limit: 1, role: 'ADMIN' }),
+      ])
+      setCounts({
+        all: allData.total || 0,
+        customers: customersData.total || 0,
+        admins: adminsData.total || 0,
+      })
+    } catch (e) {
+      // Silent fail
     }
   }
 
@@ -96,22 +131,7 @@ export function UsersScreen({ navigation, hideHeader }: { navigation: any; hideH
     }
   }, [])
 
-  // Fetch counts on mount
   useEffect(() => {
-    const fetchCounts = async () => {
-      try {
-        const [customersData, adminsData] = await Promise.all([
-          api.getUsers({ page: 1, limit: 1, role: 'USER' }),
-          api.getUsers({ page: 1, limit: 1, role: 'ADMIN' }),
-        ])
-        setCounts({
-          customers: customersData.total || 0,
-          admins: adminsData.total || 0,
-        })
-      } catch (e) {
-        // Silent fail
-      }
-    }
     fetchCounts()
     fetchSegments()
   }, [])
@@ -119,13 +139,14 @@ export function UsersScreen({ navigation, hideHeader }: { navigation: any; hideH
   useEffect(() => {
     setLoading(true)
     setPage(1)
-    fetchUsers(1, true, userType)
-  }, [userType])
+    fetchUsers(1, true, roleFilter, debouncedSearch)
+  }, [roleFilter, debouncedSearch])
 
   const onRefresh = () => {
     setRefreshing(true)
     fetchUsers(1, true)
     fetchSegments()
+    fetchCounts()
   }
 
   const loadMore = () => {
@@ -155,17 +176,39 @@ export function UsersScreen({ navigation, hideHeader }: { navigation: any; hideH
     return '??'
   }
 
+  const getRoleBadgeVariant = (role: string): 'default' | 'success' | 'warning' | 'error' | 'primary' => {
+    switch (role) {
+      case 'SUPER_ADMIN': return 'error'
+      case 'ADMIN': return 'warning'
+      case 'CUSTOMER': return 'primary'
+      default: return 'default'
+    }
+  }
+
+  const getRoleBadgeText = (role: string): string => {
+    switch (role) {
+      case 'SUPER_ADMIN': return 'Super Admin'
+      case 'ADMIN': return 'Admin'
+      case 'CUSTOMER': return 'Customer'
+      default: return role
+    }
+  }
+
   const handleEditSegment = (segment: CustomerSegment) => {
     setEditingSegment(segment)
     setShowEditSegmentModal(true)
   }
 
+  const handleUserCreated = () => {
+    setShowCreateUserModal(false)
+    fetchUsers(1, true)
+    fetchCounts()
+  }
+
   const renderUser = ({ item }: { item: User }) => {
     if (!item) return null
-    // Navigate to CustomerDetail for customers, UserDetail for admins
-    const screenName = userType === 'customers' ? 'CustomerDetail' : 'UserDetail'
     return (
-    <TouchableOpacity onPress={() => navigation.navigate(screenName, { id: item.id })} activeOpacity={0.7}>
+    <TouchableOpacity onPress={() => navigation.navigate('UserDetail', { id: item.id })} activeOpacity={0.7}>
       <Card style={styles.userCard}>
         <View style={styles.userContent}>
           <View style={[styles.avatar, (item.role === 'ADMIN' || item.role === 'SUPER_ADMIN') && styles.adminAvatar]}>
@@ -174,18 +217,11 @@ export function UsersScreen({ navigation, hideHeader }: { navigation: any; hideH
           <View style={styles.userInfo}>
             <View style={styles.userHeader}>
               <Text style={styles.userName} numberOfLines={1}>{item.name || 'No Name'}</Text>
-              <View style={styles.badges}>
-                {item.isFounder && <Badge text="Founder" variant="primary" />}
-                {item.role === 'ADMIN' && <Badge text="Admin" variant="warning" />}
-                {item.role === 'SUPER_ADMIN' && <Badge text="Super" variant="error" />}
-              </View>
             </View>
             <Text style={styles.userEmail} numberOfLines={1}>{item.email}</Text>
             <View style={styles.userMeta}>
-              <View style={styles.metaItem}>
-                <Ionicons name="calendar-outline" size={12} color={colors.textMuted} />
-                <Text style={styles.metaText}>{formatDate(item.createdAt)}</Text>
-              </View>
+              <Badge text={getRoleBadgeText(item.role)} variant={getRoleBadgeVariant(item.role)} />
+              {item.isFounder && <Badge text="Founder" variant="primary" />}
               {item._count?.orders !== undefined && item._count.orders > 0 && (
                 <View style={styles.metaItem}>
                   <Ionicons name="receipt-outline" size={12} color={colors.textMuted} />
@@ -201,9 +237,72 @@ export function UsersScreen({ navigation, hideHeader }: { navigation: any; hideH
     )
   }
 
-  const renderSegmentsSection = () => {
-    if (userType !== 'customers') return null
+  const renderHeader = () => (
+    <View>
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchInputContainer}>
+          <Ionicons name="search-outline" size={18} color={colors.textMuted} style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by name or email..."
+            placeholderTextColor={colors.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+        <TouchableOpacity
+          style={styles.createButton}
+          onPress={() => setShowCreateUserModal(true)}
+        >
+          <Ionicons name="add" size={20} color={colors.text} />
+        </TouchableOpacity>
+      </View>
 
+      {/* Role Filter */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterContainer}
+        contentContainerStyle={styles.filterContent}
+      >
+        {(['ALL', 'CUSTOMER', 'ADMIN', 'SUPER_ADMIN'] as RoleFilter[]).map((role) => {
+          const isActive = roleFilter === role
+          let label = role === 'ALL' ? 'All' : role === 'CUSTOMER' ? 'Customers' : role === 'ADMIN' ? 'Admins' : 'Super Admins'
+          let count = role === 'ALL' ? counts.all : role === 'CUSTOMER' ? counts.customers : counts.admins
+
+          return (
+            <TouchableOpacity
+              key={role}
+              style={[styles.filterChip, isActive && styles.filterChipActive]}
+              onPress={() => setRoleFilter(role)}
+            >
+              <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
+                {label}
+              </Text>
+              {count > 0 && (
+                <View style={[styles.filterCountBadge, isActive && styles.filterCountBadgeActive]}>
+                  <Text style={[styles.filterCountText, isActive && styles.filterCountTextActive]}>
+                    {count}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )
+        })}
+      </ScrollView>
+
+      {/* Segments Section (only show for Customers filter or All) */}
+      {(roleFilter === 'CUSTOMER' || roleFilter === 'ALL') && renderSegmentsSection()}
+    </View>
+  )
+
+  const renderSegmentsSection = () => {
     return (
       <View style={styles.segmentsSection}>
         <View style={styles.segmentsHeader}>
@@ -252,75 +351,32 @@ export function UsersScreen({ navigation, hideHeader }: { navigation: any; hideH
 
   return (
     <View style={styles.container}>
-      {/* Tab Selector */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, userType === 'customers' && styles.tabActive]}
-          onPress={() => setUserType('customers')}
-        >
-          <Ionicons
-            name="people"
-            size={18}
-            color={userType === 'customers' ? colors.text : colors.textMuted}
-          />
-          <Text style={[styles.tabText, userType === 'customers' && styles.tabTextActive]}>
-            Customers
-          </Text>
-          {counts.customers > 0 && (
-            <View style={[styles.countBadge, userType === 'customers' && styles.countBadgeActive]}>
-              <Text style={[styles.countText, userType === 'customers' && styles.countTextActive]}>
-                {counts.customers}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, userType === 'admins' && styles.tabActive]}
-          onPress={() => setUserType('admins')}
-        >
-          <Ionicons
-            name="shield"
-            size={18}
-            color={userType === 'admins' ? colors.text : colors.textMuted}
-          />
-          <Text style={[styles.tabText, userType === 'admins' && styles.tabTextActive]}>
-            Admins
-          </Text>
-          {counts.admins > 0 && (
-            <View style={[styles.countBadge, userType === 'admins' && styles.countBadgeActive]}>
-              <Text style={[styles.countText, userType === 'admins' && styles.countTextActive]}>
-                {counts.admins}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* Segments Section */}
-      {renderSegmentsSection()}
-
       <FlatList
         data={users}
         renderItem={renderUser}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
+        ListHeaderComponent={renderHeader}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
           !loading ? (
             <View style={styles.empty}>
-              <Ionicons
-                name={userType === 'admins' ? 'shield-outline' : 'people-outline'}
-                size={48}
-                color={colors.textMuted}
-              />
+              <Ionicons name="people-outline" size={48} color={colors.textMuted} />
               <Text style={styles.emptyText}>
-                No {userType === 'admins' ? 'admins' : 'customers'} found
+                {debouncedSearch ? 'No users found matching your search' : 'No users found'}
               </Text>
             </View>
           ) : null
         }
+      />
+
+      {/* Create User Modal */}
+      <CreateUserModal
+        visible={showCreateUserModal}
+        onClose={() => setShowCreateUserModal(false)}
+        onCreated={handleUserCreated}
       />
 
       {/* Create Segment Modal */}
@@ -353,6 +409,192 @@ export function UsersScreen({ navigation, hideHeader }: { navigation: any; hideH
         }}
       />
     </View>
+  )
+}
+
+// Create User Modal
+function CreateUserModal({
+  visible,
+  onClose,
+  onCreated,
+}: {
+  visible: boolean
+  onClose: () => void
+  onCreated: () => void
+}) {
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [role, setRole] = useState<'CUSTOMER' | 'ADMIN' | 'SUPER_ADMIN'>('CUSTOMER')
+  const [password, setPassword] = useState('')
+  const [sendWelcomeEmail, setSendWelcomeEmail] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (visible) {
+      setName('')
+      setEmail('')
+      setPhone('')
+      setRole('CUSTOMER')
+      setPassword('')
+      setSendWelcomeEmail(true)
+      setError('')
+    }
+  }, [visible])
+
+  const handleCreate = async () => {
+    if (!email.trim()) {
+      setError('Email is required')
+      return
+    }
+
+    if (!password.trim() || password.length < 8) {
+      setError('Password must be at least 8 characters')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    try {
+      await api.createUser({
+        name: name.trim() || undefined,
+        email: email.trim(),
+        phone: phone.trim() || undefined,
+        role,
+        password,
+        sendWelcomeEmail,
+      })
+      onCreated()
+    } catch (err: any) {
+      setError(err.message || 'Failed to create user')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={modalStyles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={modalStyles.header}>
+          <TouchableOpacity onPress={onClose} style={modalStyles.closeBtn}>
+            <Ionicons name="close" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={modalStyles.title}>Create User</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        <ScrollView style={modalStyles.content} showsVerticalScrollIndicator={false}>
+          {error ? (
+            <View style={modalStyles.errorBox}>
+              <Text style={modalStyles.errorText}>{error}</Text>
+            </View>
+          ) : null}
+
+          <View style={modalStyles.formGroup}>
+            <Text style={modalStyles.label}>Name</Text>
+            <TextInput
+              style={modalStyles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="John Doe"
+              placeholderTextColor={colors.textMuted}
+              autoFocus
+            />
+          </View>
+
+          <View style={modalStyles.formGroup}>
+            <Text style={modalStyles.label}>Email *</Text>
+            <TextInput
+              style={modalStyles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="john@example.com"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+
+          <View style={modalStyles.formGroup}>
+            <Text style={modalStyles.label}>Phone</Text>
+            <TextInput
+              style={modalStyles.input}
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="+1 (555) 123-4567"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="phone-pad"
+            />
+          </View>
+
+          <View style={modalStyles.formGroup}>
+            <Text style={modalStyles.label}>Password *</Text>
+            <TextInput
+              style={modalStyles.input}
+              value={password}
+              onChangeText={setPassword}
+              placeholder="At least 8 characters"
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry
+            />
+          </View>
+
+          <View style={modalStyles.formGroup}>
+            <Text style={modalStyles.label}>Role</Text>
+            <View style={modalStyles.roleSelector}>
+              {(['CUSTOMER', 'ADMIN', 'SUPER_ADMIN'] as const).map((r) => (
+                <TouchableOpacity
+                  key={r}
+                  style={[modalStyles.roleOption, role === r && modalStyles.roleOptionActive]}
+                  onPress={() => setRole(r)}
+                >
+                  <Text style={[modalStyles.roleOptionText, role === r && modalStyles.roleOptionTextActive]}>
+                    {r === 'CUSTOMER' ? 'Customer' : r === 'ADMIN' ? 'Admin' : 'Super Admin'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <View style={modalStyles.switchRow}>
+            <View>
+              <Text style={modalStyles.switchLabel}>Send Welcome Email</Text>
+              <Text style={modalStyles.switchDescription}>Send login credentials to user</Text>
+            </View>
+            <Switch
+              value={sendWelcomeEmail}
+              onValueChange={setSendWelcomeEmail}
+              trackColor={{ false: colors.border, true: colors.primary }}
+              thumbColor={colors.text}
+            />
+          </View>
+        </ScrollView>
+
+        <View style={modalStyles.footer}>
+          <TouchableOpacity
+            style={[modalStyles.footerBtn, modalStyles.footerBtnSecondary]}
+            onPress={onClose}
+            disabled={loading}
+          >
+            <Text style={modalStyles.footerBtnSecondaryText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[modalStyles.footerBtn, modalStyles.footerBtnPrimary, loading && { opacity: 0.5 }]}
+            onPress={handleCreate}
+            disabled={loading}
+          >
+            <Text style={modalStyles.footerBtnPrimaryText}>
+              {loading ? 'Creating...' : 'Create User'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   )
 }
 
@@ -707,52 +949,91 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  tabContainer: {
+  // Search
+  searchContainer: {
     flexDirection: 'row',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     gap: spacing.sm,
   },
-  tab: {
+  searchInputContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+  },
+  searchIcon: {
+    marginRight: spacing.sm,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    fontSize: fontSize.md,
+    color: colors.text,
+  },
+  clearButton: {
+    padding: spacing.xs,
+  },
+  createButton: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Filter
+  filterContainer: {
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  filterContent: {
+    gap: spacing.sm,
+    paddingRight: spacing.lg,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.full,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+    marginRight: spacing.sm,
     gap: spacing.xs,
   },
-  tabActive: {
+  filterChipActive: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
-  tabText: {
+  filterChipText: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
     color: colors.textMuted,
   },
-  tabTextActive: {
+  filterChipTextActive: {
     color: colors.text,
   },
-  countBadge: {
+  filterCountBadge: {
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: borderRadius.full,
     backgroundColor: colors.surfaceHover,
   },
-  countBadgeActive: {
+  filterCountBadgeActive: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
-  countText: {
+  filterCountText: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
     fontWeight: fontWeight.medium,
   },
-  countTextActive: {
+  filterCountTextActive: {
     color: colors.text,
   },
   // Segments
@@ -818,10 +1099,10 @@ const styles = StyleSheet.create({
   },
   // List
   list: {
-    paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,
   },
   userCard: {
+    marginHorizontal: spacing.lg,
     marginBottom: spacing.sm,
     padding: spacing.md,
   },
@@ -861,10 +1142,6 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: spacing.sm,
   },
-  badges: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
   userEmail: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
@@ -873,7 +1150,9 @@ const styles = StyleSheet.create({
   userMeta: {
     flexDirection: 'row',
     marginTop: spacing.xs,
-    gap: spacing.md,
+    gap: spacing.sm,
+    flexWrap: 'wrap',
+    alignItems: 'center',
   },
   metaItem: {
     flexDirection: 'row',
@@ -892,6 +1171,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.textMuted,
     marginTop: spacing.md,
+    textAlign: 'center',
   },
 })
 
@@ -973,6 +1253,51 @@ const modalStyles = StyleSheet.create({
   textArea: {
     minHeight: 80,
     paddingTop: spacing.md,
+  },
+  roleSelector: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  roleOption: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  roleOptionActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  roleOptionText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    color: colors.textMuted,
+  },
+  roleOptionTextActive: {
+    color: colors.text,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    marginTop: spacing.md,
+  },
+  switchLabel: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.text,
+  },
+  switchDescription: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    marginTop: 2,
   },
   colorPicker: {
     flexDirection: 'row',
