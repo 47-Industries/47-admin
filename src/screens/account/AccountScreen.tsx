@@ -206,6 +206,17 @@ export function AccountScreen({ navigation, hideHeader }: AccountScreenProps) {
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('OAuthApplications')}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="key-outline" size={20} color={colors.textSecondary} />
+              <Text style={styles.menuItemText}>OAuth Applications</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          </TouchableOpacity>
         </View>
 
         {/* Switch Portal */}
