@@ -240,6 +240,12 @@ export default function AdminNavigator() {
           return <ScreenWrapper><EmailSignaturesScreen navigation={navigation} /></ScreenWrapper>
         case 'PrintQueue':
           return <ScreenWrapper><PrintQueueScreen navigation={navigation} /></ScreenWrapper>
+        case 'PartnerApplications':
+          return <ScreenWrapper><PartnerApplicationsScreen navigation={navigation} /></ScreenWrapper>
+        case 'OAuthApplications':
+          return <ScreenWrapper><OAuthApplicationsScreen navigation={navigation} /></ScreenWrapper>
+        case 'Inventory':
+          return <ScreenWrapper><InventoryScreen navigation={navigation} /></ScreenWrapper>
       }
     }
 
@@ -560,6 +566,12 @@ function PeopleTabScreen({ navigation }: { navigation: any }) {
             <Text style={[styles.segmentText, activeSection === 'partners' && styles.segmentTextActive]}>Partners</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            style={[styles.segmentPill, activeSection === 'applications' && styles.segmentPillActive]}
+            onPress={() => setActiveSection('applications')}
+          >
+            <Text style={[styles.segmentText, activeSection === 'applications' && styles.segmentTextActive]}>Applications</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[styles.segmentPill, activeSection === 'leads' && styles.segmentPillActive]}
             onPress={() => setActiveSection('leads')}
           >
@@ -582,6 +594,7 @@ function PeopleTabScreen({ navigation }: { navigation: any }) {
       <View style={styles.tabContent}>
         {activeSection === 'clients' && <AdminClientsScreen navigation={navigation} hideHeader />}
         {activeSection === 'partners' && <AdminPartnersScreen navigation={navigation} hideHeader />}
+        {activeSection === 'applications' && <PartnerApplicationsScreen navigation={navigation} hideHeader />}
         {activeSection === 'leads' && <PartnerLeadsScreen navigation={navigation} hideHeader />}
         {activeSection === 'team' && <TeamScreen navigation={navigation} hideHeader />}
         {activeSection === 'affiliates' && <AffiliatesScreen navigation={navigation} hideHeader />}
