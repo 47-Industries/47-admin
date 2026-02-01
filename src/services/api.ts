@@ -2737,6 +2737,83 @@ class ApiService {
       body: JSON.stringify({ variantIds }),
     })
   }
+
+  // User Affiliates (Admin)
+  async getAdminUserAffiliates(params?: { page?: number; search?: string; status?: string; tier?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.search) searchParams.set('search', params.search)
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.tier) searchParams.set('tier', params.tier)
+    return this.request<{
+      affiliates: any[]
+      stats: {
+        totalAffiliates: number
+        connectedAffiliates: number
+        pendingCashTotal: number
+        pendingCashCount: number
+        pendingProTimeDays: number
+        pendingProTimeCount: number
+        totalReferrals?: number
+        totalPointsAwarded?: number
+        totalCommissionsPaid?: number
+      }
+    }>(`/admin/user-affiliates?${searchParams}`)
+  }
+
+  async getAdminUserAffiliate(id: string) {
+    return this.request<{
+      affiliate: any
+      referrals: any[]
+      commissions: any[]
+    }>(`/admin/user-affiliates/${id}`)
+  }
+
+  async updateAdminUserAffiliate(id: string, data: {
+    affiliateCode?: string
+    isPartner?: boolean
+    rewardPreference?: string
+    connectedAt?: string | null
+  }) {
+    return this.request<{ affiliate: any }>(`/admin/user-affiliates/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async getAdminUserAffiliatePoints(id: string) {
+    return this.request<{
+      transactions: any[]
+      stats: {
+        totalPointsAwarded: number
+        totalTransactions: number
+      }
+    }>(`/admin/user-affiliates/points?affiliateId=${id}`)
+  }
+
+  async adjustAdminUserAffiliatePoints(userAffiliateId: string, points: number, reason: string) {
+    return this.request<{
+      success: boolean
+      transaction: any
+    }>('/admin/user-affiliates/points', {
+      method: 'POST',
+      body: JSON.stringify({ userAffiliateId, points, reason }),
+    })
+  }
+
+  async getAdminUserAffiliateCommissions(params?: { status?: string; rewardType?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.rewardType) searchParams.set('rewardType', params.rewardType)
+    return this.request<{ commissions: any[] }>(`/admin/user-affiliates/commissions?${searchParams}`)
+  }
+
+  async approveAdminUserAffiliateCommissions(commissionIds: string[]) {
+    return this.request<{ success: boolean; updated: number }>('/admin/user-affiliates/commissions', {
+      method: 'PUT',
+      body: JSON.stringify({ commissionIds, action: 'approve' }),
+    })
+  }
 }
 
 export const api = new ApiService()
