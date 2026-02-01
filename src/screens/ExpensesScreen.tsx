@@ -116,7 +116,37 @@ interface SkipRule {
   active: boolean
 }
 
-type TabKey = 'bills' | 'approval' | 'settings'
+interface BankTransaction {
+  id: string
+  stripeTransactionId: string
+  amount: number
+  description: string | null
+  merchantName: string | null
+  category: string | null
+  transactedAt: string
+  status: string
+  matchedBillInstanceId: string | null
+  matchConfidence: number | null
+  financialAccount: {
+    id: string
+    institutionName: string
+    accountLast4: string | null
+  }
+}
+
+interface FinancialAccount {
+  id: string
+  stripeAccountId: string
+  institutionName: string
+  accountName: string | null
+  accountType: string
+  accountLast4: string | null
+  status: string
+  lastSyncAt: string | null
+  _count: { transactions: number }
+}
+
+type TabKey = 'bills' | 'transactions' | 'approval' | 'settings'
 
 export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hideHeader?: boolean }) {
   const [activeTab, setActiveTab] = useState<TabKey>('bills')
@@ -144,6 +174,20 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
   const [recurringBills, setRecurringBills] = useState<RecurringBillTemplate[]>([])
   const [skipRules, setSkipRules] = useState<SkipRule[]>([])
   const [settingsLoading, setSettingsLoading] = useState(false)
+
+  // Transactions state
+  const [transactions, setTransactions] = useState<BankTransaction[]>([])
+  const [bankAccounts, setBankAccounts] = useState<FinancialAccount[]>([])
+  const [transactionsLoading, setTransactionsLoading] = useState(false)
+  const [unmatchedTransactionCount, setUnmatchedTransactionCount] = useState(0)
+  const [transactionFilter, setTransactionFilter] = useState<'all' | 'unmatched' | 'matched' | 'skipped'>('all')
+  const [selectedAccount, setSelectedAccount] = useState<string>('all')
+  const [selectedTransaction, setSelectedTransaction] = useState<BankTransaction | null>(null)
+  const [showTransactionModal, setShowTransactionModal] = useState(false)
+  const [showBillPickerModal, setShowBillPickerModal] = useState(false)
+  const [billSearchResults, setBillSearchResults] = useState<BillInstance[]>([])
+  const [billSearchQuery, setBillSearchQuery] = useState('')
+  const [processingTransaction, setProcessingTransaction] = useState<string | null>(null)
 
   // Balances view toggle
   const [showBalances, setShowBalances] = useState(false)
@@ -195,6 +239,128 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
     }
   }
 
+  const fetchTransactions = async () => {
+    setTransactionsLoading(true)
+    try {
+      const matchedParam = transactionFilter === 'all' ? undefined : transactionFilter === 'matched' ? true : transactionFilter === 'unmatched' ? false : undefined
+      const [txnData, accountData] = await Promise.all([
+        api.getBankTransactions({ matched: matchedParam, limit: 100 }),
+        api.getBankAccounts()
+      ])
+      let filteredTxns = txnData.transactions || []
+
+      // Filter by account if selected
+      if (selectedAccount !== 'all') {
+        filteredTxns = filteredTxns.filter((t: BankTransaction) => t.financialAccount.id === selectedAccount)
+      }
+
+      setTransactions(filteredTxns)
+      setUnmatchedTransactionCount(txnData.unmatchedCount || 0)
+      setBankAccounts(accountData.accounts || [])
+    } catch (error) {
+      console.error('Failed to fetch transactions:', error)
+    } finally {
+      setTransactionsLoading(false)
+    }
+  }
+
+  const handleApproveTransaction = async (transaction: BankTransaction) => {
+    setProcessingTransaction(transaction.id)
+    try {
+      await api.approveBankTransaction(transaction.id)
+      fetchTransactions()
+      fetchData() // Refresh bills
+      Alert.alert('Success', 'Transaction added as company expense')
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to approve transaction')
+    } finally {
+      setProcessingTransaction(null)
+    }
+  }
+
+  const handleSkipTransaction = async (transaction: BankTransaction, createRule?: boolean) => {
+    setProcessingTransaction(transaction.id)
+    try {
+      await api.skipBankTransaction(
+        transaction.id,
+        createRule,
+        createRule ? 'VENDOR' : undefined,
+        createRule ? (transaction.merchantName || transaction.description || undefined) : undefined
+      )
+      fetchTransactions()
+      Alert.alert('Success', createRule ? 'Transaction skipped and rule created' : 'Transaction skipped')
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to skip transaction')
+    } finally {
+      setProcessingTransaction(null)
+    }
+  }
+
+  const handleMatchTransaction = async (transaction: BankTransaction, billId: string) => {
+    setProcessingTransaction(transaction.id)
+    try {
+      await api.matchBankTransaction(transaction.id, billId)
+      setShowBillPickerModal(false)
+      setSelectedTransaction(null)
+      fetchTransactions()
+      fetchData() // Refresh bills
+      Alert.alert('Success', 'Transaction matched to bill')
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to match transaction')
+    } finally {
+      setProcessingTransaction(null)
+    }
+  }
+
+  const searchBillsForMatch = async (query: string) => {
+    setBillSearchQuery(query)
+    if (query.length < 2) {
+      setBillSearchResults([])
+      return
+    }
+    try {
+      const data = await api.searchBillsForMatch({ search: query, limit: 10 })
+      setBillSearchResults(data.bills || [])
+    } catch (error) {
+      console.error('Failed to search bills:', error)
+    }
+  }
+
+  const showTransactionActions = (transaction: BankTransaction) => {
+    const options = ['Cancel', 'Approve as Expense', 'Match to Bill', 'Skip', 'Skip & Create Rule']
+    const cancelIndex = 0
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options,
+          cancelButtonIndex: cancelIndex,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) handleApproveTransaction(transaction)
+          if (buttonIndex === 2) {
+            setSelectedTransaction(transaction)
+            setShowBillPickerModal(true)
+          }
+          if (buttonIndex === 3) handleSkipTransaction(transaction, false)
+          if (buttonIndex === 4) handleSkipTransaction(transaction, true)
+        }
+      )
+    } else {
+      Alert.alert(
+        'Transaction Actions',
+        `${transaction.merchantName || transaction.description}`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Approve as Expense', onPress: () => handleApproveTransaction(transaction) },
+          { text: 'Match to Bill', onPress: () => { setSelectedTransaction(transaction); setShowBillPickerModal(true) } },
+          { text: 'Skip', onPress: () => handleSkipTransaction(transaction, false) },
+          { text: 'Skip & Create Rule', onPress: () => handleSkipTransaction(transaction, true) },
+        ]
+      )
+    }
+  }
+
   useEffect(() => {
     setLoading(true)
     fetchData()
@@ -211,8 +377,16 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
       fetchApprovalQueue()
     } else if (activeTab === 'settings') {
       fetchSettings()
+    } else if (activeTab === 'transactions') {
+      fetchTransactions()
     }
   }, [activeTab])
+
+  useEffect(() => {
+    if (activeTab === 'transactions') {
+      fetchTransactions()
+    }
+  }, [transactionFilter, selectedAccount])
 
   const onRefresh = () => {
     setRefreshing(true)
@@ -221,6 +395,8 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
       fetchApprovalQueue()
     } else if (activeTab === 'settings') {
       fetchSettings()
+    } else if (activeTab === 'transactions') {
+      fetchTransactions()
     }
   }
 
@@ -791,6 +967,7 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
       {/* Tabs */}
       <View style={styles.tabs}>
         <TabButton title="Bills" tabKey="bills" icon="receipt" />
+        <TabButton title="Transactions" tabKey="transactions" icon="card" badge={unmatchedTransactionCount} />
         <TabButton title="Approval" tabKey="approval" icon="checkmark-circle" badge={pendingApprovalCount} />
         <TabButton title="Settings" tabKey="settings" icon="settings" />
       </View>
@@ -897,6 +1074,126 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
                   summary.founderBalances.map(renderBalanceCard)
                 )}
               </>
+            )}
+          </>
+        )}
+
+        {/* Transactions Tab */}
+        {activeTab === 'transactions' && (
+          <>
+            {/* Filter Buttons */}
+            <View style={styles.transactionFilters}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+                {(['all', 'unmatched', 'matched', 'skipped'] as const).map(filter => (
+                  <TouchableOpacity
+                    key={filter}
+                    style={[styles.filterButton, transactionFilter === filter && styles.filterButtonActive]}
+                    onPress={() => setTransactionFilter(filter)}
+                  >
+                    <Text style={[styles.filterButtonText, transactionFilter === filter && styles.filterButtonTextActive]}>
+                      {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            {/* Account Filter */}
+            {bankAccounts.length > 1 && (
+              <View style={styles.accountFilter}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <TouchableOpacity
+                    style={[styles.accountChip, selectedAccount === 'all' && styles.accountChipActive]}
+                    onPress={() => setSelectedAccount('all')}
+                  >
+                    <Text style={[styles.accountChipText, selectedAccount === 'all' && styles.accountChipTextActive]}>All Accounts</Text>
+                  </TouchableOpacity>
+                  {bankAccounts.map(account => (
+                    <TouchableOpacity
+                      key={account.id}
+                      style={[styles.accountChip, selectedAccount === account.id && styles.accountChipActive]}
+                      onPress={() => setSelectedAccount(account.id)}
+                    >
+                      <Text style={[styles.accountChipText, selectedAccount === account.id && styles.accountChipTextActive]}>
+                        {account.institutionName} {account.accountLast4 ? `****${account.accountLast4}` : ''}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Connected Accounts Summary */}
+            <View style={styles.transactionHeader}>
+              <View>
+                <Text style={styles.transactionHeaderTitle}>Bank Transactions</Text>
+                <Text style={styles.transactionHeaderSubtitle}>
+                  {unmatchedTransactionCount} unmatched {bankAccounts.length > 0 ? `from ${bankAccounts.length} account${bankAccounts.length > 1 ? 's' : ''}` : ''}
+                </Text>
+              </View>
+            </View>
+
+            {transactionsLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+              </View>
+            ) : transactions.length === 0 ? (
+              <Card style={styles.emptyCard}>
+                <Ionicons name="card-outline" size={48} color={colors.textMuted} />
+                <Text style={styles.emptyText}>No transactions found</Text>
+                <Text style={styles.emptySubtext}>
+                  {bankAccounts.length === 0 ? 'Connect a bank account to import transactions' : 'Try adjusting your filters'}
+                </Text>
+              </Card>
+            ) : (
+              <Card style={styles.billsCard}>
+                {transactions.map((transaction) => {
+                  const isProcessing = processingTransaction === transaction.id
+                  const isExpense = transaction.amount < 0
+                  const isMatched = !!transaction.matchedBillInstanceId
+
+                  return (
+                    <TouchableOpacity
+                      key={transaction.id}
+                      style={styles.transactionRow}
+                      onPress={() => {
+                        setSelectedTransaction(transaction)
+                        setShowTransactionModal(true)
+                      }}
+                      disabled={isProcessing}
+                    >
+                      <View style={styles.transactionRowLeft}>
+                        <Text style={styles.transactionMerchant}>
+                          {transaction.merchantName || transaction.description || 'Transaction'}
+                        </Text>
+                        <Text style={styles.transactionDescription} numberOfLines={1}>
+                          {transaction.description}
+                        </Text>
+                        <Text style={styles.transactionMeta}>
+                          {formatDate(transaction.transactedAt)} - {transaction.financialAccount.institutionName}
+                          {transaction.financialAccount.accountLast4 && ` ****${transaction.financialAccount.accountLast4}`}
+                        </Text>
+                      </View>
+                      <View style={styles.transactionRowRight}>
+                        <Text style={[styles.transactionAmount, { color: isExpense ? colors.error : colors.success }]}>
+                          {formatCurrency(Math.abs(transaction.amount))}
+                        </Text>
+                        <View style={[
+                          styles.matchStatusBadge,
+                          isMatched ? styles.matchStatusMatched : styles.matchStatusUnmatched
+                        ]}>
+                          <Text style={[
+                            styles.matchStatusText,
+                            isMatched ? styles.matchStatusTextMatched : styles.matchStatusTextUnmatched
+                          ]}>
+                            {isMatched ? 'Matched' : 'Unmatched'}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )
+                })}
+              </Card>
             )}
           </>
         )}
@@ -1158,6 +1455,192 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
                 </View>
               </>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Transaction Detail Modal */}
+      <Modal visible={showTransactionModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {selectedTransaction && (
+              <>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Transaction Details</Text>
+                  <TouchableOpacity onPress={() => { setShowTransactionModal(false); setSelectedTransaction(null); }}>
+                    <Ionicons name="close" size={24} color={colors.text} />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.billDetailRow}>
+                  <Text style={styles.billDetailLabel}>Merchant</Text>
+                  <Text style={styles.billDetailValue}>{selectedTransaction.merchantName || 'Unknown'}</Text>
+                </View>
+
+                <View style={styles.billDetailRow}>
+                  <Text style={styles.billDetailLabel}>Description</Text>
+                  <Text style={[styles.billDetailValue, { flex: 1, textAlign: 'right' }]} numberOfLines={2}>
+                    {selectedTransaction.description || '-'}
+                  </Text>
+                </View>
+
+                <View style={styles.billDetailRow}>
+                  <Text style={styles.billDetailLabel}>Amount</Text>
+                  <Text style={[styles.billDetailValue, styles.billDetailAmount, { color: selectedTransaction.amount < 0 ? colors.error : colors.success }]}>
+                    {formatCurrency(Math.abs(selectedTransaction.amount))}
+                  </Text>
+                </View>
+
+                <View style={styles.billDetailRow}>
+                  <Text style={styles.billDetailLabel}>Date</Text>
+                  <Text style={styles.billDetailValue}>{formatDate(selectedTransaction.transactedAt)}</Text>
+                </View>
+
+                <View style={styles.billDetailRow}>
+                  <Text style={styles.billDetailLabel}>Account</Text>
+                  <Text style={styles.billDetailValue}>
+                    {selectedTransaction.financialAccount.institutionName}
+                    {selectedTransaction.financialAccount.accountLast4 && ` ****${selectedTransaction.financialAccount.accountLast4}`}
+                  </Text>
+                </View>
+
+                {selectedTransaction.category && (
+                  <View style={styles.billDetailRow}>
+                    <Text style={styles.billDetailLabel}>Category</Text>
+                    <Text style={styles.billDetailValue}>{selectedTransaction.category}</Text>
+                  </View>
+                )}
+
+                <View style={styles.billDetailRow}>
+                  <Text style={styles.billDetailLabel}>Status</Text>
+                  <View style={[
+                    styles.matchStatusBadge,
+                    selectedTransaction.matchedBillInstanceId ? styles.matchStatusMatched : styles.matchStatusUnmatched
+                  ]}>
+                    <Text style={[
+                      styles.matchStatusText,
+                      selectedTransaction.matchedBillInstanceId ? styles.matchStatusTextMatched : styles.matchStatusTextUnmatched
+                    ]}>
+                      {selectedTransaction.matchedBillInstanceId ? 'Matched' : 'Unmatched'}
+                    </Text>
+                  </View>
+                </View>
+
+                {!selectedTransaction.matchedBillInstanceId && (
+                  <View style={styles.transactionActions}>
+                    <Button
+                      title="Approve as Expense"
+                      onPress={() => {
+                        setShowTransactionModal(false)
+                        handleApproveTransaction(selectedTransaction)
+                      }}
+                      loading={processingTransaction === selectedTransaction.id}
+                      style={{ marginBottom: spacing.sm }}
+                    />
+                    <Button
+                      title="Match to Bill"
+                      variant="outline"
+                      onPress={() => {
+                        setShowTransactionModal(false)
+                        setShowBillPickerModal(true)
+                      }}
+                      style={{ marginBottom: spacing.sm }}
+                    />
+                    <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                      <Button
+                        title="Skip"
+                        variant="outline"
+                        onPress={() => {
+                          setShowTransactionModal(false)
+                          handleSkipTransaction(selectedTransaction, false)
+                        }}
+                        style={{ flex: 1 }}
+                      />
+                      <Button
+                        title="Skip & Rule"
+                        variant="outline"
+                        onPress={() => {
+                          setShowTransactionModal(false)
+                          handleSkipTransaction(selectedTransaction, true)
+                        }}
+                        style={{ flex: 1 }}
+                      />
+                    </View>
+                  </View>
+                )}
+
+                <View style={styles.modalButtons}>
+                  <Button
+                    title="Close"
+                    onPress={() => { setShowTransactionModal(false); setSelectedTransaction(null); }}
+                    style={{ flex: 1 }}
+                  />
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Bill Picker Modal for Matching */}
+      <Modal visible={showBillPickerModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Match to Bill</Text>
+              <TouchableOpacity onPress={() => { setShowBillPickerModal(false); setBillSearchResults([]); setBillSearchQuery(''); }}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            {selectedTransaction && (
+              <View style={styles.matchingTransactionPreview}>
+                <Text style={styles.matchingTransactionLabel}>Matching transaction:</Text>
+                <Text style={styles.matchingTransactionValue}>
+                  {selectedTransaction.merchantName || selectedTransaction.description} - {formatCurrency(Math.abs(selectedTransaction.amount))}
+                </Text>
+              </View>
+            )}
+
+            <Text style={styles.inputLabel}>Search Bills</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Search by vendor name..."
+              placeholderTextColor={colors.textMuted}
+              value={billSearchQuery}
+              onChangeText={searchBillsForMatch}
+            />
+
+            <ScrollView style={styles.billPickerList}>
+              {billSearchResults.length === 0 && billSearchQuery.length >= 2 ? (
+                <Text style={styles.emptySubtext}>No bills found</Text>
+              ) : (
+                billSearchResults.map((bill) => (
+                  <TouchableOpacity
+                    key={bill.id}
+                    style={styles.billPickerRow}
+                    onPress={() => selectedTransaction && handleMatchTransaction(selectedTransaction, bill.id)}
+                  >
+                    <View style={styles.billPickerRowLeft}>
+                      <Text style={styles.billPickerVendor}>{bill.vendor}</Text>
+                      <Text style={styles.billPickerMeta}>
+                        {formatDate(bill.dueDate)} - {bill.status}
+                      </Text>
+                    </View>
+                    <Text style={styles.billPickerAmount}>{formatCurrency(Number(bill.amount))}</Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+
+            <View style={styles.modalButtons}>
+              <Button
+                title="Cancel"
+                variant="outline"
+                onPress={() => { setShowBillPickerModal(false); setBillSearchResults([]); setBillSearchQuery(''); setSelectedTransaction(null); }}
+                style={{ flex: 1 }}
+              />
+            </View>
           </View>
         </View>
       </Modal>
@@ -1861,5 +2344,178 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: spacing.xs,
     textAlign: 'center',
+  },
+  // Transactions tab styles
+  transactionFilters: {
+    marginBottom: spacing.md,
+  },
+  filterScroll: {
+    flexDirection: 'row',
+  },
+  filterButton: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.surface,
+    marginRight: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterButtonText: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    fontWeight: fontWeight.medium,
+  },
+  filterButtonTextActive: {
+    color: colors.text,
+  },
+  accountFilter: {
+    marginBottom: spacing.md,
+  },
+  accountChip: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    marginRight: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  accountChipActive: {
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    borderColor: colors.primary,
+  },
+  accountChipText: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+  },
+  accountChipTextActive: {
+    color: colors.primary,
+  },
+  transactionHeader: {
+    marginBottom: spacing.lg,
+  },
+  transactionHeaderTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+  },
+  transactionHeaderSubtitle: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    marginTop: 4,
+  },
+  transactionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  transactionRowLeft: {
+    flex: 1,
+    marginRight: spacing.md,
+  },
+  transactionRowRight: {
+    alignItems: 'flex-end',
+  },
+  transactionMerchant: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.text,
+  },
+  transactionDescription: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  transactionMeta: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: 4,
+  },
+  transactionAmount: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+  },
+  matchStatusBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+    marginTop: 4,
+  },
+  matchStatusMatched: {
+    backgroundColor: colors.successBg,
+  },
+  matchStatusUnmatched: {
+    backgroundColor: colors.warningBg,
+  },
+  matchStatusText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+  },
+  matchStatusTextMatched: {
+    color: colors.success,
+  },
+  matchStatusTextUnmatched: {
+    color: colors.warning,
+  },
+  transactionActions: {
+    marginTop: spacing.lg,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  matchingTransactionPreview: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  matchingTransactionLabel: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginBottom: spacing.xs,
+  },
+  matchingTransactionValue: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.text,
+  },
+  billPickerList: {
+    maxHeight: 300,
+    marginBottom: spacing.lg,
+  },
+  billPickerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  billPickerRowLeft: {
+    flex: 1,
+  },
+  billPickerVendor: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.text,
+  },
+  billPickerMeta: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  billPickerAmount: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
   },
 })
