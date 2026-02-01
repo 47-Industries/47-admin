@@ -27,6 +27,7 @@ import ServicePackageDetailScreen from '../screens/ServicePackageDetailScreen'
 import { RecurringBillsScreen } from '../screens/RecurringBillsScreen'
 import { AccountScreen, ProfileEditScreen, ChangePasswordScreen } from '../screens/account'
 import { CategoriesScreen } from '../screens/CategoriesScreen'
+import { BrandsScreen } from '../screens/BrandsScreen'
 import { InvoicesScreen as AdminInvoicesScreen } from '../screens/admin/InvoicesScreen'
 import { InvoiceDetailScreen } from '../screens/admin/InvoiceDetailScreen'
 import { InvoiceCreateScreen } from '../screens/admin/InvoiceCreateScreen'
@@ -88,8 +89,8 @@ export default function AdminNavigator() {
   const currentScreen = screenStack[screenStack.length - 1]
 
   const getParentTab = (screenName: string): TabName | null => {
-    // Sales: Orders, Invoices, Returns + Products, Categories
-    const salesScreens = ['OrderDetail', 'Returns', 'AdminInvoices', 'InvoiceDetail', 'InvoiceCreate', 'Products', 'ProductDetail', 'ProductCreate', 'Categories']
+    // Sales: Orders, Invoices, Returns + Products, Categories, Brands
+    const salesScreens = ['OrderDetail', 'Returns', 'AdminInvoices', 'InvoiceDetail', 'InvoiceCreate', 'Products', 'ProductDetail', 'ProductCreate', 'Categories', 'Brands']
     // Business: Requests (Inquiries, 3D Prints) + Packages + Portfolio + Finance (Expenses, Reports) + Analytics
     const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Portfolio', 'PortfolioDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills', 'Documents']
     // People: Clients, Partners, Team, Affiliates, Users
@@ -161,6 +162,8 @@ export default function AdminNavigator() {
           return <ScreenWrapper><ChangePasswordScreen navigation={navigation} /></ScreenWrapper>
         case 'Categories':
           return <ScreenWrapper><CategoriesScreen navigation={navigation} /></ScreenWrapper>
+        case 'Brands':
+          return <ScreenWrapper><BrandsScreen navigation={navigation} /></ScreenWrapper>
         case 'AdminInvoices':
           return <ScreenWrapper><AdminInvoicesScreen navigation={navigation} /></ScreenWrapper>
         case 'InvoiceDetail':
@@ -266,9 +269,9 @@ export default function AdminNavigator() {
   )
 }
 
-// Sales Tab - Products-focused: Products, Categories + Orders, Invoices, Returns
+// Sales Tab - Products-focused: Products, Categories, Brands + Orders, Invoices, Returns
 type SalesCategory = 'catalog' | 'sales'
-type CatalogSection = 'products' | 'categories'
+type CatalogSection = 'products' | 'categories' | 'brands'
 type SalesSection = 'orders' | 'invoices' | 'returns'
 
 function SalesTabScreen({ navigation }: { navigation: any }) {
@@ -344,6 +347,12 @@ function SalesTabScreen({ navigation }: { navigation: any }) {
             >
               <Text style={[styles.segmentText, catalogSection === 'categories' && styles.segmentTextActive]}>Categories</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segment, catalogSection === 'brands' && styles.segmentActive]}
+              onPress={() => setCatalogSection('brands')}
+            >
+              <Text style={[styles.segmentText, catalogSection === 'brands' && styles.segmentTextActive]}>Brands</Text>
+            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -356,6 +365,7 @@ function SalesTabScreen({ navigation }: { navigation: any }) {
 
         {category === 'catalog' && catalogSection === 'products' && <ProductsScreen navigation={navigation} hideHeader />}
         {category === 'catalog' && catalogSection === 'categories' && <CategoriesScreen navigation={navigation} hideHeader />}
+        {category === 'catalog' && catalogSection === 'brands' && <BrandsScreen navigation={navigation} hideHeader />}
       </View>
     </SafeAreaView>
   )

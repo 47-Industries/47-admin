@@ -446,13 +446,29 @@ class ApiService {
   }
 
   // Products
-  async getProducts(params?: { page?: number; limit?: number; search?: string; type?: string }) {
+  async getProducts(params?: {
+    page?: number
+    limit?: number
+    search?: string
+    type?: string
+    fulfillment?: string
+    brand?: string
+  }) {
     const searchParams = new URLSearchParams()
     if (params?.page) searchParams.set('page', params.page.toString())
     if (params?.limit) searchParams.set('limit', params.limit.toString())
     if (params?.search) searchParams.set('search', params.search)
-    if (params?.type) searchParams.set('productType', params.type)
+    if (params?.type) searchParams.set('type', params.type)
+    if (params?.fulfillment) searchParams.set('fulfillment', params.fulfillment)
+    if (params?.brand) searchParams.set('brand', params.brand)
     return this.request<{ products: any[]; total: number }>(`/admin/products?${searchParams}`)
+  }
+
+  // Printful Sync
+  async syncPrintful() {
+    return this.request<{ success: boolean; synced: number; message?: string }>('/admin/printful/sync', {
+      method: 'POST',
+    })
   }
 
   async getProduct(id: string) {
@@ -1724,6 +1740,25 @@ class ApiService {
     })
   }
 
+  async replaceDocumentFile(id: string, formData: FormData) {
+    const token = await this.getToken()
+    const headers: HeadersInit = {}
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+    // Do NOT set Content-Type - let fetch set it with boundary for multipart
+    const response = await fetch(`${API_BASE_URL}/admin/documents/${id}`, {
+      method: 'PUT',
+      headers,
+      body: formData,
+    })
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'File replacement failed' }))
+      throw new Error(error.error || 'File replacement failed')
+    }
+    return response.json()
+  }
+
   async deleteDocument(id: string) {
     return this.request<{ success: boolean }>(`/admin/documents/${id}`, {
       method: 'DELETE',
@@ -1818,6 +1853,55 @@ class ApiService {
 
   async deleteTaxRate(id: string) {
     return this.request<{ success: boolean }>(`/admin/tax/rates/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // Brands
+  async getBrands(params?: { includeInactive?: boolean }) {
+    const searchParams = new URLSearchParams()
+    if (params?.includeInactive) searchParams.set('includeInactive', 'true')
+    return this.request<{ brands: any[] }>(`/admin/brands?${searchParams}`)
+  }
+
+  async getBrand(id: string) {
+    return this.request<any>(`/admin/brands/${id}`)
+  }
+
+  async createBrand(data: {
+    name: string
+    slug?: string
+    key?: string
+    tagline?: string
+    description?: string
+    accentColor?: string
+    logo?: string
+    active?: boolean
+  }) {
+    return this.request<any>('/admin/brands', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateBrand(id: string, data: {
+    name?: string
+    slug?: string
+    key?: string
+    tagline?: string
+    description?: string
+    accentColor?: string
+    logo?: string
+    active?: boolean
+  }) {
+    return this.request<any>(`/admin/brands/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteBrand(id: string) {
+    return this.request<{ success: boolean }>(`/admin/brands/${id}`, {
       method: 'DELETE',
     })
   }
