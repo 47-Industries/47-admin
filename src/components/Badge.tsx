@@ -1,14 +1,15 @@
 import React from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet, ViewStyle } from 'react-native'
 import { colors, borderRadius, spacing, fontSize, fontWeight } from '../theme'
 
 interface BadgeProps {
   text: string
   variant?: 'default' | 'success' | 'warning' | 'error' | 'primary'
+  style?: ViewStyle
 }
 
-export function Badge({ text, variant = 'default' }: BadgeProps) {
-  const containerStyle = [styles.container, styles[`container_${variant}`]]
+export function Badge({ text, variant = 'default', style }: BadgeProps) {
+  const containerStyle = [styles.container, styles[`container_${variant}`], style]
   const textStyle = [styles.text, styles[`text_${variant}`]]
 
   return (

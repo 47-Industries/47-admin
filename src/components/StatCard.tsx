@@ -9,6 +9,7 @@ interface StatCardProps {
   subtitle?: string
   icon?: keyof typeof Ionicons.glyphMap
   iconColor?: string
+  color?: string
   trend?: {
     value: number
     isPositive: boolean
@@ -16,16 +17,16 @@ interface StatCardProps {
   compact?: boolean
 }
 
-export function StatCard({ title, value, subtitle, icon, iconColor, trend, compact }: StatCardProps) {
+export function StatCard({ title, value, subtitle, icon, iconColor, color, trend, compact }: StatCardProps) {
   return (
     <View style={[styles.card, compact && styles.cardCompact]}>
       <View style={styles.header}>
         <Text style={styles.title}>{title}</Text>
         {icon && (
-          <Ionicons name={icon} size={18} color={iconColor || colors.textMuted} />
+          <Ionicons name={icon} size={18} color={iconColor || color || colors.textMuted} />
         )}
       </View>
-      <Text style={[styles.value, compact && styles.valueCompact]}>{value}</Text>
+      <Text style={[styles.value, compact && styles.valueCompact, color && { color }]}>{value}</Text>
       {(subtitle || trend) && (
         <View style={styles.footer}>
           {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}

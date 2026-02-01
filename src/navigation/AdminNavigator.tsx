@@ -112,8 +112,8 @@ export default function AdminNavigator() {
     const salesScreens = ['OrderDetail', 'Returns', 'AdminInvoices', 'InvoiceDetail', 'InvoiceCreate', 'Products', 'ProductDetail', 'ProductCreate', 'Categories', 'Brands', 'Collections', 'CollectionDetail', 'Inventory', 'Variants', 'ExternalOrders', 'ExternalOrderDetail', 'CustomerDesigns', 'CustomerDesignDetail']
     // Business: Requests (Inquiries, 3D Prints) + Packages + Portfolio + Finance (Expenses, Reports) + Analytics + Operations (Print Queue)
     const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Portfolio', 'PortfolioDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills', 'Documents', 'PrintQueue']
-    // People: Clients, Partners, Team, Affiliates, Users
-    const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'CustomerDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail', 'PartnerApplications', 'PartnerInquiries']
+    // People: Clients, Partners, Team, Affiliates, User Affiliates, Users
+    const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'CustomerDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail', 'UserAffiliates', 'UserAffiliateDetail', 'PartnerApplications', 'PartnerInquiries']
     // Account: Profile, Email, Settings, Notifications, Marketing, Blog, Business Cards, Email Signatures, OAuth
     const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'ShippingSettings', 'TaxSettings', 'Email', 'EmailSignatures', 'Marketing', 'Blog', 'BlogPostDetail', 'BusinessCards', 'CardGenerator', 'OAuthApplications']
 
@@ -211,6 +211,10 @@ export default function AdminNavigator() {
           return <ScreenWrapper><AffiliatesScreen navigation={navigation} /></ScreenWrapper>
         case 'AffiliateDetail':
           return <ScreenWrapper><AffiliateDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
+        case 'UserAffiliates':
+          return <ScreenWrapper><UserAffiliatesScreen navigation={navigation} /></ScreenWrapper>
+        case 'UserAffiliateDetail':
+          return <ScreenWrapper><UserAffiliateDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
         case 'PartnerLeads':
           return <ScreenWrapper><PartnerLeadsScreen navigation={navigation} /></ScreenWrapper>
         case 'PartnerLeadDetail':
@@ -581,9 +585,9 @@ function BusinessTabScreen({ navigation }: { navigation: any }) {
   )
 }
 
-// People Tab - Clients, Partners, Team, Users
+// People Tab - Clients, Partners, Team, Users, Affiliates
 function PeopleTabScreen({ navigation }: { navigation: any }) {
-  const [activeSection, setActiveSection] = useState<'users' | 'clients' | 'partners' | 'applications' | 'inquiries' | 'leads' | 'team' | 'affiliates'>('users')
+  const [activeSection, setActiveSection] = useState<'users' | 'clients' | 'partners' | 'applications' | 'inquiries' | 'leads' | 'team' | 'affiliates' | 'userAffiliates'>('users')
 
   return (
     <SafeAreaView style={styles.tabContainer} edges={['top']}>
@@ -637,6 +641,12 @@ function PeopleTabScreen({ navigation }: { navigation: any }) {
           >
             <Text style={[styles.segmentText, activeSection === 'affiliates' && styles.segmentTextActive]}>Affiliates</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.segmentPill, activeSection === 'userAffiliates' && styles.segmentPillActive]}
+            onPress={() => setActiveSection('userAffiliates')}
+          >
+            <Text style={[styles.segmentText, activeSection === 'userAffiliates' && styles.segmentTextActive]}>User Affiliates</Text>
+          </TouchableOpacity>
         </ScrollView>
       </View>
       <View style={styles.tabContent}>
@@ -648,6 +658,7 @@ function PeopleTabScreen({ navigation }: { navigation: any }) {
         {activeSection === 'leads' && <PartnerLeadsScreen navigation={navigation} hideHeader />}
         {activeSection === 'team' && <TeamScreen navigation={navigation} hideHeader />}
         {activeSection === 'affiliates' && <AffiliatesScreen navigation={navigation} hideHeader />}
+        {activeSection === 'userAffiliates' && <UserAffiliatesScreen navigation={navigation} hideHeader />}
       </View>
     </SafeAreaView>
   )
