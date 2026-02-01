@@ -224,6 +224,10 @@ export default function AdminNavigator() {
           return <ScreenWrapper><CollectionsScreen navigation={navigation} /></ScreenWrapper>
         case 'CollectionDetail':
           return <ScreenWrapper><CollectionDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
+        case 'CustomerDesigns':
+          return <ScreenWrapper><CustomerDesignsScreen navigation={navigation} /></ScreenWrapper>
+        case 'CustomerDesignDetail':
+          return <ScreenWrapper><CustomerDesignDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
       }
     }
 
@@ -291,8 +295,8 @@ export default function AdminNavigator() {
 
 // Sales Tab - Products-focused: Products, Categories, Brands + Orders, Invoices, Returns, External Orders
 type SalesCategory = 'catalog' | 'sales'
-type CatalogSection = 'products' | 'categories' | 'brands'
-type SalesSection = 'orders' | 'invoices' | 'returns' | 'external'
+type CatalogSection = 'products' | 'categories' | 'brands' | 'collections'
+type SalesSection = 'orders' | 'designs' | 'invoices' | 'returns' | 'external'
 
 function SalesTabScreen({ navigation }: { navigation: any }) {
   const [category, setCategory] = useState<SalesCategory>('sales')
@@ -335,6 +339,12 @@ function SalesTabScreen({ navigation }: { navigation: any }) {
               onPress={() => setSalesSection('orders')}
             >
               <Text style={[styles.segmentText, salesSection === 'orders' && styles.segmentTextActive]}>Orders</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segmentPill, salesSection === 'designs' && styles.segmentPillActive]}
+              onPress={() => setSalesSection('designs')}
+            >
+              <Text style={[styles.segmentText, salesSection === 'designs' && styles.segmentTextActive]}>Designs</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.segmentPill, salesSection === 'invoices' && styles.segmentPillActive]}
@@ -386,6 +396,7 @@ function SalesTabScreen({ navigation }: { navigation: any }) {
       {/* Content */}
       <View style={styles.tabContent}>
         {category === 'sales' && salesSection === 'orders' && <OrdersScreen navigation={navigation} hideHeader />}
+        {category === 'sales' && salesSection === 'designs' && <CustomerDesignsScreen navigation={navigation} hideHeader />}
         {category === 'sales' && salesSection === 'invoices' && <AdminInvoicesScreen navigation={navigation} hideHeader />}
         {category === 'sales' && salesSection === 'returns' && <ReturnsScreen navigation={navigation} hideHeader />}
         {category === 'sales' && salesSection === 'external' && <ExternalOrdersScreen navigation={navigation} hideHeader />}
