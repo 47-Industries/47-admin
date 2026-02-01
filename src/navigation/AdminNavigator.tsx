@@ -370,26 +370,32 @@ function SalesTabScreen({ navigation }: { navigation: any }) {
 
       {category === 'catalog' && (
         <View style={styles.segmentWrapper}>
-          <View style={styles.segmentedControl}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segmentedControlWide}>
             <TouchableOpacity
-              style={[styles.segment, catalogSection === 'products' && styles.segmentActive]}
+              style={[styles.segmentPill, catalogSection === 'products' && styles.segmentPillActive]}
               onPress={() => setCatalogSection('products')}
             >
               <Text style={[styles.segmentText, catalogSection === 'products' && styles.segmentTextActive]}>Products</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.segment, catalogSection === 'categories' && styles.segmentActive]}
+              style={[styles.segmentPill, catalogSection === 'categories' && styles.segmentPillActive]}
               onPress={() => setCatalogSection('categories')}
             >
               <Text style={[styles.segmentText, catalogSection === 'categories' && styles.segmentTextActive]}>Categories</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.segment, catalogSection === 'brands' && styles.segmentActive]}
+              style={[styles.segmentPill, catalogSection === 'brands' && styles.segmentPillActive]}
               onPress={() => setCatalogSection('brands')}
             >
               <Text style={[styles.segmentText, catalogSection === 'brands' && styles.segmentTextActive]}>Brands</Text>
             </TouchableOpacity>
-          </View>
+            <TouchableOpacity
+              style={[styles.segmentPill, catalogSection === 'collections' && styles.segmentPillActive]}
+              onPress={() => setCatalogSection('collections')}
+            >
+              <Text style={[styles.segmentText, catalogSection === 'collections' && styles.segmentTextActive]}>Collections</Text>
+            </TouchableOpacity>
+          </ScrollView>
         </View>
       )}
 
@@ -404,6 +410,7 @@ function SalesTabScreen({ navigation }: { navigation: any }) {
         {category === 'catalog' && catalogSection === 'products' && <ProductsScreen navigation={navigation} hideHeader />}
         {category === 'catalog' && catalogSection === 'categories' && <CategoriesScreen navigation={navigation} hideHeader />}
         {category === 'catalog' && catalogSection === 'brands' && <BrandsScreen navigation={navigation} hideHeader />}
+        {category === 'catalog' && catalogSection === 'collections' && <CollectionsScreen navigation={navigation} hideHeader />}
       </View>
     </SafeAreaView>
   )
