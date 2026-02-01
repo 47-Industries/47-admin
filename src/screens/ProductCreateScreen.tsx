@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import {
   View,
   Text,
@@ -10,14 +10,13 @@ import {
   Switch,
   Image,
   ActivityIndicator,
-  Platform,
+  Modal,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
-import { Badge } from '../components/Badge'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
@@ -26,6 +25,12 @@ interface Category {
   name: string
   slug: string
   productType: 'PHYSICAL' | 'DIGITAL'
+}
+
+interface Brand {
+  id: string
+  name: string
+  slug: string
 }
 
 interface OptionType {
@@ -47,11 +52,20 @@ interface ProductFormData {
   description: string
   price: string
   comparePrice: string
+  costPrice: string
   stock: string
+  lowStockThreshold: string
   sku: string
   categoryId: string
+  brandId: string
+  tags: string
+  weight: string
+  dimensionLength: string
+  dimensionWidth: string
+  dimensionHeight: string
   active: boolean
   featured: boolean
+  trackInventory: boolean
 }
 
 // Validation constants
@@ -64,12 +78,18 @@ const URL_REGEX = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/i
 
 export default function ProductCreateScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false)
+  const [savingDraft, setSavingDraft] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
+  const [brands, setBrands] = useState<Brand[]>([])
   const [loadingCategories, setLoadingCategories] = useState(true)
+  const [, setLoadingBrands] = useState(true)
   const [productType, setProductType] = useState<'PHYSICAL' | 'DIGITAL'>('PHYSICAL')
+  const [fulfillmentType, setFulfillmentType] = useState<'SELF_FULFILLED' | 'PRINTFUL'>('SELF_FULFILLED')
   const [images, setImages] = useState<string[]>([])
   const [uploadingImage, setUploadingImage] = useState(false)
   const [showCategoryPicker, setShowCategoryPicker] = useState(false)
+  const [showBrandPicker, setShowBrandPicker] = useState(false)
+  const [showImageSourcePicker, setShowImageSourcePicker] = useState(false)
   const [optionTypes, setOptionTypes] = useState<OptionType[]>([])
   const [hasVariants, setHasVariants] = useState(false)
   const [variants, setVariants] = useState<VariantDraft[]>([])
@@ -87,43 +107,65 @@ export default function ProductCreateScreen({ navigation }: any) {
     description: '',
     price: '',
     comparePrice: '',
+    costPrice: '',
     stock: '0',
+    lowStockThreshold: '5',
     sku: '',
     categoryId: '',
+    brandId: '',
+    tags: '',
+    weight: '',
+    dimensionLength: '',
+    dimensionWidth: '',
+    dimensionHeight: '',
     active: true,
     featured: false,
+    trackInventory: true,
   })
 
   const [errors, setErrors] = useState<Partial<Record<keyof ProductFormData | 'images', string>>>({})
   const [touched, setTouched] = useState<Partial<Record<keyof ProductFormData | 'images', boolean>>>({})
 
-  useEffect(() => {
-    fetchCategories()
-    fetchOptionTypes()
-  }, [productType])
-
-  const fetchOptionTypes = async () => {
+  const fetchOptionTypes = useCallback(async () => {
     try {
       const data = await api.getOptionTypes()
       setOptionTypes(data.optionTypes || [])
-    } catch (error) {
-      console.error('Failed to fetch option types:', error)
+    } catch (err) {
+      console.error('Failed to fetch option types:', err)
     }
-  }
+  }, [])
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     setLoadingCategories(true)
     try {
       const data = await api.getCategories({ type: productType })
       setCategories(data.categories || [])
       // Reset category selection when product type changes
       setFormData((prev) => ({ ...prev, categoryId: '' }))
-    } catch (error) {
-      console.error('Failed to fetch categories:', error)
+    } catch (err) {
+      console.error('Failed to fetch categories:', err)
     } finally {
       setLoadingCategories(false)
     }
-  }
+  }, [productType])
+
+  const fetchBrands = useCallback(async () => {
+    setLoadingBrands(true)
+    try {
+      const data = await api.getBrands()
+      setBrands(data.brands || [])
+    } catch (err) {
+      console.error('Failed to fetch brands:', err)
+    } finally {
+      setLoadingBrands(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchCategories()
+    fetchBrands()
+    fetchOptionTypes()
+  }, [fetchCategories, fetchBrands, fetchOptionTypes])
 
   // Validate a single field
   const validateField = (field: keyof ProductFormData | 'images', value: any): string | undefined => {
@@ -160,18 +202,19 @@ export default function ProductCreateScreen({ navigation }: any) {
         }
         break
       case 'comparePrice':
+      case 'costPrice':
         if (value && value.trim()) {
-          const comparePrice = parseFloat(value)
-          if (isNaN(comparePrice)) {
-            return 'Please enter a valid compare price'
+          const amount = parseFloat(value)
+          if (isNaN(amount)) {
+            return 'Please enter a valid amount'
           }
-          if (comparePrice < 0) {
-            return 'Compare price cannot be negative'
+          if (amount < 0) {
+            return 'Amount cannot be negative'
           }
         }
         break
       case 'stock':
-        if (productType === 'PHYSICAL') {
+        if (productType === 'PHYSICAL' && formData.trackInventory) {
           if (!value || !value.trim()) {
             return 'Stock quantity is required'
           }
@@ -184,6 +227,17 @@ export default function ProductCreateScreen({ navigation }: any) {
           }
         }
         break
+      case 'lowStockThreshold':
+        if (value && value.trim()) {
+          const threshold = parseInt(value)
+          if (isNaN(threshold)) {
+            return 'Please enter a valid threshold'
+          }
+          if (threshold < 0) {
+            return 'Threshold cannot be negative'
+          }
+        }
+        break
       case 'sku':
         if (value && value.length > MAX_SKU_LENGTH) {
           return `SKU must be ${MAX_SKU_LENGTH} characters or less`
@@ -192,6 +246,17 @@ export default function ProductCreateScreen({ navigation }: any) {
       case 'categoryId':
         if (!value) {
           return 'Please select a category'
+        }
+        break
+      case 'weight':
+        if (value && value.trim()) {
+          const weight = parseFloat(value)
+          if (isNaN(weight)) {
+            return 'Please enter a valid weight'
+          }
+          if (weight < 0) {
+            return 'Weight cannot be negative'
+          }
         }
         break
     }
@@ -213,7 +278,7 @@ export default function ProductCreateScreen({ navigation }: any) {
     const newErrors: Partial<Record<keyof ProductFormData | 'images', string>> = {}
 
     // Validate all fields
-    const fields: (keyof ProductFormData)[] = ['name', 'description', 'price', 'comparePrice', 'stock', 'sku', 'categoryId']
+    const fields: (keyof ProductFormData)[] = ['name', 'description', 'price', 'comparePrice', 'costPrice', 'stock', 'sku', 'categoryId']
     fields.forEach(field => {
       const error = validateField(field, formData[field])
       if (error) {
@@ -234,7 +299,7 @@ export default function ProductCreateScreen({ navigation }: any) {
   // Check if form is valid for button state (without setting errors)
   const isFormValid = (): boolean => {
     const fields: (keyof ProductFormData)[] = ['name', 'description', 'price', 'categoryId']
-    if (productType === 'PHYSICAL') {
+    if (productType === 'PHYSICAL' && formData.trackInventory) {
       fields.push('stock')
     }
 
@@ -259,15 +324,60 @@ export default function ProductCreateScreen({ navigation }: any) {
     setErrors(prev => ({ ...prev, [field]: error }))
   }
 
-  const pickImage = async () => {
+  const requestCameraPermission = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync()
+    return status === 'granted'
+  }
+
+  const requestMediaLibraryPermission = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    return status === 'granted'
+  }
+
+  const pickImageFromCamera = async () => {
+    setShowImageSourcePicker(false)
+
+    const hasPermission = await requestCameraPermission()
+    if (!hasPermission) {
+      Alert.alert('Permission Required', 'Please allow access to your camera')
+      return
+    }
+
     try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      })
 
-      if (!permissionResult.granted) {
-        Alert.alert('Permission Required', 'Please allow access to your photo library')
-        return
+      if (!result.canceled && result.assets[0]) {
+        setUploadingImage(true)
+        try {
+          const imageUri = result.assets[0].uri
+          setImages((prev) => [...prev, imageUri])
+        } catch {
+          Alert.alert('Error', 'Failed to add image')
+        } finally {
+          setUploadingImage(false)
+        }
       }
+    } catch (err) {
+      console.error('Camera error:', err)
+      Alert.alert('Error', 'Failed to open camera')
+    }
+  }
 
+  const pickImageFromGallery = async () => {
+    setShowImageSourcePicker(false)
+
+    const hasPermission = await requestMediaLibraryPermission()
+    if (!hasPermission) {
+      Alert.alert('Permission Required', 'Please allow access to your photo library')
+      return
+    }
+
+    try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -278,24 +388,40 @@ export default function ProductCreateScreen({ navigation }: any) {
       if (!result.canceled && result.assets[0]) {
         setUploadingImage(true)
         try {
-          // For now, we'll use the local URI
-          // In production, you would upload to your server/R2
           const imageUri = result.assets[0].uri
           setImages((prev) => [...prev, imageUri])
-        } catch (error) {
-          Alert.alert('Error', 'Failed to upload image')
+        } catch {
+          Alert.alert('Error', 'Failed to add image')
         } finally {
           setUploadingImage(false)
         }
       }
-    } catch (error) {
-      console.error('Image picker error:', error)
+    } catch (err) {
+      console.error('Image picker error:', err)
       Alert.alert('Error', 'Failed to pick image')
     }
   }
 
   const removeImage = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const moveImage = (fromIndex: number, direction: 'left' | 'right') => {
+    const toIndex = direction === 'left' ? fromIndex - 1 : fromIndex + 1
+    if (toIndex < 0 || toIndex >= images.length) return
+
+    const newImages = [...images]
+    const [movedImage] = newImages.splice(fromIndex, 1)
+    newImages.splice(toIndex, 0, movedImage)
+    setImages(newImages)
+  }
+
+  const setFeaturedImage = (index: number) => {
+    if (index === 0) return // Already featured
+    const newImages = [...images]
+    const [featuredImage] = newImages.splice(index, 1)
+    newImages.unshift(featuredImage)
+    setImages(newImages)
   }
 
   // Variant functions
@@ -329,43 +455,69 @@ export default function ProductCreateScreen({ navigation }: any) {
     setVariants(variants.filter((v) => v.id !== id))
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (asDraft: boolean = false) => {
     if (!validateForm()) {
       Alert.alert('Validation Error', 'Please fix the errors before submitting')
       return
     }
 
-    if (loading) return
+    if (loading || savingDraft) return
 
-    setLoading(true)
+    if (asDraft) {
+      setSavingDraft(true)
+    } else {
+      setLoading(true)
+    }
 
     try {
+      // Build dimensions string if provided
+      let dimensions: string | null = null
+      if (formData.dimensionLength || formData.dimensionWidth || formData.dimensionHeight) {
+        dimensions = `${formData.dimensionLength || '0'} x ${formData.dimensionWidth || '0'} x ${formData.dimensionHeight || '0'}`
+      }
+
+      // Parse tags
+      const tagsArray = formData.tags
+        .split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0)
+
       await api.createProduct({
         name: formData.name.trim(),
         description: formData.description.trim(),
         productType,
+        fulfillmentType: productType === 'PHYSICAL' ? fulfillmentType : null,
         price: parseFloat(formData.price),
         comparePrice: formData.comparePrice ? parseFloat(formData.comparePrice) : null,
-        stock: productType === 'DIGITAL' ? 999999 : parseInt(formData.stock),
+        costPrice: formData.costPrice ? parseFloat(formData.costPrice) : null,
+        stock: productType === 'DIGITAL' ? 999999 : (formData.trackInventory ? parseInt(formData.stock) : null),
+        lowStockThreshold: formData.trackInventory && formData.lowStockThreshold ? parseInt(formData.lowStockThreshold) : null,
+        trackInventory: productType === 'PHYSICAL' ? formData.trackInventory : false,
         sku: formData.sku.trim() || null,
         categoryId: formData.categoryId,
-        active: formData.active,
+        brandId: formData.brandId || null,
+        tags: tagsArray.length > 0 ? tagsArray : null,
+        weight: formData.weight ? parseFloat(formData.weight) : null,
+        dimensions: dimensions,
+        active: asDraft ? false : formData.active,
         featured: formData.featured,
         images,
         requiresShipping: productType === 'PHYSICAL',
       })
 
-      Alert.alert('Success', 'Product created successfully', [
+      Alert.alert('Success', asDraft ? 'Product saved as draft' : 'Product created successfully', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ])
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to create product')
     } finally {
       setLoading(false)
+      setSavingDraft(false)
     }
   }
 
   const selectedCategory = categories.find((c) => c.id === formData.categoryId)
+  const selectedBrand = brands.find((b) => b.id === formData.brandId)
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -474,6 +626,27 @@ export default function ProductCreateScreen({ navigation }: any) {
               )}
             </View>
           </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>SKU</Text>
+            <TextInput
+              style={[styles.input, touched.sku && errors.sku && styles.inputError]}
+              value={formData.sku}
+              onChangeText={(text) => {
+                setFormData({ ...formData, sku: text })
+                if (touched.sku) {
+                  const error = validateField('sku', text)
+                  setErrors(prev => ({ ...prev, sku: error }))
+                }
+              }}
+              onBlur={() => handleBlur('sku')}
+              placeholder="Enter SKU"
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="characters"
+              maxLength={MAX_SKU_LENGTH}
+            />
+            {touched.sku && errors.sku && <Text style={styles.errorText}>{errors.sku}</Text>}
+          </View>
         </Card>
 
         {/* Pricing */}
@@ -507,7 +680,7 @@ export default function ProductCreateScreen({ navigation }: any) {
             </View>
             <View style={{ width: spacing.md }} />
             <View style={[styles.inputGroup, { flex: 1 }]}>
-              <Text style={styles.label}>Compare Price</Text>
+              <Text style={styles.label}>Compare At Price</Text>
               <View style={[styles.currencyInput, touched.comparePrice && errors.comparePrice && styles.inputError]}>
                 <Text style={styles.currencySymbol}>$</Text>
                 <TextInput
@@ -529,58 +702,102 @@ export default function ProductCreateScreen({ navigation }: any) {
               {touched.comparePrice && errors.comparePrice && <Text style={styles.errorText}>{errors.comparePrice}</Text>}
             </View>
           </View>
+
+          <View style={[styles.inputGroup, { marginTop: spacing.sm }]}>
+            <Text style={styles.label}>Cost Per Item</Text>
+            <View style={[styles.currencyInput, touched.costPrice && errors.costPrice && styles.inputError]}>
+              <Text style={styles.currencySymbol}>$</Text>
+              <TextInput
+                style={styles.currencyTextInput}
+                value={formData.costPrice}
+                onChangeText={(text) => {
+                  setFormData({ ...formData, costPrice: text })
+                  if (touched.costPrice) {
+                    const error = validateField('costPrice', text)
+                    setErrors(prev => ({ ...prev, costPrice: error }))
+                  }
+                }}
+                onBlur={() => handleBlur('costPrice')}
+                placeholder="0.00"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="decimal-pad"
+              />
+            </View>
+            <Text style={styles.helperText}>Used to calculate profit margin</Text>
+            {touched.costPrice && errors.costPrice && <Text style={styles.errorText}>{errors.costPrice}</Text>}
+          </View>
         </Card>
 
         {/* Inventory */}
         <Text style={styles.sectionTitle}>Inventory</Text>
         <Card style={styles.card}>
-          <View style={styles.row}>
-            {productType === 'PHYSICAL' && (
-              <View style={[styles.inputGroup, { flex: 1 }]}>
-                <View style={styles.labelRow}>
-                  <Text style={styles.label}>Stock Quantity</Text>
-                  <Text style={styles.requiredIndicator}>*</Text>
+          {productType === 'PHYSICAL' && (
+            <>
+              <View style={styles.toggleRow}>
+                <View style={styles.toggleInfo}>
+                  <Ionicons name="layers-outline" size={20} color={colors.textMuted} />
+                  <View style={styles.toggleTextContainer}>
+                    <Text style={styles.toggleLabel}>Track Inventory</Text>
+                    <Text style={styles.toggleDescription}>Monitor stock levels for this product</Text>
+                  </View>
                 </View>
-                <TextInput
-                  style={[styles.input, touched.stock && errors.stock && styles.inputError]}
-                  value={formData.stock}
-                  onChangeText={(text) => {
-                    setFormData({ ...formData, stock: text })
-                    if (touched.stock) {
-                      const error = validateField('stock', text)
-                      setErrors(prev => ({ ...prev, stock: error }))
-                    }
-                  }}
-                  onBlur={() => handleBlur('stock')}
-                  placeholder="0"
-                  placeholderTextColor={colors.textMuted}
-                  keyboardType="number-pad"
+                <Switch
+                  value={formData.trackInventory}
+                  onValueChange={(value) => setFormData({ ...formData, trackInventory: value })}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor={colors.text}
                 />
-                {touched.stock && errors.stock && <Text style={styles.errorText}>{errors.stock}</Text>}
               </View>
-            )}
-            {productType === 'PHYSICAL' && <View style={{ width: spacing.md }} />}
-            <View style={[styles.inputGroup, { flex: 1 }]}>
-              <Text style={styles.label}>SKU</Text>
-              <TextInput
-                style={[styles.input, touched.sku && errors.sku && styles.inputError]}
-                value={formData.sku}
-                onChangeText={(text) => {
-                  setFormData({ ...formData, sku: text })
-                  if (touched.sku) {
-                    const error = validateField('sku', text)
-                    setErrors(prev => ({ ...prev, sku: error }))
-                  }
-                }}
-                onBlur={() => handleBlur('sku')}
-                placeholder="Enter SKU"
-                placeholderTextColor={colors.textMuted}
-                autoCapitalize="characters"
-                maxLength={MAX_SKU_LENGTH}
-              />
-              {touched.sku && errors.sku && <Text style={styles.errorText}>{errors.sku}</Text>}
-            </View>
-          </View>
+
+              {formData.trackInventory && (
+                <View style={[styles.row, { marginTop: spacing.lg }]}>
+                  <View style={[styles.inputGroup, { flex: 1 }]}>
+                    <View style={styles.labelRow}>
+                      <Text style={styles.label}>Stock Quantity</Text>
+                      <Text style={styles.requiredIndicator}>*</Text>
+                    </View>
+                    <TextInput
+                      style={[styles.input, touched.stock && errors.stock && styles.inputError]}
+                      value={formData.stock}
+                      onChangeText={(text) => {
+                        setFormData({ ...formData, stock: text })
+                        if (touched.stock) {
+                          const error = validateField('stock', text)
+                          setErrors(prev => ({ ...prev, stock: error }))
+                        }
+                      }}
+                      onBlur={() => handleBlur('stock')}
+                      placeholder="0"
+                      placeholderTextColor={colors.textMuted}
+                      keyboardType="number-pad"
+                    />
+                    {touched.stock && errors.stock && <Text style={styles.errorText}>{errors.stock}</Text>}
+                  </View>
+                  <View style={{ width: spacing.md }} />
+                  <View style={[styles.inputGroup, { flex: 1 }]}>
+                    <Text style={styles.label}>Low Stock Alert</Text>
+                    <TextInput
+                      style={[styles.input, touched.lowStockThreshold && errors.lowStockThreshold && styles.inputError]}
+                      value={formData.lowStockThreshold}
+                      onChangeText={(text) => {
+                        setFormData({ ...formData, lowStockThreshold: text })
+                        if (touched.lowStockThreshold) {
+                          const error = validateField('lowStockThreshold', text)
+                          setErrors(prev => ({ ...prev, lowStockThreshold: error }))
+                        }
+                      }}
+                      onBlur={() => handleBlur('lowStockThreshold')}
+                      placeholder="5"
+                      placeholderTextColor={colors.textMuted}
+                      keyboardType="number-pad"
+                    />
+                    <Text style={styles.helperText}>Alert when below this</Text>
+                  </View>
+                </View>
+              )}
+            </>
+          )}
+
           {productType === 'DIGITAL' && (
             <View style={styles.digitalNote}>
               <Ionicons name="information-circle-outline" size={16} color={colors.purple} />
@@ -589,8 +806,8 @@ export default function ProductCreateScreen({ navigation }: any) {
           )}
         </Card>
 
-        {/* Category */}
-        <Text style={styles.sectionTitle}>Category</Text>
+        {/* Organization */}
+        <Text style={styles.sectionTitle}>Organization</Text>
         <Card style={styles.card}>
           <View style={styles.inputGroup}>
             <View style={styles.labelRow}>
@@ -625,6 +842,31 @@ export default function ProductCreateScreen({ navigation }: any) {
               </Text>
             </View>
           )}
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Brand</Text>
+            <TouchableOpacity
+              style={styles.pickerButton}
+              onPress={() => setShowBrandPicker(true)}
+            >
+              <Text style={selectedBrand ? styles.pickerButtonText : styles.pickerButtonPlaceholder}>
+                {selectedBrand ? selectedBrand.name : 'Select a brand (optional)'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Tags</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.tags}
+              onChangeText={(text) => setFormData({ ...formData, tags: text })}
+              placeholder="Enter tags, separated by commas"
+              placeholderTextColor={colors.textMuted}
+            />
+            <Text style={styles.helperText}>e.g., new, bestseller, limited-edition</Text>
+          </View>
         </Card>
 
         {/* Category Picker Modal */}
@@ -666,19 +908,104 @@ export default function ProductCreateScreen({ navigation }: any) {
           </View>
         )}
 
-        {/* Images */}
+        {/* Brand Picker Modal */}
+        {showBrandPicker && (
+          <View style={styles.pickerModal}>
+            <View style={styles.pickerModalContent}>
+              <View style={styles.pickerModalHeader}>
+                <Text style={styles.pickerModalTitle}>Select Brand</Text>
+                <TouchableOpacity onPress={() => setShowBrandPicker(false)}>
+                  <Ionicons name="close" size={24} color={colors.text} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={styles.pickerModalScroll}>
+                <TouchableOpacity
+                  style={[styles.pickerOption, !formData.brandId && styles.pickerOptionActive]}
+                  onPress={() => {
+                    setFormData({ ...formData, brandId: '' })
+                    setShowBrandPicker(false)
+                  }}
+                >
+                  <Text style={[styles.pickerOptionText, !formData.brandId && styles.pickerOptionTextActive]}>
+                    No Brand
+                  </Text>
+                  {!formData.brandId && <Ionicons name="checkmark" size={20} color={colors.primary} />}
+                </TouchableOpacity>
+                {brands.map((brand) => (
+                  <TouchableOpacity
+                    key={brand.id}
+                    style={[styles.pickerOption, formData.brandId === brand.id && styles.pickerOptionActive]}
+                    onPress={() => {
+                      setFormData({ ...formData, brandId: brand.id })
+                      setShowBrandPicker(false)
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.pickerOptionText,
+                        formData.brandId === brand.id && styles.pickerOptionTextActive,
+                      ]}
+                    >
+                      {brand.name}
+                    </Text>
+                    {formData.brandId === brand.id && (
+                      <Ionicons name="checkmark" size={20} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        )}
+
+        {/* Media */}
         <Text style={styles.sectionTitle}>Product Images</Text>
         <Card style={styles.card}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagesScroll}>
             {images.map((image, index) => (
               <View key={index} style={styles.imageContainer}>
                 <Image source={{ uri: image }} style={styles.productImage} />
+                {index === 0 && (
+                  <View style={styles.featuredBadge}>
+                    <Text style={styles.featuredBadgeText}>Featured</Text>
+                  </View>
+                )}
+                <View style={styles.imageActions}>
+                  {index > 0 && (
+                    <TouchableOpacity
+                      style={styles.imageActionButton}
+                      onPress={() => moveImage(index, 'left')}
+                    >
+                      <Ionicons name="arrow-back" size={16} color={colors.text} />
+                    </TouchableOpacity>
+                  )}
+                  {index < images.length - 1 && (
+                    <TouchableOpacity
+                      style={styles.imageActionButton}
+                      onPress={() => moveImage(index, 'right')}
+                    >
+                      <Ionicons name="arrow-forward" size={16} color={colors.text} />
+                    </TouchableOpacity>
+                  )}
+                  {index !== 0 && (
+                    <TouchableOpacity
+                      style={styles.imageActionButton}
+                      onPress={() => setFeaturedImage(index)}
+                    >
+                      <Ionicons name="star-outline" size={16} color={colors.warning} />
+                    </TouchableOpacity>
+                  )}
+                </View>
                 <TouchableOpacity style={styles.removeImageButton} onPress={() => removeImage(index)}>
                   <Ionicons name="close-circle" size={24} color={colors.error} />
                 </TouchableOpacity>
               </View>
             ))}
-            <TouchableOpacity style={styles.addImageButton} onPress={pickImage} disabled={uploadingImage}>
+            <TouchableOpacity
+              style={styles.addImageButton}
+              onPress={() => setShowImageSourcePicker(true)}
+              disabled={uploadingImage}
+            >
               {uploadingImage ? (
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
@@ -689,182 +1016,318 @@ export default function ProductCreateScreen({ navigation }: any) {
               )}
             </TouchableOpacity>
           </ScrollView>
-          <Text style={styles.imageHint}>Tap to add product images (recommended: square images)</Text>
+          <Text style={styles.imageHint}>First image is the featured image. Tap to add from camera or gallery.</Text>
         </Card>
 
-        {/* Variants Section */}
-        <Text style={styles.sectionTitle}>Variants</Text>
-        <Card style={styles.card}>
-          <View style={styles.toggleRow}>
-            <View style={styles.toggleInfo}>
-              <Ionicons name="layers-outline" size={20} color={colors.textMuted} />
-              <View style={styles.toggleTextContainer}>
-                <Text style={styles.toggleLabel}>Has Variants</Text>
-                <Text style={styles.toggleDescription}>Add different options like size or color</Text>
-              </View>
+        {/* Image Source Picker Modal */}
+        <Modal
+          visible={showImageSourcePicker}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowImageSourcePicker(false)}
+        >
+          <TouchableOpacity
+            style={styles.imageSourceOverlay}
+            activeOpacity={1}
+            onPress={() => setShowImageSourcePicker(false)}
+          >
+            <View style={styles.imageSourceContent}>
+              <Text style={styles.imageSourceTitle}>Add Image</Text>
+              <TouchableOpacity style={styles.imageSourceOption} onPress={pickImageFromCamera}>
+                <Ionicons name="camera-outline" size={24} color={colors.text} />
+                <Text style={styles.imageSourceOptionText}>Take Photo</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.imageSourceOption} onPress={pickImageFromGallery}>
+                <Ionicons name="images-outline" size={24} color={colors.text} />
+                <Text style={styles.imageSourceOptionText}>Choose from Gallery</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.imageSourceOption, styles.imageSourceCancel]}
+                onPress={() => setShowImageSourcePicker(false)}
+              >
+                <Text style={styles.imageSourceCancelText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
-            <Switch
-              value={hasVariants}
-              onValueChange={(value) => {
-                setHasVariants(value)
-                if (!value) {
-                  setVariants([])
-                }
-              }}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor={colors.text}
-            />
-          </View>
+          </TouchableOpacity>
+        </Modal>
 
-          {hasVariants && (
-            <View style={styles.variantsContainer}>
-              {optionTypes.length === 0 ? (
-                <View style={styles.noOptionTypesWarning}>
-                  <Ionicons name="warning-outline" size={20} color={colors.warning} />
-                  <Text style={styles.noOptionTypesText}>
-                    No option types defined. Create option types in the web admin first.
-                  </Text>
-                </View>
-              ) : (
-                <>
-                  {variants.length > 0 && (
-                    <View style={styles.variantsList}>
-                      {variants.map((variant) => (
-                        <View key={variant.id} style={styles.variantItem}>
-                          <View style={styles.variantItemInfo}>
-                            <Text style={styles.variantItemName}>{getVariantName(variant.options)}</Text>
-                            <View style={styles.variantItemMeta}>
-                              <Text style={styles.variantItemMetaText}>
-                                ${variant.price || formData.price} | Stock: {variant.stock}
-                                {variant.sku ? ` | SKU: ${variant.sku}` : ''}
-                              </Text>
-                            </View>
-                          </View>
-                          <TouchableOpacity
-                            style={styles.variantItemRemove}
-                            onPress={() => removeVariant(variant.id)}
-                          >
-                            <Ionicons name="trash-outline" size={18} color={colors.error} />
-                          </TouchableOpacity>
-                        </View>
-                      ))}
-                    </View>
+        {/* Fulfillment - Only for Physical Products */}
+        {productType === 'PHYSICAL' && (
+          <>
+            <Text style={styles.sectionTitle}>Fulfillment</Text>
+            <Card style={styles.card}>
+              <View style={styles.fulfillmentSelector}>
+                <TouchableOpacity
+                  style={[styles.fulfillmentOption, fulfillmentType === 'SELF_FULFILLED' && styles.fulfillmentOptionActive]}
+                  onPress={() => setFulfillmentType('SELF_FULFILLED')}
+                >
+                  <Ionicons
+                    name="cube-outline"
+                    size={20}
+                    color={fulfillmentType === 'SELF_FULFILLED' ? colors.primary : colors.textMuted}
+                  />
+                  <View style={styles.fulfillmentOptionContent}>
+                    <Text style={[styles.fulfillmentOptionText, fulfillmentType === 'SELF_FULFILLED' && styles.fulfillmentOptionTextActive]}>
+                      Self-Fulfilled
+                    </Text>
+                    <Text style={styles.fulfillmentOptionDesc}>You handle shipping</Text>
+                  </View>
+                  {fulfillmentType === 'SELF_FULFILLED' && (
+                    <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
                   )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.fulfillmentOption, fulfillmentType === 'PRINTFUL' && styles.fulfillmentOptionActivePrintful]}
+                  onPress={() => setFulfillmentType('PRINTFUL')}
+                >
+                  <Ionicons
+                    name="shirt-outline"
+                    size={20}
+                    color={fulfillmentType === 'PRINTFUL' ? colors.warning : colors.textMuted}
+                  />
+                  <View style={styles.fulfillmentOptionContent}>
+                    <Text style={[styles.fulfillmentOptionText, fulfillmentType === 'PRINTFUL' && styles.fulfillmentOptionTextActivePrintful]}>
+                      Printful
+                    </Text>
+                    <Text style={styles.fulfillmentOptionDesc}>Print-on-demand</Text>
+                  </View>
+                  {fulfillmentType === 'PRINTFUL' && (
+                    <Ionicons name="checkmark-circle" size={20} color={colors.warning} />
+                  )}
+                </TouchableOpacity>
+              </View>
 
-                  {showAddVariant ? (
-                    <View style={styles.addVariantForm}>
-                      <Text style={styles.addVariantFormTitle}>Add Variant</Text>
+              <View style={[styles.row, { marginTop: spacing.lg }]}>
+                <View style={[styles.inputGroup, { flex: 1 }]}>
+                  <Text style={styles.label}>Weight (lbs)</Text>
+                  <TextInput
+                    style={[styles.input, touched.weight && errors.weight && styles.inputError]}
+                    value={formData.weight}
+                    onChangeText={(text) => setFormData({ ...formData, weight: text })}
+                    onBlur={() => handleBlur('weight')}
+                    placeholder="0.00"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+              </View>
 
-                      {/* Option Selectors */}
-                      {optionTypes.map((optionType) => (
-                        <View key={optionType.id} style={styles.optionSelector}>
-                          <Text style={styles.optionSelectorLabel}>{optionType.name}</Text>
-                          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                            <View style={styles.optionValues}>
-                              {optionType.values.map((value) => (
-                                <TouchableOpacity
-                                  key={value}
-                                  style={[
-                                    styles.optionValue,
-                                    newVariant.options[optionType.name] === value && styles.optionValueActive,
-                                  ]}
-                                  onPress={() =>
-                                    setNewVariant({
-                                      ...newVariant,
-                                      options: { ...newVariant.options, [optionType.name]: value },
-                                    })
-                                  }
-                                >
-                                  <Text
-                                    style={[
-                                      styles.optionValueText,
-                                      newVariant.options[optionType.name] === value && styles.optionValueTextActive,
-                                    ]}
-                                  >
-                                    {value}
-                                  </Text>
-                                </TouchableOpacity>
-                              ))}
-                            </View>
-                          </ScrollView>
-                        </View>
-                      ))}
+              <Text style={[styles.label, { marginTop: spacing.md, marginBottom: spacing.sm }]}>Dimensions (inches)</Text>
+              <View style={styles.row}>
+                <View style={[styles.inputGroup, { flex: 1 }]}>
+                  <TextInput
+                    style={styles.input}
+                    value={formData.dimensionLength}
+                    onChangeText={(text) => setFormData({ ...formData, dimensionLength: text })}
+                    placeholder="L"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+                <Text style={styles.dimensionSeparator}>x</Text>
+                <View style={[styles.inputGroup, { flex: 1 }]}>
+                  <TextInput
+                    style={styles.input}
+                    value={formData.dimensionWidth}
+                    onChangeText={(text) => setFormData({ ...formData, dimensionWidth: text })}
+                    placeholder="W"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+                <Text style={styles.dimensionSeparator}>x</Text>
+                <View style={[styles.inputGroup, { flex: 1 }]}>
+                  <TextInput
+                    style={styles.input}
+                    value={formData.dimensionHeight}
+                    onChangeText={(text) => setFormData({ ...formData, dimensionHeight: text })}
+                    placeholder="H"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="decimal-pad"
+                  />
+                </View>
+              </View>
+            </Card>
+          </>
+        )}
 
-                      {/* Variant Price */}
-                      <View style={styles.variantInputRow}>
-                        <View style={[styles.inputGroup, { flex: 1 }]}>
-                          <Text style={styles.label}>Price (optional)</Text>
-                          <View style={styles.currencyInput}>
-                            <Text style={styles.currencySymbol}>$</Text>
-                            <TextInput
-                              style={styles.currencyTextInput}
-                              value={newVariant.price}
-                              onChangeText={(text) => setNewVariant({ ...newVariant, price: text })}
-                              placeholder={formData.price || '0.00'}
-                              placeholderTextColor={colors.textMuted}
-                              keyboardType="decimal-pad"
-                            />
-                          </View>
-                        </View>
-                        <View style={{ width: spacing.md }} />
-                        <View style={[styles.inputGroup, { flex: 1 }]}>
-                          <Text style={styles.label}>Stock</Text>
-                          <TextInput
-                            style={styles.input}
-                            value={newVariant.stock}
-                            onChangeText={(text) => setNewVariant({ ...newVariant, stock: text })}
-                            placeholder="0"
-                            placeholderTextColor={colors.textMuted}
-                            keyboardType="number-pad"
-                          />
-                        </View>
-                      </View>
+        {/* Variants Section - Only for Physical Products */}
+        {productType === 'PHYSICAL' && (
+          <>
+            <Text style={styles.sectionTitle}>Variants</Text>
+            <Card style={styles.card}>
+              <View style={styles.toggleRow}>
+                <View style={styles.toggleInfo}>
+                  <Ionicons name="layers-outline" size={20} color={colors.textMuted} />
+                  <View style={styles.toggleTextContainer}>
+                    <Text style={styles.toggleLabel}>Has Variants</Text>
+                    <Text style={styles.toggleDescription}>Add different options like size or color</Text>
+                  </View>
+                </View>
+                <Switch
+                  value={hasVariants}
+                  onValueChange={(value) => {
+                    setHasVariants(value)
+                    if (!value) {
+                      setVariants([])
+                    }
+                  }}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor={colors.text}
+                />
+              </View>
 
-                      {/* Variant SKU */}
-                      <View style={styles.inputGroup}>
-                        <Text style={styles.label}>SKU (optional)</Text>
-                        <TextInput
-                          style={styles.input}
-                          value={newVariant.sku}
-                          onChangeText={(text) => setNewVariant({ ...newVariant, sku: text })}
-                          placeholder="e.g., PROD-001-SM-BLK"
-                          placeholderTextColor={colors.textMuted}
-                          autoCapitalize="characters"
-                        />
-                      </View>
-
-                      <View style={styles.addVariantFormButtons}>
-                        <TouchableOpacity
-                          style={styles.cancelVariantButton}
-                          onPress={() => {
-                            setShowAddVariant(false)
-                            setNewVariant({
-                              id: '',
-                              options: {},
-                              sku: '',
-                              price: '',
-                              stock: '0',
-                            })
-                          }}
-                        >
-                          <Text style={styles.cancelVariantButtonText}>Cancel</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.saveVariantButton} onPress={addVariant}>
-                          <Text style={styles.saveVariantButtonText}>Add Variant</Text>
-                        </TouchableOpacity>
-                      </View>
+              {hasVariants && (
+                <View style={styles.variantsContainer}>
+                  {optionTypes.length === 0 ? (
+                    <View style={styles.noOptionTypesWarning}>
+                      <Ionicons name="warning-outline" size={20} color={colors.warning} />
+                      <Text style={styles.noOptionTypesText}>
+                        No option types defined. Create option types in the web admin first.
+                      </Text>
                     </View>
                   ) : (
-                    <TouchableOpacity style={styles.addVariantButton} onPress={() => setShowAddVariant(true)}>
-                      <Ionicons name="add" size={20} color={colors.primary} />
-                      <Text style={styles.addVariantButtonText}>Add Variant</Text>
-                    </TouchableOpacity>
+                    <>
+                      {variants.length > 0 && (
+                        <View style={styles.variantsList}>
+                          {variants.map((variant) => (
+                            <View key={variant.id} style={styles.variantItem}>
+                              <View style={styles.variantItemInfo}>
+                                <Text style={styles.variantItemName}>{getVariantName(variant.options)}</Text>
+                                <View style={styles.variantItemMeta}>
+                                  <Text style={styles.variantItemMetaText}>
+                                    ${variant.price || formData.price} | Stock: {variant.stock}
+                                    {variant.sku ? ` | SKU: ${variant.sku}` : ''}
+                                  </Text>
+                                </View>
+                              </View>
+                              <TouchableOpacity
+                                style={styles.variantItemRemove}
+                                onPress={() => removeVariant(variant.id)}
+                              >
+                                <Ionicons name="trash-outline" size={18} color={colors.error} />
+                              </TouchableOpacity>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+
+                      {showAddVariant ? (
+                        <View style={styles.addVariantForm}>
+                          <Text style={styles.addVariantFormTitle}>Add Variant</Text>
+
+                          {/* Option Selectors */}
+                          {optionTypes.map((optionType) => (
+                            <View key={optionType.id} style={styles.optionSelector}>
+                              <Text style={styles.optionSelectorLabel}>{optionType.name}</Text>
+                              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                <View style={styles.optionValues}>
+                                  {optionType.values.map((value) => (
+                                    <TouchableOpacity
+                                      key={value}
+                                      style={[
+                                        styles.optionValue,
+                                        newVariant.options[optionType.name] === value && styles.optionValueActive,
+                                      ]}
+                                      onPress={() =>
+                                        setNewVariant({
+                                          ...newVariant,
+                                          options: { ...newVariant.options, [optionType.name]: value },
+                                        })
+                                      }
+                                    >
+                                      <Text
+                                        style={[
+                                          styles.optionValueText,
+                                          newVariant.options[optionType.name] === value && styles.optionValueTextActive,
+                                        ]}
+                                      >
+                                        {value}
+                                      </Text>
+                                    </TouchableOpacity>
+                                  ))}
+                                </View>
+                              </ScrollView>
+                            </View>
+                          ))}
+
+                          {/* Variant Price */}
+                          <View style={styles.variantInputRow}>
+                            <View style={[styles.inputGroup, { flex: 1 }]}>
+                              <Text style={styles.label}>Price (optional)</Text>
+                              <View style={styles.currencyInput}>
+                                <Text style={styles.currencySymbol}>$</Text>
+                                <TextInput
+                                  style={styles.currencyTextInput}
+                                  value={newVariant.price}
+                                  onChangeText={(text) => setNewVariant({ ...newVariant, price: text })}
+                                  placeholder={formData.price || '0.00'}
+                                  placeholderTextColor={colors.textMuted}
+                                  keyboardType="decimal-pad"
+                                />
+                              </View>
+                            </View>
+                            <View style={{ width: spacing.md }} />
+                            <View style={[styles.inputGroup, { flex: 1 }]}>
+                              <Text style={styles.label}>Stock</Text>
+                              <TextInput
+                                style={styles.input}
+                                value={newVariant.stock}
+                                onChangeText={(text) => setNewVariant({ ...newVariant, stock: text })}
+                                placeholder="0"
+                                placeholderTextColor={colors.textMuted}
+                                keyboardType="number-pad"
+                              />
+                            </View>
+                          </View>
+
+                          {/* Variant SKU */}
+                          <View style={styles.inputGroup}>
+                            <Text style={styles.label}>SKU (optional)</Text>
+                            <TextInput
+                              style={styles.input}
+                              value={newVariant.sku}
+                              onChangeText={(text) => setNewVariant({ ...newVariant, sku: text })}
+                              placeholder="e.g., PROD-001-SM-BLK"
+                              placeholderTextColor={colors.textMuted}
+                              autoCapitalize="characters"
+                            />
+                          </View>
+
+                          <View style={styles.addVariantFormButtons}>
+                            <TouchableOpacity
+                              style={styles.cancelVariantButton}
+                              onPress={() => {
+                                setShowAddVariant(false)
+                                setNewVariant({
+                                  id: '',
+                                  options: {},
+                                  sku: '',
+                                  price: '',
+                                  stock: '0',
+                                })
+                              }}
+                            >
+                              <Text style={styles.cancelVariantButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.saveVariantButton} onPress={addVariant}>
+                              <Text style={styles.saveVariantButtonText}>Add Variant</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ) : (
+                        <TouchableOpacity style={styles.addVariantButton} onPress={() => setShowAddVariant(true)}>
+                          <Ionicons name="add" size={20} color={colors.primary} />
+                          <Text style={styles.addVariantButtonText}>Add Variant</Text>
+                        </TouchableOpacity>
+                      )}
+                    </>
                   )}
-                </>
+                </View>
               )}
-            </View>
-          )}
-        </Card>
+            </Card>
+          </>
+        )}
 
         {/* Status Toggles */}
         <Text style={styles.sectionTitle}>Status</Text>
@@ -901,13 +1364,29 @@ export default function ProductCreateScreen({ navigation }: any) {
           </View>
         </Card>
 
-        {/* Submit Button */}
+        {/* Submit Buttons */}
         <View style={styles.submitContainer}>
+          <View style={styles.submitRow}>
+            <Button
+              title="Cancel"
+              variant="outline"
+              onPress={() => navigation.goBack()}
+              style={styles.cancelButton}
+            />
+            <Button
+              title={savingDraft ? 'Saving...' : 'Save Draft'}
+              variant="secondary"
+              onPress={() => handleSubmit(true)}
+              loading={savingDraft}
+              disabled={loading || savingDraft}
+              style={styles.draftButton}
+            />
+          </View>
           <Button
-            title={loading ? 'Creating...' : 'Create Product'}
-            onPress={handleSubmit}
+            title={loading ? 'Publishing...' : 'Save and Publish'}
+            onPress={() => handleSubmit(false)}
             loading={loading}
-            disabled={loading || !isFormValid()}
+            disabled={loading || savingDraft || !isFormValid()}
             style={styles.submitButton}
           />
           {!isFormValid() && (
@@ -1041,6 +1520,11 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: fontSize.xs,
     color: colors.error,
+    marginTop: spacing.xs,
+  },
+  helperText: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
     marginTop: spacing.xs,
   },
   fieldFooter: {
@@ -1193,6 +1677,34 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     backgroundColor: colors.surfaceHover,
   },
+  featuredBadge: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    backgroundColor: colors.warning,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+  },
+  featuredBadgeText: {
+    fontSize: 9,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+  },
+  imageActions: {
+    position: 'absolute',
+    bottom: 4,
+    left: 4,
+    right: 4,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  imageActionButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    padding: 4,
+    borderRadius: borderRadius.sm,
+  },
   removeImageButton: {
     position: 'absolute',
     top: -8,
@@ -1218,6 +1730,92 @@ const styles = StyleSheet.create({
   imageHint: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
+  },
+  imageSourceOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'flex-end',
+  },
+  imageSourceContent: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    padding: spacing.xl,
+  },
+  imageSourceTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  imageSourceOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.lg,
+    gap: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  imageSourceOptionText: {
+    fontSize: fontSize.md,
+    color: colors.text,
+  },
+  imageSourceCancel: {
+    justifyContent: 'center',
+    borderBottomWidth: 0,
+    marginTop: spacing.md,
+  },
+  imageSourceCancelText: {
+    fontSize: fontSize.md,
+    color: colors.error,
+    textAlign: 'center',
+  },
+  fulfillmentSelector: {
+    gap: spacing.sm,
+  },
+  fulfillmentOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  fulfillmentOptionActive: {
+    borderColor: colors.primary,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+  },
+  fulfillmentOptionActivePrintful: {
+    borderColor: colors.warning,
+    backgroundColor: colors.warningBg,
+  },
+  fulfillmentOptionContent: {
+    flex: 1,
+  },
+  fulfillmentOptionText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.textMuted,
+  },
+  fulfillmentOptionTextActive: {
+    color: colors.primary,
+  },
+  fulfillmentOptionTextActivePrintful: {
+    color: colors.warning,
+  },
+  fulfillmentOptionDesc: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  dimensionSeparator: {
+    fontSize: fontSize.md,
+    color: colors.textMuted,
+    alignSelf: 'center',
+    marginHorizontal: spacing.sm,
   },
   toggleRow: {
     flexDirection: 'row',
@@ -1245,6 +1843,17 @@ const styles = StyleSheet.create({
   },
   submitContainer: {
     marginTop: spacing.xl,
+  },
+  submitRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  cancelButton: {
+    flex: 1,
+  },
+  draftButton: {
+    flex: 1,
   },
   submitButton: {
     paddingVertical: spacing.lg,
