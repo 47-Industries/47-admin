@@ -2023,6 +2023,82 @@ class ApiService {
   async searchBookFadeBarbers(query: string) {
     return this.request<{ barbers: any[] }>(`/admin/bookfade/barbers?search=${encodeURIComponent(query)}`)
   }
+
+  // Product Collections
+  async getCollections() {
+    return this.request<{ collections: any[] }>('/admin/collections')
+  }
+
+  async getCollection(id: string) {
+    return this.request<{ collection: any }>(`/admin/collections/${id}`)
+  }
+
+  async createCollection(data: {
+    name: string
+    slug: string
+    description?: string | null
+    type?: 'AUTOMATIC' | 'MANUAL'
+    autoQuery?: any
+    displayOnHome?: boolean
+    maxProducts?: number
+    accentColor?: string | null
+    active?: boolean
+    sortOrder?: number
+  }) {
+    return this.request<{ collection: any }>('/admin/collections', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateCollection(id: string, data: {
+    name?: string
+    slug?: string
+    description?: string | null
+    type?: 'AUTOMATIC' | 'MANUAL'
+    autoQuery?: any
+    displayOnHome?: boolean
+    maxProducts?: number
+    accentColor?: string | null
+    active?: boolean
+    sortOrder?: number
+  }) {
+    return this.request<{ collection: any }>(`/admin/collections/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteCollection(id: string) {
+    return this.request<{ success: boolean }>(`/admin/collections/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async addProductsToCollection(collectionId: string, productIds: string[]) {
+    return this.request<{ results: any[] }>(`/admin/collections/${collectionId}/products`, {
+      method: 'POST',
+      body: JSON.stringify({ productIds }),
+    })
+  }
+
+  async replaceCollectionProducts(collectionId: string, productIds: string[]) {
+    return this.request<{ success: boolean; count: number }>(`/admin/collections/${collectionId}/products`, {
+      method: 'PUT',
+      body: JSON.stringify({ productIds }),
+    })
+  }
+
+  async removeProductsFromCollection(collectionId: string, productIds: string[]) {
+    return this.request<{ success: boolean }>(`/admin/collections/${collectionId}/products?productIds=${productIds.join(',')}`, {
+      method: 'DELETE',
+    })
+  }
+
+  // Product Brands (for collection query builder)
+  async getProductBrands() {
+    return this.request<{ brands: string[] }>('/admin/products/brands')
+  }
 }
 
 export const api = new ApiService()
