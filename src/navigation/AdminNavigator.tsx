@@ -545,14 +545,20 @@ function BusinessTabScreen({ navigation }: { navigation: any }) {
   )
 }
 
-// People Tab - Clients, Partners, Team
+// People Tab - Clients, Partners, Team, Users
 function PeopleTabScreen({ navigation }: { navigation: any }) {
-  const [activeSection, setActiveSection] = useState<'clients' | 'partners' | 'applications' | 'leads' | 'team' | 'affiliates'>('clients')
+  const [activeSection, setActiveSection] = useState<'users' | 'clients' | 'partners' | 'applications' | 'leads' | 'team' | 'affiliates'>('users')
 
   return (
     <SafeAreaView style={styles.tabContainer} edges={['top']}>
       <View style={styles.segmentWrapper}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segmentedControlWide}>
+          <TouchableOpacity
+            style={[styles.segmentPill, activeSection === 'users' && styles.segmentPillActive]}
+            onPress={() => setActiveSection('users')}
+          >
+            <Text style={[styles.segmentText, activeSection === 'users' && styles.segmentTextActive]}>Users</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={[styles.segmentPill, activeSection === 'clients' && styles.segmentPillActive]}
             onPress={() => setActiveSection('clients')}
@@ -592,6 +598,7 @@ function PeopleTabScreen({ navigation }: { navigation: any }) {
         </ScrollView>
       </View>
       <View style={styles.tabContent}>
+        {activeSection === 'users' && <UsersScreen navigation={navigation} hideHeader />}
         {activeSection === 'clients' && <AdminClientsScreen navigation={navigation} hideHeader />}
         {activeSection === 'partners' && <AdminPartnersScreen navigation={navigation} hideHeader />}
         {activeSection === 'applications' && <PartnerApplicationsScreen navigation={navigation} hideHeader />}
