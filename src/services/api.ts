@@ -2403,6 +2403,340 @@ class ApiService {
       method: 'POST',
     })
   }
+
+  // Shipping Label APIs (Shippo)
+  async getShippingRatesForOrder(orderId: string, parcel?: {
+    length: number
+    width: number
+    height: number
+    weight: number
+  }) {
+    return this.request<{
+      shipmentId: string
+      rates: {
+        id: string
+        carrier: string
+        service: string
+        serviceName: string
+        rate: number
+        deliveryDays: number | null
+      }[]
+      parcel: {
+        length: number
+        width: number
+        height: number
+        weight: number
+      }
+      fromAddress: any
+      toAddress: any
+    }>(`/admin/orders/${orderId}/shipping/rates`, {
+      method: 'POST',
+      body: JSON.stringify(parcel ? { parcel } : {}),
+    })
+  }
+
+  async purchaseShippingLabel(orderId: string, data: {
+    shipmentId: string
+    rateId: string
+    fromAddress?: any
+    toAddress?: any
+    parcel?: any
+  }) {
+    return this.request<{
+      success: boolean
+      label: {
+        id: string
+        trackingNumber: string | null
+        carrier: string
+        service: string
+        labelCost: number
+        totalCost: number
+        labelUrl: string | null
+        status: string
+        createdAt: string
+        providerData?: {
+          trackingUrl?: string
+        }
+      }
+      trackingNumber: string | null
+      trackingUrl: string | null
+      labelUrl: string | null
+    }>(`/admin/orders/${orderId}/shipping/label`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async getShippingLabel(orderId: string) {
+    return this.request<{
+      label: {
+        id: string
+        trackingNumber: string | null
+        carrier: string
+        service: string
+        labelCost: number
+        totalCost: number
+        labelUrl: string | null
+        status: string
+        createdAt: string
+        providerData?: {
+          trackingUrl?: string
+        }
+      } | null
+    }>(`/admin/orders/${orderId}/shipping/label`)
+  }
+
+  async voidShippingLabel(orderId: string) {
+    return this.request<{ success: boolean }>(`/admin/orders/${orderId}/shipping/label`, {
+      method: 'DELETE',
+    })
+  }
+
+  // Partner Inquiries
+  async getPartnerInquiries(params?: { page?: number; status?: string; search?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.search) searchParams.set('search', params.search)
+    return this.request<{
+      inquiries: {
+        id: string
+        inquiryNumber: string
+        name: string
+        email: string
+        phone?: string
+        company?: string
+        website?: string
+        socialMedia?: string
+        audience: string
+        reason: string
+        status: string
+        leadchopperId?: string
+        leadchopperOrgId?: string
+        reviewedBy?: string
+        reviewedAt?: string
+        reviewNotes?: string
+        partnerId?: string
+        convertedAt?: string
+        createdAt: string
+        updatedAt: string
+      }[]
+      stats: {
+        total: number
+        new: number
+        contacted: number
+        approved: number
+        rejected: number
+      }
+      pagination: {
+        page: number
+        limit: number
+        total: number
+        pages: number
+      }
+    }>(`/admin/partner-inquiries?${searchParams}`)
+  }
+
+  async getPartnerInquiry(id: string) {
+    return this.request<{
+      inquiry: {
+        id: string
+        inquiryNumber: string
+        name: string
+        email: string
+        phone?: string
+        company?: string
+        website?: string
+        socialMedia?: string
+        audience: string
+        reason: string
+        status: string
+        leadchopperId?: string
+        leadchopperOrgId?: string
+        reviewedBy?: string
+        reviewedAt?: string
+        reviewNotes?: string
+        partnerId?: string
+        convertedAt?: string
+        createdAt: string
+        updatedAt: string
+      }
+    }>(`/admin/partner-inquiries/${id}`)
+  }
+
+  async updatePartnerInquiry(id: string, data: {
+    status?: string
+    reviewNotes?: string
+  }) {
+    return this.request<{
+      success: boolean
+      inquiry: {
+        id: string
+        inquiryNumber: string
+        name: string
+        email: string
+        status: string
+        reviewedAt?: string
+        partnerId?: string
+        convertedAt?: string
+      }
+    }>(`/admin/partner-inquiries/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deletePartnerInquiry(id: string) {
+    return this.request<{ success: boolean }>(`/admin/partner-inquiries/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async convertPartnerInquiry(id: string) {
+    return this.request<{
+      success: boolean
+      partner: any
+      inquiry: any
+    }>(`/admin/partner-inquiries/${id}/convert`, {
+      method: 'POST',
+    })
+  }
+
+  // Printful Integration
+  async getPrintfulStatus() {
+    return this.request<{
+      connected: boolean
+      configured: boolean
+      storeName?: string
+      storeType?: string
+      error?: string
+      lastSyncedAt: string | null
+      stats: {
+        products: number
+        totalOrders: number
+        failedOrders: number
+      }
+      stores?: Array<{ id: number; name: string; type: string | null }>
+    }>('/admin/printful/status')
+  }
+
+  async syncPrintfulProducts(mode: 'all' | 'new' = 'all') {
+    const url = mode === 'new'
+      ? '/admin/printful/sync?mode=new'
+      : '/admin/printful/sync'
+    return this.request<{
+      success: boolean
+      synced?: number
+      added?: number
+      updated?: number
+      message?: string
+      errors?: string[]
+    }>(url, {
+      method: 'POST',
+    })
+  }
+
+  async getPrintfulOrders(params?: { page?: number; limit?: number; status?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.limit) searchParams.set('limit', params.limit.toString())
+    if (params?.status) searchParams.set('status', params.status)
+    return this.request<{
+      orders: Array<{
+        id: string
+        printfulId: string | null
+        status: string
+        trackingNumber: string | null
+        trackingUrl: string | null
+        shippedAt: string | null
+        createdAt: string
+        order: {
+          id: string
+          orderNumber: string
+          customerName: string
+          customerEmail: string
+          total: number
+          status: string
+          createdAt: string
+          items: Array<{
+            id: string
+            name: string
+            quantity: number
+            price: number
+            image: string | null
+          }>
+        }
+      }>
+      pagination: {
+        page: number
+        limit: number
+        total: number
+        totalPages: number
+      }
+    }>(`/admin/printful/orders?${searchParams}`)
+  }
+
+  async retryPrintfulOrder(orderId: string) {
+    return this.request<{ success: boolean; printfulOrder?: any }>(`/admin/printful/orders/${orderId}/retry`, {
+      method: 'POST',
+    })
+  }
+
+  // All Product Variants (Bulk Edit)
+  async getAllVariants(params?: {
+    search?: string
+    stockStatus?: string
+    productId?: string
+    page?: number
+    limit?: number
+  }) {
+    const searchParams = new URLSearchParams()
+    if (params?.search) searchParams.set('search', params.search)
+    if (params?.stockStatus) searchParams.set('stockStatus', params.stockStatus)
+    if (params?.productId) searchParams.set('productId', params.productId)
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.limit) searchParams.set('limit', params.limit.toString())
+    return this.request<{
+      variants: {
+        id: string
+        productId: string
+        productName: string
+        name: string
+        options: Record<string, string>
+        price: number
+        comparePrice: number | null
+        stock: number
+        sku: string | null
+        isActive: boolean
+        image: string | null
+      }[]
+      products: { id: string; name: string }[]
+      total: number
+    }>(`/admin/products/variants?${searchParams}`)
+  }
+
+  async bulkUpdateVariants(
+    variantIds: string[],
+    data: {
+      priceAction?: 'set' | 'increase_percent' | 'decrease_percent'
+      priceValue?: number
+      stockAction?: 'set' | 'add' | 'subtract'
+      stockValue?: number
+      isActive?: boolean
+    }
+  ) {
+    return this.request<{ success: boolean; updated: number }>('/admin/products/variants/bulk', {
+      method: 'PATCH',
+      body: JSON.stringify({ variantIds, ...data }),
+    })
+  }
+
+  async bulkDeleteVariants(variantIds: string[]) {
+    return this.request<{ success: boolean; deleted: number }>('/admin/products/variants/bulk', {
+      method: 'DELETE',
+      body: JSON.stringify({ variantIds }),
+    })
+  }
 }
 
 export const api = new ApiService()

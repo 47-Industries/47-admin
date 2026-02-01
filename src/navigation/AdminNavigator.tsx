@@ -61,8 +61,11 @@ import CustomerDesignsScreen from '../screens/CustomerDesignsScreen'
 import CustomerDesignDetailScreen from '../screens/CustomerDesignDetailScreen'
 import EmailSignaturesScreen from '../screens/admin/EmailSignaturesScreen'
 import { PartnerApplicationsScreen } from '../screens/admin/PartnerApplicationsScreen'
+import { PartnerInquiriesScreen } from '../screens/admin/PartnerInquiriesScreen'
 import InventoryScreen from '../screens/InventoryScreen'
+import VariantsBulkEditScreen from '../screens/VariantsBulkEditScreen'
 import { PrintQueueScreen } from '../screens/admin/PrintQueueScreen'
+import { PrintfulDashboardScreen } from '../screens/admin/PrintfulDashboardScreen'
 import { OAuthApplicationsScreen } from '../screens/admin/OAuthApplicationsScreen'
 import { colors, portalColors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
@@ -108,7 +111,7 @@ export default function AdminNavigator() {
     // Business: Requests (Inquiries, 3D Prints) + Packages + Portfolio + Finance (Expenses, Reports) + Analytics + Operations (Print Queue)
     const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Portfolio', 'PortfolioDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills', 'Documents', 'PrintQueue']
     // People: Clients, Partners, Team, Affiliates, Users
-    const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'CustomerDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail', 'PartnerApplications']
+    const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'CustomerDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail', 'PartnerApplications', 'PartnerInquiries']
     // Account: Profile, Email, Settings, Notifications, Marketing, Blog, Business Cards, Email Signatures, OAuth
     const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'ShippingSettings', 'TaxSettings', 'Email', 'EmailSignatures', 'Marketing', 'Blog', 'BlogPostDetail', 'BusinessCards', 'CardGenerator', 'OAuthApplications']
 
@@ -242,6 +245,8 @@ export default function AdminNavigator() {
           return <ScreenWrapper><PrintQueueScreen navigation={navigation} /></ScreenWrapper>
         case 'PartnerApplications':
           return <ScreenWrapper><PartnerApplicationsScreen navigation={navigation} /></ScreenWrapper>
+        case 'PartnerInquiries':
+          return <ScreenWrapper><PartnerInquiriesScreen navigation={navigation} /></ScreenWrapper>
         case 'OAuthApplications':
           return <ScreenWrapper><OAuthApplicationsScreen navigation={navigation} /></ScreenWrapper>
         case 'Inventory':
@@ -445,11 +450,13 @@ function SalesTabScreen({ navigation }: { navigation: any }) {
 type BusinessCategory = 'services' | 'finance' | 'operations' | 'analytics' | 'documents'
 type ServiceSection = 'inquiries' | 'packages' | 'portfolio'
 type FinanceSection = 'expenses' | 'reports'
+type OperationsSection = 'print-queue' | 'printful'
 
 function BusinessTabScreen({ navigation }: { navigation: any }) {
   const [category, setCategory] = useState<BusinessCategory>('services')
   const [serviceSection, setServiceSection] = useState<ServiceSection>('inquiries')
   const [financeSection, setFinanceSection] = useState<FinanceSection>('expenses')
+  const [operationsSection, setOperationsSection] = useState<OperationsSection>('print-queue')
 
   const categoryConfig: Record<BusinessCategory, { icon: string; label: string }> = {
     services: { icon: 'construct-outline', label: 'Services' },
@@ -547,7 +554,7 @@ function BusinessTabScreen({ navigation }: { navigation: any }) {
 
 // People Tab - Clients, Partners, Team, Users
 function PeopleTabScreen({ navigation }: { navigation: any }) {
-  const [activeSection, setActiveSection] = useState<'users' | 'clients' | 'partners' | 'applications' | 'leads' | 'team' | 'affiliates'>('users')
+  const [activeSection, setActiveSection] = useState<'users' | 'clients' | 'partners' | 'applications' | 'inquiries' | 'leads' | 'team' | 'affiliates'>('users')
 
   return (
     <SafeAreaView style={styles.tabContainer} edges={['top']}>
@@ -578,6 +585,12 @@ function PeopleTabScreen({ navigation }: { navigation: any }) {
             <Text style={[styles.segmentText, activeSection === 'applications' && styles.segmentTextActive]}>Applications</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            style={[styles.segmentPill, activeSection === 'inquiries' && styles.segmentPillActive]}
+            onPress={() => setActiveSection('inquiries')}
+          >
+            <Text style={[styles.segmentText, activeSection === 'inquiries' && styles.segmentTextActive]}>Inquiries</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[styles.segmentPill, activeSection === 'leads' && styles.segmentPillActive]}
             onPress={() => setActiveSection('leads')}
           >
@@ -602,6 +615,7 @@ function PeopleTabScreen({ navigation }: { navigation: any }) {
         {activeSection === 'clients' && <AdminClientsScreen navigation={navigation} hideHeader />}
         {activeSection === 'partners' && <AdminPartnersScreen navigation={navigation} hideHeader />}
         {activeSection === 'applications' && <PartnerApplicationsScreen navigation={navigation} hideHeader />}
+        {activeSection === 'inquiries' && <PartnerInquiriesScreen navigation={navigation} hideHeader />}
         {activeSection === 'leads' && <PartnerLeadsScreen navigation={navigation} hideHeader />}
         {activeSection === 'team' && <TeamScreen navigation={navigation} hideHeader />}
         {activeSection === 'affiliates' && <AffiliatesScreen navigation={navigation} hideHeader />}
