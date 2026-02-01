@@ -874,6 +874,34 @@ class ApiService {
     })
   }
 
+  async approveBankTransaction(transactionId: string) {
+    return this.request<{ success: boolean; billInstance?: any }>(`/admin/financial-connections/transactions/${transactionId}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    })
+  }
+
+  async skipBankTransaction(transactionId: string, createSkipRule?: boolean, skipRuleType?: string, vendor?: string) {
+    return this.request<{ success: boolean; skipRule?: any }>(`/admin/financial-connections/transactions/${transactionId}/skip`, {
+      method: 'POST',
+      body: JSON.stringify({ createSkipRule, skipRuleType, vendor }),
+    })
+  }
+
+  async createBillFromTransaction(transactionId: string, data: { vendor: string; vendorType: string; amount: number; dueDate?: string }) {
+    return this.request<{ success: boolean; billInstance: any }>(`/admin/financial-connections/transactions/${transactionId}/create-bill`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async searchBillsForMatch(params?: { search?: string; limit?: number }) {
+    const searchParams = new URLSearchParams()
+    if (params?.search) searchParams.set('search', params.search)
+    if (params?.limit) searchParams.set('limit', params.limit.toString())
+    return this.request<{ bills: any[] }>(`/admin/bill-instances?${searchParams}`)
+  }
+
   // Skip Rules
   async getSkipRules() {
     return this.request<{ skipRules: any[] }>('/admin/skip-rules')
@@ -900,18 +928,18 @@ class ApiService {
   }
 
   // Email Accounts (for bill scanning)
-  async getEmailAccounts() {
+  async getBillScanEmailAccounts() {
     return this.request<{ emailAccounts: any[] }>('/admin/email-accounts')
   }
 
-  async createEmailAccount(data: { email: string; provider: string }) {
+  async createBillScanEmailAccount(data: { email: string; provider: string }) {
     return this.request<{ emailAccount: any; authUrl?: string }>('/admin/email-accounts', {
       method: 'POST',
       body: JSON.stringify(data),
     })
   }
 
-  async deleteEmailAccount(id: string) {
+  async deleteBillScanEmailAccount(id: string) {
     return this.request<{ success: boolean }>(`/admin/email-accounts/${id}`, {
       method: 'DELETE',
     })
@@ -1008,11 +1036,32 @@ class ApiService {
   }
 
   // Inventory
-  async getInventory(params?: { search?: string; status?: string }) {
+  async getInventory(params?: { search?: string; status?: string; category?: string }) {
     const searchParams = new URLSearchParams()
     if (params?.search) searchParams.set('search', params.search)
     if (params?.status) searchParams.set('status', params.status)
+    if (params?.category) searchParams.set('category', params.category)
     return this.request<{ products: any[]; stats: any }>(`/admin/inventory?${searchParams}`)
+  }
+
+  async getInventoryMovements(params?: { page?: number; limit?: number }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.limit) searchParams.set('limit', params.limit.toString())
+    return this.request<{ movements: any[] }>(`/admin/inventory/movements?${searchParams}`)
+  }
+
+  async getInventoryAlerts(params?: { resolved?: boolean }) {
+    const searchParams = new URLSearchParams()
+    if (params?.resolved !== undefined) searchParams.set('resolved', params.resolved.toString())
+    return this.request<{ alerts: any[] }>(`/admin/inventory/alerts?${searchParams}`)
+  }
+
+  async resolveInventoryAlert(alertId: string) {
+    return this.request<{ alert: any }>(`/admin/inventory/alerts/${alertId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isResolved: true }),
+    })
   }
 
   async adjustStock(productId: string, data: { quantity: number; type: 'add' | 'subtract' | 'set'; reason?: string }) {
@@ -2098,6 +2147,223 @@ class ApiService {
   // Product Brands (for collection query builder)
   async getProductBrands() {
     return this.request<{ brands: string[] }>('/admin/products/brands')
+  }
+
+  // Partner Applications
+  async getPartnerApplications(params?: { page?: number; status?: string; type?: string; search?: string }) {
+    const searchParams = new URLSearchParams()
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.type) searchParams.set('type', params.type)
+    if (params?.search) searchParams.set('search', params.search)
+    return this.request<{
+      applications: any[]
+      stats: { total: number; pending: number; approved: number; rejected: number }
+    }>(`/admin/partners/applications?${searchParams}`)
+  }
+
+  async getPartnerApplication(id: string) {
+    return this.request<{ application: any }>(`/admin/partners/applications/${id}`)
+  }
+
+  async updatePartnerApplication(id: string, data: { action: 'approve' | 'reject'; reviewNotes?: string }) {
+    return this.request<{ application: any }>(`/admin/partners/applications/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  // Email Signatures
+  async getEmailSignatures() {
+    return this.request<{ signatures: any[] }>('/admin/email/signatures')
+  }
+
+  async getEmailSignature(id: string) {
+    return this.request<{ signature: any }>(`/admin/email/signatures/${id}`)
+  }
+
+  async createEmailSignature(data: {
+    name: string
+    content: string
+    isDefault?: boolean
+    forAddress?: string | null
+  }) {
+    return this.request<{ signature: any; success: boolean }>('/admin/email/signatures', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateEmailSignature(id: string, data: {
+    name?: string
+    content?: string
+    isDefault?: boolean
+    forAddress?: string | null
+  }) {
+    return this.request<{ signature: any; success: boolean }>(`/admin/email/signatures/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteEmailSignature(id: string) {
+    return this.request<{ success: boolean }>(`/admin/email/signatures/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async setDefaultSignature(id: string) {
+    return this.request<{ signature: any; success: boolean }>(`/admin/email/signatures/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ isDefault: true }),
+    })
+  }
+
+  // OAuth Applications
+  async getOAuthApplications() {
+    return this.request<{
+      applications: {
+        id: string
+        name: string
+        clientId: string
+        clientSecret: string
+        redirectUris: string[]
+        scopes: string[]
+        description: string | null
+        websiteUrl: string | null
+        active: boolean
+        createdAt: string
+        _count: {
+          accessTokens: number
+        }
+      }[]
+    }>('/admin/oauth/applications')
+  }
+
+  async createOAuthApplication(data: {
+    name: string
+    description?: string
+    websiteUrl?: string
+    redirectUris: string[]
+  }) {
+    return this.request<{
+      application: {
+        id: string
+        name: string
+        clientId: string
+        clientSecret: string
+        redirectUris: string[]
+        scopes: string[]
+        description: string | null
+        websiteUrl: string | null
+        active: boolean
+        createdAt: string
+        _count: {
+          accessTokens: number
+        }
+      }
+    }>('/admin/oauth/applications', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateOAuthApplication(id: string, data: {
+    name?: string
+    description?: string
+    websiteUrl?: string
+    redirectUris?: string[]
+    active?: boolean
+  }) {
+    return this.request<{
+      application: {
+        id: string
+        name: string
+        clientId: string
+        clientSecret: string
+        redirectUris: string[]
+        scopes: string[]
+        description: string | null
+        websiteUrl: string | null
+        active: boolean
+        createdAt: string
+        _count: {
+          accessTokens: number
+        }
+      }
+    }>(`/admin/oauth/applications/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteOAuthApplication(id: string) {
+    return this.request<{ success: boolean }>(`/admin/oauth/applications/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async regenerateOAuthSecret(id: string) {
+    return this.request<{
+      application: {
+        id: string
+        name: string
+        clientId: string
+        clientSecret: string
+        redirectUris: string[]
+        scopes: string[]
+        description: string | null
+        websiteUrl: string | null
+        active: boolean
+        createdAt: string
+        _count: {
+          accessTokens: number
+        }
+      }
+    }>(`/admin/oauth/applications/${id}/regenerate-secret`, {
+      method: 'POST',
+    })
+  }
+
+  // Print Queue
+  async getPrintQueue(params?: { status?: string; search?: string; page?: number; limit?: number }) {
+    const searchParams = new URLSearchParams()
+    if (params?.status) searchParams.set('status', params.status)
+    if (params?.search) searchParams.set('search', params.search)
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.limit) searchParams.set('limit', params.limit.toString())
+    return this.request<{
+      jobs: any[]
+      stats: {
+        total: number
+        pending: number
+        printing: number
+        completedToday: number
+        failed: number
+      }
+    }>(`/admin/print-queue?${searchParams}`)
+  }
+
+  async getPrintQueueJob(id: string) {
+    return this.request<{ job: any }>(`/admin/print-queue/${id}`)
+  }
+
+  async updatePrintQueueJob(id: string, data: {
+    status?: 'PENDING' | 'PRINTING' | 'COMPLETED' | 'FAILED'
+    priority?: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT'
+    notes?: string | null
+    failureReason?: string | null
+  }) {
+    return this.request<{ job: any }>(`/admin/print-queue/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async submitPrintJob(id: string) {
+    return this.request<{ success: boolean; printerOrderId?: string }>(`/admin/print-queue/${id}/submit`, {
+      method: 'POST',
+    })
   }
 }
 

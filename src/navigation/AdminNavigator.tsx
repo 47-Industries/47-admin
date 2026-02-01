@@ -62,6 +62,8 @@ import CustomerDesignDetailScreen from '../screens/CustomerDesignDetailScreen'
 import EmailSignaturesScreen from '../screens/admin/EmailSignaturesScreen'
 import { PartnerApplicationsScreen } from '../screens/admin/PartnerApplicationsScreen'
 import InventoryScreen from '../screens/InventoryScreen'
+import { PrintQueueScreen } from '../screens/admin/PrintQueueScreen'
+import { OAuthApplicationsScreen } from '../screens/admin/OAuthApplicationsScreen'
 import { colors, portalColors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
 type TabName = 'Home' | 'Sales' | 'Business' | 'People' | 'Account'
@@ -103,10 +105,10 @@ export default function AdminNavigator() {
   const getParentTab = (screenName: string): TabName | null => {
     // Sales: Orders, Invoices, Returns, External Orders + Products, Categories, Brands, Collections, Customer Designs
     const salesScreens = ['OrderDetail', 'Returns', 'AdminInvoices', 'InvoiceDetail', 'InvoiceCreate', 'Products', 'ProductDetail', 'ProductCreate', 'Categories', 'Brands', 'Collections', 'CollectionDetail', 'ExternalOrders', 'ExternalOrderDetail', 'CustomerDesigns', 'CustomerDesignDetail']
-    // Business: Requests (Inquiries, 3D Prints) + Packages + Portfolio + Finance (Expenses, Reports) + Analytics
-    const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Portfolio', 'PortfolioDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills', 'Documents']
+    // Business: Requests (Inquiries, 3D Prints) + Packages + Portfolio + Finance (Expenses, Reports) + Analytics + Operations (Print Queue)
+    const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Portfolio', 'PortfolioDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills', 'Documents', 'PrintQueue']
     // People: Clients, Partners, Team, Affiliates, Users
-    const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'CustomerDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail']
+    const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'CustomerDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail', 'PartnerApplications']
     // Account: Profile, Email, Settings, Notifications, Marketing, Blog, Business Cards, Email Signatures
     const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'ShippingSettings', 'TaxSettings', 'Email', 'EmailSignatures', 'Marketing', 'Blog', 'BlogPostDetail', 'BusinessCards', 'CardGenerator']
 
@@ -236,6 +238,8 @@ export default function AdminNavigator() {
           return <ScreenWrapper><CustomerDesignDetailScreen navigation={navigation} route={{ params: currentScreen.params }} /></ScreenWrapper>
         case 'EmailSignatures':
           return <ScreenWrapper><EmailSignaturesScreen navigation={navigation} /></ScreenWrapper>
+        case 'PrintQueue':
+          return <ScreenWrapper><PrintQueueScreen navigation={navigation} /></ScreenWrapper>
       }
     }
 
@@ -403,6 +407,12 @@ function SalesTabScreen({ navigation }: { navigation: any }) {
             >
               <Text style={[styles.segmentText, catalogSection === 'collections' && styles.segmentTextActive]}>Collections</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segmentPill, catalogSection === 'inventory' && styles.segmentPillActive]}
+              onPress={() => setCatalogSection('inventory')}
+            >
+              <Text style={[styles.segmentText, catalogSection === 'inventory' && styles.segmentTextActive]}>Inventory</Text>
+            </TouchableOpacity>
           </ScrollView>
         </View>
       )}
@@ -419,13 +429,14 @@ function SalesTabScreen({ navigation }: { navigation: any }) {
         {category === 'catalog' && catalogSection === 'categories' && <CategoriesScreen navigation={navigation} hideHeader />}
         {category === 'catalog' && catalogSection === 'brands' && <BrandsScreen navigation={navigation} hideHeader />}
         {category === 'catalog' && catalogSection === 'collections' && <CollectionsScreen navigation={navigation} hideHeader />}
+        {category === 'catalog' && catalogSection === 'inventory' && <InventoryScreen navigation={navigation} hideHeader />}
       </View>
     </SafeAreaView>
   )
 }
 
-// Business Tab - Services, Finance, and Analytics as top-level categories
-type BusinessCategory = 'services' | 'finance' | 'analytics' | 'documents'
+// Business Tab - Services, Finance, Operations, Analytics, and Documents as top-level categories
+type BusinessCategory = 'services' | 'finance' | 'operations' | 'analytics' | 'documents'
 type ServiceSection = 'inquiries' | 'packages' | 'portfolio'
 type FinanceSection = 'expenses' | 'reports'
 
@@ -437,6 +448,7 @@ function BusinessTabScreen({ navigation }: { navigation: any }) {
   const categoryConfig: Record<BusinessCategory, { icon: string; label: string }> = {
     services: { icon: 'construct-outline', label: 'Services' },
     finance: { icon: 'wallet-outline', label: 'Finance' },
+    operations: { icon: 'print-outline', label: 'Operations' },
     analytics: { icon: 'analytics-outline', label: 'Analytics' },
     documents: { icon: 'document-text-outline', label: 'Documents' },
   }
@@ -516,6 +528,8 @@ function BusinessTabScreen({ navigation }: { navigation: any }) {
 
         {category === 'finance' && financeSection === 'expenses' && <ExpensesScreen navigation={navigation} hideHeader />}
         {category === 'finance' && financeSection === 'reports' && <ReportsScreen navigation={navigation} hideHeader />}
+
+        {category === 'operations' && <PrintQueueScreen navigation={navigation} hideHeader />}
 
         {category === 'analytics' && <AnalyticsScreen navigation={navigation} hideHeader />}
 
