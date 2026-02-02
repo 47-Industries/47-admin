@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Share, Clipboard, Image, TextInput, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Share, Clipboard, TextInput, ActivityIndicator } from 'react-native'
+import { CachedImage } from '../../components/CachedImage'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '../../store/auth'
@@ -178,7 +179,7 @@ export function AffiliateDashboardScreen({ navigation, hideHeader }: AffiliateDa
         {/* Header with MotoRev Profile */}
         <View style={styles.header}>
           {motorev?.profilePicture ? (
-            <Image
+            <CachedImage
               source={{ uri: motorev.profilePicture }}
               style={styles.profileImage}
             />

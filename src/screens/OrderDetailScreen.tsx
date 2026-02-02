@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, Image, Linking, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, Linking, ActivityIndicator } from 'react-native'
+import { CachedImage } from '../components/CachedImage'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
@@ -432,7 +433,7 @@ export default function OrderDetailScreen({ navigation, route }: any) {
           {order.items?.map((item: any, index: number) => (
             <View key={item.id} style={[styles.item, index > 0 && styles.itemBorder]}>
               {item.image ? (
-                <Image source={{ uri: item.image }} style={styles.itemImage} />
+                <CachedImage source={{ uri: item.image }} style={styles.itemImage} />
               ) : (
                 <View style={styles.itemImagePlaceholder}>
                   <Ionicons name="cube-outline" size={24} color={colors.textMuted} />

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Image } from 'react-native'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl } from 'react-native'
+import { CachedImage } from '../components/CachedImage'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
@@ -113,7 +114,7 @@ export default function BlogScreen({ navigation, hideHeader }: { navigation: any
       <Card style={styles.postCard}>
         <View style={styles.postContent}>
           {item.coverImage && (
-            <Image source={{ uri: item.coverImage }} style={styles.coverImage} />
+            <CachedImage source={{ uri: item.coverImage }} style={styles.coverImage} />
           )}
           <View style={styles.postInfo}>
             <View style={styles.postHeader}>

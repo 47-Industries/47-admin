@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, Image, Switch } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, Switch } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
+import { CachedImage } from '../components/CachedImage'
 import { VariantList } from '../components/VariantList'
 import { VariantEditor } from '../components/VariantEditor'
 import { api } from '../services/api'
@@ -317,7 +318,7 @@ export default function ProductDetailScreen({ navigation, route }: any) {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagesScroll}>
           {product.images?.length > 0 ? (
             product.images.map((image: string, index: number) => (
-              <Image key={index} source={{ uri: image }} style={styles.productImage} />
+              <CachedImage key={index} source={{ uri: image }} style={styles.productImage} />
             ))
           ) : (
             <View style={styles.productImagePlaceholder}>

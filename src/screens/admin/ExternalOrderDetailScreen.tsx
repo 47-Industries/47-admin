@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, Image, Linking } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, Linking } from 'react-native'
+import { CachedImage } from '../../components/CachedImage'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../../components/Card'
@@ -166,7 +167,7 @@ export function ExternalOrderDetailScreen({ navigation, route }: any) {
         {customization.logoUrl && (
           <View style={styles.logoContainer}>
             <Text style={styles.customizationLabel}>Logo</Text>
-            <Image source={{ uri: customization.logoUrl }} style={styles.logoImage} resizeMode="contain" />
+            <CachedImage source={{ uri: customization.logoUrl }} style={styles.logoImage} resizeMode="contain" />
           </View>
         )}
         {displayFields.map(field => (
@@ -299,7 +300,7 @@ export function ExternalOrderDetailScreen({ navigation, route }: any) {
             <View key={item.id}>
               <View style={[styles.item, index > 0 && styles.itemBorder]}>
                 {item.image ? (
-                  <Image source={{ uri: item.image }} style={styles.itemImage} />
+                  <CachedImage source={{ uri: item.image }} style={styles.itemImage} />
                 ) : (
                   <View style={styles.itemImagePlaceholder}>
                     <Ionicons name="cube-outline" size={24} color={colors.textMuted} />

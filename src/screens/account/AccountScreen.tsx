@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Alert, Linking } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Linking } from 'react-native'
+import { CachedImage } from '../../components/CachedImage'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '../../store/auth'
@@ -81,7 +82,7 @@ export function AccountScreen({ navigation, hideHeader }: AccountScreenProps) {
             activeOpacity={user?.image ? 0.8 : 1}
           >
             {user?.image ? (
-              <Image source={{ uri: user.image }} style={styles.avatar} />
+              <CachedImage source={{ uri: user.image }} style={styles.avatar} />
             ) : (
               <View style={[styles.avatarPlaceholder, { backgroundColor: `${accentColor}20` }]}>
                 <Text style={[styles.avatarText, { color: accentColor }]}>

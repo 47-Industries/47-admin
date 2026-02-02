@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, Image, Linking } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, Linking } from 'react-native'
+import { CachedImage } from '../components/CachedImage'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
@@ -247,7 +248,7 @@ export default function CustomerDesignDetailScreen({ navigation, route }: any) {
         <Card style={styles.previewCard}>
           {design.previewImage ? (
             <TouchableOpacity onPress={() => openFile(design.previewImage)}>
-              <Image source={{ uri: design.previewImage }} style={styles.previewImageLarge} resizeMode="contain" />
+              <CachedImage source={{ uri: design.previewImage }} style={styles.previewImageLarge} resizeMode="contain" />
               <Text style={styles.tapToView}>Tap to view full size</Text>
             </TouchableOpacity>
           ) : (

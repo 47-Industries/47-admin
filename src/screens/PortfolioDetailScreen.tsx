@@ -8,7 +8,6 @@ import {
   TextInput,
   Alert,
   Modal,
-  Image,
   Switch,
   KeyboardAvoidingView,
   Platform,
@@ -18,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
+import { CachedImage } from '../components/CachedImage'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
@@ -295,7 +295,7 @@ export default function PortfolioDetailScreen({ navigation, route }: any) {
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
           {/* Thumbnail Preview */}
           {formData.thumbnailUrl ? (
-            <Image source={{ uri: formData.thumbnailUrl }} style={styles.thumbnail} />
+            <CachedImage source={{ uri: formData.thumbnailUrl }} style={styles.thumbnail} />
           ) : (
             <View style={styles.thumbnailPlaceholder}>
               <Ionicons name="image-outline" size={48} color={colors.textMuted} />
@@ -551,7 +551,7 @@ export default function PortfolioDetailScreen({ navigation, route }: any) {
               >
                 {formData.images.map((img, index) => (
                   <View key={index} style={styles.galleryItem}>
-                    <Image source={{ uri: img.url }} style={styles.galleryImage} />
+                    <CachedImage source={{ uri: img.url }} style={styles.galleryImage} />
                     <View style={styles.galleryBadge}>
                       <Text style={styles.galleryBadgeText}>
                         {img.type === 'desktop' ? 'Desktop' : 'Mobile'}

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, TextInput, Image, Linking } from 'react-native'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, TextInput, Linking } from 'react-native'
+import { CachedImage } from '../components/CachedImage'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
@@ -128,7 +129,7 @@ export default function CustomerDesignsScreen({ navigation, hideHeader }: { navi
 
         {/* Preview Image or Placeholder */}
         {item.previewImage ? (
-          <Image source={{ uri: item.previewImage }} style={styles.previewImage} resizeMode="cover" />
+          <CachedImage source={{ uri: item.previewImage }} style={styles.previewImage} resizeMode="cover" />
         ) : (
           <View style={styles.previewPlaceholder}>
             <Ionicons name="cube-outline" size={32} color={colors.textMuted} />

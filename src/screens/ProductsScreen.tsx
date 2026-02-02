@@ -6,7 +6,6 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
-  Image,
   TextInput,
   Alert,
   ActivityIndicator,
@@ -16,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
+import { CachedImage } from '../components/CachedImage'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 import { Product } from '../types'
@@ -240,7 +240,7 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
               </TouchableOpacity>
             )}
             {item.images?.[0] ? (
-              <Image source={{ uri: item.images[0] }} style={styles.productImage} />
+              <CachedImage source={{ uri: item.images[0] }} style={styles.productImage} />
             ) : (
               <View style={styles.productImagePlaceholder}>
                 <Ionicons name="cube-outline" size={32} color={colors.textMuted} />

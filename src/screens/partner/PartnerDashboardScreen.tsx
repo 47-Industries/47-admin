@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Image, Clipboard } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Clipboard } from 'react-native'
+import { CachedImage } from '../../components/CachedImage'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '../../store/auth'
@@ -244,7 +245,7 @@ export function PartnerDashboardScreen({ navigation, hideHeader }: PartnerDashbo
           <View style={styles.motorevSection}>
             <View style={styles.motorevHeader}>
               {motorevAffiliate.motorev?.profilePicture ? (
-                <Image
+                <CachedImage
                   source={{ uri: motorevAffiliate.motorev.profilePicture }}
                   style={styles.motorevProfileImage}
                 />

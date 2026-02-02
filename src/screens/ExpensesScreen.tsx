@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Alert, Modal, TextInput, ActionSheetIOS, Platform, Image, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Alert, Modal, TextInput, ActionSheetIOS, Platform, ActivityIndicator } from 'react-native'
+import { CachedImage } from '../components/CachedImage'
 import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
 import { Card } from '../components/Card'
@@ -1291,7 +1292,7 @@ export function ExpensesScreen({ navigation, hideHeader }: { navigation: any; hi
                 </View>
               ) : selectedImage ? (
                 <View style={styles.selectedImageContainer}>
-                  <Image source={{ uri: selectedImage }} style={styles.selectedImage} />
+                  <CachedImage source={{ uri: selectedImage }} style={styles.selectedImage} />
                   <View style={styles.imageOverlay}>
                     <Ionicons name="checkmark-circle" size={32} color={colors.success} />
                   </View>

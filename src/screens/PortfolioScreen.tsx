@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Alert, Image } from 'react-native'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Alert } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
+import { CachedImage } from '../components/CachedImage'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
@@ -117,7 +118,7 @@ export default function PortfolioScreen({ navigation, hideHeader }: { navigation
       <Card style={StyleSheet.flatten([styles.projectCard, !item.isActive && styles.projectInactive])}>
         <View style={styles.projectImage}>
           {item.thumbnailUrl ? (
-            <Image source={{ uri: item.thumbnailUrl }} style={styles.thumbnail} />
+            <CachedImage source={{ uri: item.thumbnailUrl }} style={styles.thumbnail} />
           ) : (
             <View style={styles.noThumbnail}>
               <Ionicons name="image-outline" size={32} color={colors.textMuted} />
