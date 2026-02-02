@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { WebView } from 'react-native-webview'
 import { Card } from '../../components/Card'
+import { ZoomableView } from '../../components/ZoomableView'
 import { Badge } from '../../components/Badge'
 import { api } from '../../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../theme'
@@ -597,12 +598,15 @@ export default function CardGeneratorScreen({ navigation, route }: CardGenerator
           {/* Card Preview */}
           <View style={styles.previewContainer}>
             {(previewSide === 'front' ? frontHtml : backHtml) ? (
-              <WebView
-                source={{ html: previewSide === 'front' ? frontHtml : backHtml }}
-                style={styles.previewWebView}
-                scrollEnabled={false}
-                showsVerticalScrollIndicator={false}
-              />
+              <ZoomableView style={styles.zoomableContainer} minScale={1} maxScale={5}>
+                <WebView
+                  source={{ html: previewSide === 'front' ? frontHtml : backHtml }}
+                  style={styles.previewWebView}
+                  scrollEnabled={false}
+                  showsVerticalScrollIndicator={false}
+                  scalesPageToFit={false}
+                />
+              </ZoomableView>
             ) : (
               <View style={styles.previewEmpty}>
                 <Ionicons name="card-outline" size={48} color={colors.textMuted} />
@@ -610,6 +614,9 @@ export default function CardGeneratorScreen({ navigation, route }: CardGenerator
               </View>
             )}
           </View>
+
+          {/* Zoom hint */}
+          <Text style={styles.zoomHint}>Pinch to zoom, drag to pan</Text>
 
           {/* PDF Actions */}
           <View style={styles.modalActions}>
@@ -915,9 +922,19 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     overflow: 'hidden',
   },
+  zoomableContainer: {
+    flex: 1,
+  },
   previewWebView: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  zoomHint: {
+    textAlign: 'center',
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
   },
   previewEmpty: {
     flex: 1,
