@@ -37,6 +37,20 @@ interface BookFadeBarber {
   businessAddress?: string | null
 }
 
+interface TeamMember {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  title: string | null
+  image: string | null
+  userId: string | null
+  user?: {
+    email: string | null
+    image: string | null
+  }
+}
+
 interface SavedDesign {
   id: string
   name: string
@@ -94,6 +108,12 @@ export default function CardGeneratorScreen({ navigation, route }: CardGenerator
   // BookFade import
   const [barberUsername, setBarberUsername] = useState('')
   const [importingBarber, setImportingBarber] = useState(false)
+
+  // Team member import (47 Industries)
+  const [teamSearchQuery, setTeamSearchQuery] = useState('')
+  const [teamSearchResults, setTeamSearchResults] = useState<TeamMember[]>([])
+  const [searchingTeam, setSearchingTeam] = useState(false)
+  const [showTeamResults, setShowTeamResults] = useState(false)
 
   // Generated cards
   const [frontHtml, setFrontHtml] = useState('')
@@ -189,6 +209,32 @@ export default function CardGeneratorScreen({ navigation, route }: CardGenerator
     }
   }
 
+  const handleSearchTeam = async () => {
+    if (!teamSearchQuery.trim()) return
+
+    setSearchingTeam(true)
+    try {
+      const data = await api.getTeamMembers({ search: teamSearchQuery.trim(), limit: 10 })
+      setTeamSearchResults(data.teamMembers || [])
+      setShowTeamResults(true)
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to search team members')
+    } finally {
+      setSearchingTeam(false)
+    }
+  }
+
+  const handleSelectTeamMember = (member: TeamMember) => {
+    setName(member.name || '')
+    setEmail(member.email || member.user?.email || '')
+    setPhone(member.phone || '')
+    setTitle(member.title || '')
+    setProfileImage(member.image || member.user?.image || '')
+    setShowTeamResults(false)
+    setTeamSearchResults([])
+    setTeamSearchQuery('')
+  }
+
   const handleGenerateCard = async () => {
     if (!name.trim()) {
       Alert.alert('Error', 'Name is required')
@@ -267,6 +313,9 @@ export default function CardGeneratorScreen({ navigation, route }: CardGenerator
     setFrontHtml('')
     setBackHtml('')
     setBarberUsername('')
+    setTeamSearchQuery('')
+    setTeamSearchResults([])
+    setShowTeamResults(false)
   }
 
   return (
@@ -312,6 +361,75 @@ export default function CardGeneratorScreen({ navigation, route }: CardGenerator
             ))}
           </ScrollView>
         </View>
+
+        {/* 47 Industries Team Import */}
+        {selectedBrand === 'FORTY_SEVEN_INDUSTRIES' && (
+          <Card style={styles.importCard} borderColor="#3b82f6">
+            <View style={styles.importHeader}>
+              <Ionicons name="people-outline" size={20} color="#3b82f6" />
+              <Text style={styles.importTitle}>Import from Team</Text>
+            </View>
+            <View style={styles.importRow}>
+              <TextInput
+                style={styles.importInput}
+                value={teamSearchQuery}
+                onChangeText={setTeamSearchQuery}
+                placeholder="Search team members..."
+                placeholderTextColor={colors.textMuted}
+                autoCapitalize="none"
+                onSubmitEditing={handleSearchTeam}
+                returnKeyType="search"
+              />
+              <TouchableOpacity
+                style={[styles.importButton, { backgroundColor: '#3b82f6' }, searchingTeam && styles.importButtonDisabled]}
+                onPress={handleSearchTeam}
+                disabled={searchingTeam}
+              >
+                {searchingTeam ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons name="search-outline" size={20} color="#fff" />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Team Search Results */}
+            {showTeamResults && teamSearchResults.length > 0 && (
+              <View style={styles.searchResults}>
+                {teamSearchResults.map((member) => (
+                  <TouchableOpacity
+                    key={member.id}
+                    style={styles.searchResultItem}
+                    onPress={() => handleSelectTeamMember(member)}
+                  >
+                    <View style={styles.searchResultAvatar}>
+                      {member.image || member.user?.image ? (
+                        <View style={styles.avatarImage}>
+                          <Text style={styles.avatarText}>{(member.name || 'U').charAt(0)}</Text>
+                        </View>
+                      ) : (
+                        <View style={[styles.avatarImage, { backgroundColor: '#3b82f6' }]}>
+                          <Text style={styles.avatarText}>{(member.name || 'U').charAt(0)}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.searchResultInfo}>
+                      <Text style={styles.searchResultName}>{member.name || 'Unknown'}</Text>
+                      <Text style={styles.searchResultMeta}>
+                        {member.title || 'Team Member'}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {showTeamResults && teamSearchResults.length === 0 && !searchingTeam && (
+              <Text style={styles.noResultsText}>No team members found</Text>
+            )}
+          </Card>
+        )}
 
         {/* BookFade Import */}
         {selectedBrand === 'BOOKFADE' && (
@@ -752,6 +870,56 @@ const styles = StyleSheet.create({
   },
   importButtonDisabled: {
     opacity: 0.6,
+  },
+  searchResults: {
+    marginTop: spacing.md,
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  searchResultAvatar: {
+    marginRight: spacing.md,
+  },
+  avatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    color: '#fff',
+  },
+  searchResultInfo: {
+    flex: 1,
+  },
+  searchResultName: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.text,
+  },
+  searchResultMeta: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  noResultsText: {
+    marginTop: spacing.md,
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+    textAlign: 'center',
   },
   layoutGrid: {
     flexDirection: 'row',
