@@ -43,7 +43,7 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
   const [syncing, setSyncing] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [brandFilter, setBrandFilter] = useState<string>('')
-  const [brands, setBrands] = useState<string[]>([])
+  const [brands, setBrands] = useState<{ key: string; name: string }[]>([])
   const [bulkLoading, setBulkLoading] = useState(false)
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
 
@@ -64,6 +64,9 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
         // Physical products: PHYSICAL type, exclude Printful (self-fulfilled only)
         params.productType = 'PHYSICAL'
         params.excludeFulfillment = 'PRINTFUL'
+        if (brandFilter) {
+          params.brand = brandFilter
+        }
       } else if (activeTab === 'apparel') {
         // Apparel products: Printful fulfilled
         params.productType = 'PHYSICAL'
@@ -81,11 +84,6 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
 
       if (refresh || pageNum === 1) {
         setProducts(newProducts)
-        // Extract unique brands for apparel tab
-        if (activeTab === 'apparel') {
-          const uniqueBrands = [...new Set(newProducts.map((p) => p.brand).filter(Boolean))] as string[]
-          setBrands(uniqueBrands.sort())
-        }
       } else {
         setProducts((prev) => [...prev, ...newProducts])
       }
@@ -100,6 +98,27 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
     }
   }
 
+  // Fetch brands from API
+  const fetchBrands = async () => {
+    try {
+      const data = await api.getProductBrands()
+      // API now returns { brands: [{ key: string, name: string }] }
+      if (data.brands && Array.isArray(data.brands)) {
+        // Handle both old format (string[]) and new format ({ key, name }[])
+        const formattedBrands = data.brands.map((b: any) =>
+          typeof b === 'string' ? { key: b, name: b } : b
+        )
+        setBrands(formattedBrands)
+      }
+    } catch (error) {
+      console.error('Failed to fetch brands:', error)
+    }
+  }
+
+  useEffect(() => {
+    fetchBrands()
+  }, [])
+
   useEffect(() => {
     setLoading(true)
     setSelectedIds(new Set())
@@ -108,7 +127,7 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
   }, [activeTab, search, statusFilter])
 
   useEffect(() => {
-    if (activeTab === 'apparel' && brandFilter !== undefined) {
+    if ((activeTab === 'apparel' || activeTab === 'physical') && brandFilter !== undefined) {
       setLoading(true)
       fetchProducts(1, true)
     }
@@ -233,7 +252,7 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
               </Text>
               <Text style={styles.productCategory}>
                 {item.category?.name || 'Uncategorized'}
-                {activeTab === 'apparel' && item.brand && ` - ${item.brand}`}
+                {(activeTab === 'apparel' || activeTab === 'physical') && item.brand && ` - ${brands.find(b => b.key === item.brand)?.name || item.brand}`}
                 {activeTab === 'digital' && ' - Digital Download'}
               </Text>
               <View style={styles.productMeta}>
@@ -393,12 +412,12 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
               </TouchableOpacity>
               {brands.map((brand) => (
                 <TouchableOpacity
-                  key={brand}
-                  style={[styles.brandChip, brandFilter === brand && styles.brandChipActive]}
-                  onPress={() => setBrandFilter(brand)}
+                  key={brand.key}
+                  style={[styles.brandChip, brandFilter === brand.key && styles.brandChipActive]}
+                  onPress={() => setBrandFilter(brand.key)}
                 >
-                  <Text style={[styles.brandChipText, brandFilter === brand && styles.brandChipTextActive]}>
-                    {brand}
+                  <Text style={[styles.brandChipText, brandFilter === brand.key && styles.brandChipTextActive]}>
+                    {brand.name}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -454,8 +473,44 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
         </View>
       )}
 
-      {/* Physical/Digital Tab: Add Button */}
-      {(activeTab === 'physical' || activeTab === 'digital') && (
+      {/* Physical Tab: Brand Filter + Add Button */}
+      {activeTab === 'physical' && (
+        <View style={styles.apparelControls}>
+          {/* Brand Filter */}
+          {brands.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.brandFilterContainer}>
+              <TouchableOpacity
+                style={[styles.brandChip, !brandFilter && styles.brandChipActive]}
+                onPress={() => setBrandFilter('')}
+              >
+                <Text style={[styles.brandChipText, !brandFilter && styles.brandChipTextActive]}>All Brands</Text>
+              </TouchableOpacity>
+              {brands.map((brand) => (
+                <TouchableOpacity
+                  key={brand.key}
+                  style={[styles.brandChip, brandFilter === brand.key && styles.brandChipActive]}
+                  onPress={() => setBrandFilter(brand.key)}
+                >
+                  <Text style={[styles.brandChipText, brandFilter === brand.key && styles.brandChipTextActive]}>
+                    {brand.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+          <View style={styles.filtersContainer}>
+            <View style={styles.filtersRow}>
+              <Text style={styles.productCountText}>{products.length} products</Text>
+            </View>
+            <TouchableOpacity style={styles.addButtonSmall} onPress={() => navigation.navigate('ProductCreate')}>
+              <Ionicons name="add" size={20} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Digital Tab: Add Button */}
+      {activeTab === 'digital' && (
         <View style={styles.filtersContainer}>
           <View style={styles.filtersRow}>
             <Text style={styles.productCountText}>{products.length} products</Text>
