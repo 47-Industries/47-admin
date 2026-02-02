@@ -18,11 +18,12 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
+import { CachedImage } from '../components/CachedImage'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 import { User } from '../types'
 
-type RoleFilter = 'ALL' | 'CUSTOMER' | 'ADMIN' | 'SUPER_ADMIN'
+type RoleFilter = 'CUSTOMER' | 'ADMIN' | 'SUPER_ADMIN'
 
 interface CustomerSegment {
   id: string
@@ -43,7 +44,7 @@ const SEGMENT_COLORS = [
 ]
 
 export function UsersScreen({ navigation, hideHeader }: { navigation: any; hideHeader?: boolean }) {
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>('ALL')
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('CUSTOMER')
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -211,9 +212,19 @@ export function UsersScreen({ navigation, hideHeader }: { navigation: any; hideH
     <TouchableOpacity onPress={() => navigation.navigate('UserDetail', { id: item.id })} activeOpacity={0.7}>
       <Card style={styles.userCard}>
         <View style={styles.userContent}>
-          <View style={[styles.avatar, (item.role === 'ADMIN' || item.role === 'SUPER_ADMIN') && styles.adminAvatar]}>
-            <Text style={styles.avatarText}>{getInitials(item.name, item.email)}</Text>
-          </View>
+          {item.image ? (
+            <View style={styles.avatarImageContainer}>
+              <CachedImage
+                source={{ uri: item.image }}
+                style={styles.avatarImage}
+                contentFit="cover"
+              />
+            </View>
+          ) : (
+            <View style={[styles.avatar, (item.role === 'ADMIN' || item.role === 'SUPER_ADMIN') && styles.adminAvatar]}>
+              <Text style={styles.avatarText}>{getInitials(item.name, item.email)}</Text>
+            </View>
+          )}
           <View style={styles.userInfo}>
             <View style={styles.userHeader}>
               <Text style={styles.userName} numberOfLines={1}>{item.name || 'No Name'}</Text>
@@ -271,10 +282,10 @@ export function UsersScreen({ navigation, hideHeader }: { navigation: any; hideH
         style={styles.filterContainer}
         contentContainerStyle={styles.filterContent}
       >
-        {(['ALL', 'CUSTOMER', 'ADMIN', 'SUPER_ADMIN'] as RoleFilter[]).map((role) => {
+        {(['CUSTOMER', 'ADMIN', 'SUPER_ADMIN'] as RoleFilter[]).map((role) => {
           const isActive = roleFilter === role
-          let label = role === 'ALL' ? 'All' : role === 'CUSTOMER' ? 'Customers' : role === 'ADMIN' ? 'Admins' : 'Super Admins'
-          let count = role === 'ALL' ? counts.all : role === 'CUSTOMER' ? counts.customers : counts.admins
+          let label = role === 'CUSTOMER' ? 'Customers' : role === 'ADMIN' ? 'Admins' : 'Super Admins'
+          let count = role === 'CUSTOMER' ? counts.customers : counts.admins
 
           return (
             <TouchableOpacity
@@ -297,8 +308,8 @@ export function UsersScreen({ navigation, hideHeader }: { navigation: any; hideH
         })}
       </ScrollView>
 
-      {/* Segments Section (only show for Customers filter or All) */}
-      {(roleFilter === 'CUSTOMER' || roleFilter === 'ALL') && renderSegmentsSection()}
+      {/* Segments Section (only show for Customers filter) */}
+      {roleFilter === 'CUSTOMER' && renderSegmentsSection()}
     </View>
   )
 
@@ -1120,6 +1131,16 @@ const styles = StyleSheet.create({
   },
   adminAvatar: {
     backgroundColor: '#f59e0b',
+  },
+  avatarImageContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.full,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 44,
+    height: 44,
   },
   avatarText: {
     fontSize: fontSize.md,
