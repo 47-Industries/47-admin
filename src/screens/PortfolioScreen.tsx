@@ -231,8 +231,6 @@ export default function PortfolioScreen({ navigation, hideHeader }: { navigation
         data={filteredProjects}
         renderItem={renderProject}
         keyExtractor={(item) => item.id}
-        numColumns={2}
-        columnWrapperStyle={styles.projectsRow}
         contentContainerStyle={styles.list}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
@@ -342,11 +340,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxl,
   },
-  projectsRow: {
-    justifyContent: 'space-between',
-  },
   projectCard: {
-    width: '48%',
     marginBottom: spacing.md,
     padding: 0,
     overflow: 'hidden',
@@ -355,7 +349,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   projectImage: {
-    aspectRatio: 16 / 9,
+    aspectRatio: 2.2,
     backgroundColor: colors.surfaceHover,
   },
   thumbnail: {
