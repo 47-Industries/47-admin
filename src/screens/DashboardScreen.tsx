@@ -18,7 +18,7 @@ interface Stats {
 }
 
 interface ActivityItem {
-  type: 'order' | 'request' | 'inquiry'
+  type: 'order' | 'request' | 'inquiry' | 'lead' | 'email'
   id: string
   number: string
   name: string
@@ -47,14 +47,24 @@ const statusColors: Record<string, { bg: string; text: string }> = {
   IN_PROGRESS: { bg: 'rgba(168, 85, 247, 0.15)', text: '#a855f7' },
   COMPLETED: { bg: 'rgba(34, 197, 94, 0.15)', text: '#22c55e' },
   REJECTED: { bg: 'rgba(239, 68, 68, 0.15)', text: '#ef4444' },
+  // Leads
+  CONTACTED: { bg: 'rgba(59, 130, 246, 0.15)', text: '#3b82f6' },
+  QUALIFIED: { bg: 'rgba(168, 85, 247, 0.15)', text: '#a855f7' },
+  CONVERTED: { bg: 'rgba(34, 197, 94, 0.15)', text: '#22c55e' },
+  LOST: { bg: 'rgba(239, 68, 68, 0.15)', text: '#ef4444' },
+  // Email
+  SENT: { bg: 'rgba(34, 197, 94, 0.15)', text: '#22c55e' },
+  FAILED: { bg: 'rgba(239, 68, 68, 0.15)', text: '#ef4444' },
   // Default
   default: { bg: 'rgba(113, 113, 122, 0.15)', text: '#71717a' },
 }
 
-const typeConfig = {
+const typeConfig: Record<string, { icon: string; color: string; label: string }> = {
   order: { icon: 'receipt', color: '#3b82f6', label: 'Order' },
   request: { icon: 'print', color: '#a855f7', label: '3D Print' },
   inquiry: { icon: 'chatbubbles', color: '#f59e0b', label: 'Inquiry' },
+  lead: { icon: 'people', color: '#10b981', label: 'Lead' },
+  email: { icon: 'mail', color: '#ec4899', label: 'Email' },
 }
 
 export function DashboardScreen({ navigation }: any) {
@@ -135,6 +145,10 @@ export function DashboardScreen({ navigation }: any) {
       navigation.navigate('CustomRequestDetail', { id: item.id })
     } else if (item.type === 'inquiry') {
       navigation.navigate('InquiryDetail', { id: item.id })
+    } else if (item.type === 'lead') {
+      navigation.navigate('LeadDetail', { id: item.id })
+    } else if (item.type === 'email') {
+      navigation.navigate('Email')
     }
   }
 
