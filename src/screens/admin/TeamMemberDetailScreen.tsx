@@ -75,6 +75,7 @@ export function TeamMemberDetailScreen({ navigation, route }: any) {
   const [refreshing, setRefreshing] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [formData, setFormData] = useState<Partial<TeamMember>>({})
   const [viewingImage, setViewingImage] = useState<string | null>(null)
 
@@ -99,6 +100,32 @@ export function TeamMemberDetailScreen({ navigation, route }: any) {
   const onRefresh = () => {
     setRefreshing(true)
     fetchMember()
+  }
+
+  const handleDeleteTeamMember = () => {
+    Alert.alert(
+      'Delete Team Member',
+      `Are you sure you want to delete ${member?.name}? This will also delete all associated contracts, payments, and documents. This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true)
+            try {
+              await api.deleteTeamMember(id)
+              Alert.alert('Success', 'Team member deleted successfully')
+              navigation.goBack()
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to delete team member')
+            } finally {
+              setDeleting(false)
+            }
+          },
+        },
+      ]
+    )
   }
 
   const handleSave = async () => {
@@ -709,6 +736,24 @@ export function TeamMemberDetailScreen({ navigation, route }: any) {
               </>
             )}
 
+            {/* Danger Zone */}
+            <View style={styles.dangerZone}>
+              <Text style={styles.dangerZoneTitle}>Danger Zone</Text>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => {
+                  setShowEditModal(false)
+                  setTimeout(handleDeleteTeamMember, 300)
+                }}
+                disabled={deleting}
+              >
+                <Ionicons name="trash-outline" size={18} color={colors.error} />
+                <Text style={styles.deleteButtonText}>
+                  {deleting ? 'Deleting...' : 'Delete Team Member'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
             <View style={{ height: spacing.xxxl }} />
           </ScrollView>
         </KeyboardAvoidingView>
@@ -1006,5 +1051,33 @@ const styles = StyleSheet.create({
   switchLabel: {
     fontSize: fontSize.md,
     color: colors.text,
+  },
+  dangerZone: {
+    marginTop: spacing.xl,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  dangerZoneTitle: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: colors.error,
+    marginBottom: spacing.md,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.errorBg,
+    borderWidth: 1,
+    borderColor: colors.error,
+    borderRadius: borderRadius.md,
+  },
+  deleteButtonText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.error,
   },
 })

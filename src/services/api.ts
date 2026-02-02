@@ -1379,6 +1379,12 @@ class ApiService {
     })
   }
 
+  async deleteAdminClient(id: string) {
+    return this.request<{ success: boolean }>(`/admin/clients/${id}`, {
+      method: 'DELETE',
+    })
+  }
+
   // Admin Partners
   async getAdminPartners(params?: { page?: number; status?: string; type?: string; search?: string }) {
     const searchParams = new URLSearchParams()
@@ -2797,6 +2803,12 @@ class ApiService {
     return this.request<{ affiliate: any }>(`/admin/user-affiliates/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
+    })
+  }
+
+  async deleteAdminUserAffiliate(id: string) {
+    return this.request<{ success: boolean }>(`/admin/user-affiliates/${id}`, {
+      method: 'DELETE',
     })
   }
 

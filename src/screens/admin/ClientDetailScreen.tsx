@@ -159,6 +159,7 @@ export function ClientDetailScreen({ navigation, route }: ClientDetailScreenProp
   // Actions
   const [sendingQuote, setSendingQuote] = useState(false)
   const [generatingContract, setGeneratingContract] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const fetchClient = async () => {
     try {
@@ -512,6 +513,32 @@ export function ClientDetailScreen({ navigation, route }: ClientDetailScreenProp
 
   const handleLinkUserAccount = () => {
     navigation.navigate('UserDetail', { id: client?.userId })
+  }
+
+  const handleDeleteClient = () => {
+    Alert.alert(
+      'Delete Client',
+      `Are you sure you want to delete ${client?.name}? This will also delete all associated projects, contacts, notes, and invoices. This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true)
+            try {
+              await api.deleteAdminClient(id)
+              Alert.alert('Success', 'Client deleted successfully')
+              navigation.goBack()
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to delete client')
+            } finally {
+              setDeleting(false)
+            }
+          },
+        },
+      ]
+    )
   }
 
   // Helpers
@@ -1154,6 +1181,24 @@ export function ClientDetailScreen({ navigation, route }: ClientDetailScreenProp
                   color={formData.autopayEnabled ? colors.primary : colors.textMuted}
                 />
               </TouchableOpacity>
+
+              {/* Danger Zone */}
+              <View style={styles.dangerZone}>
+                <Text style={styles.dangerZoneTitle}>Danger Zone</Text>
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => {
+                    setShowEditModal(false)
+                    setTimeout(handleDeleteClient, 300)
+                  }}
+                  disabled={deleting}
+                >
+                  <Ionicons name="trash-outline" size={18} color={colors.error} />
+                  <Text style={styles.deleteButtonText}>
+                    {deleting ? 'Deleting...' : 'Delete Client'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </ScrollView>
 
             <View style={styles.modalButtons}>
@@ -1511,4 +1556,8 @@ const styles = StyleSheet.create({
   toggleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.md, marginBottom: spacing.md },
   toggleLabel: { fontSize: fontSize.md, color: colors.text },
   modalButtons: { flexDirection: 'row', marginTop: spacing.lg },
+  dangerZone: { marginTop: spacing.xl, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border },
+  dangerZoneTitle: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.error, marginBottom: spacing.md },
+  deleteButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: spacing.md, backgroundColor: colors.errorBg, borderWidth: 1, borderColor: colors.error, borderRadius: borderRadius.md },
+  deleteButtonText: { fontSize: fontSize.md, fontWeight: fontWeight.medium, color: colors.error },
 })

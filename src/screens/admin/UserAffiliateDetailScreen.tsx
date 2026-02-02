@@ -117,6 +117,7 @@ export function UserAffiliateDetailScreen({ navigation, route }: UserAffiliateDe
   const [editModalVisible, setEditModalVisible] = useState(false)
   const [pointsModalVisible, setPointsModalVisible] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   // Edit form
   const [editForm, setEditForm] = useState({
@@ -276,6 +277,34 @@ export function UserAffiliateDetailScreen({ navigation, route }: UserAffiliateDe
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleDeleteAffiliate = () => {
+    if (!affiliate) return
+
+    Alert.alert(
+      'Delete User Affiliate',
+      `Are you sure you want to delete this affiliate account for ${affiliate.user?.name || affiliate.user?.email}? This will delete all referrals, commissions, and point history. This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true)
+            try {
+              await api.deleteAdminUserAffiliate(id)
+              Alert.alert('Success', 'User affiliate deleted successfully')
+              navigation.goBack()
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to delete user affiliate')
+            } finally {
+              setDeleting(false)
+            }
+          },
+        },
+      ]
+    )
   }
 
   const handleToggleStatus = async () => {
@@ -533,6 +562,16 @@ export function UserAffiliateDetailScreen({ navigation, route }: UserAffiliateDe
           <TouchableOpacity style={styles.actionButton} onPress={openEditModal}>
             <Ionicons name="create-outline" size={20} color={colors.primary} />
             <Text style={[styles.actionButtonText, { color: colors.primary }]}>Edit Affiliate</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.deleteAction]}
+            onPress={handleDeleteAffiliate}
+            disabled={deleting}
+          >
+            <Ionicons name="trash-outline" size={20} color={colors.error} />
+            <Text style={[styles.actionButtonText, { color: colors.error }]}>
+              {deleting ? 'Deleting...' : 'Delete Affiliate'}
+            </Text>
           </TouchableOpacity>
         </Card>
 
@@ -1155,6 +1194,13 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.medium,
+  },
+  deleteAction: {
+    borderBottomWidth: 0,
+    marginTop: spacing.sm,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   bottomSpacer: {
     height: spacing.xxxl,
