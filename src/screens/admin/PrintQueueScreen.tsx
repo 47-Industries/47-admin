@@ -10,7 +10,6 @@ import {
   Modal,
   ScrollView,
   Alert,
-  Image,
   ActivityIndicator,
   Linking,
 } from 'react-native'
@@ -18,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../../components/Card'
 import { Badge } from '../../components/Badge'
 import { Button } from '../../components/Button'
-import { StatCard } from '../../components/StatCard'
+import { CachedImage } from '../../components/CachedImage'
 import { api } from '../../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../theme'
 
@@ -297,7 +296,7 @@ export function PrintQueueScreen({ navigation, hideHeader }: { navigation: any; 
 
           <View style={styles.productRow}>
             {item.productImage ? (
-              <Image source={{ uri: item.productImage }} style={styles.productImage} />
+              <CachedImage source={{ uri: item.productImage }} style={styles.productImage} />
             ) : (
               <View style={styles.productImagePlaceholder}>
                 <Ionicons name="cube-outline" size={24} color={colors.textMuted} />
@@ -323,35 +322,24 @@ export function PrintQueueScreen({ navigation, hideHeader }: { navigation: any; 
 
   const renderStats = () => (
     <View style={styles.statsContainer}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statsScroll}>
-        <StatCard
-          title="Total Jobs"
-          value={stats.total}
-          icon="layers-outline"
-          compact
-        />
-        <StatCard
-          title="Pending"
-          value={stats.pending}
-          icon="time-outline"
-          iconColor={colors.warning}
-          compact
-        />
-        <StatCard
-          title="Printing"
-          value={stats.printing}
-          icon="print-outline"
-          iconColor={colors.primary}
-          compact
-        />
-        <StatCard
-          title="Completed Today"
-          value={stats.completedToday}
-          icon="checkmark-circle-outline"
-          iconColor={colors.success}
-          compact
-        />
-      </ScrollView>
+      <View style={styles.statsRow}>
+        <View style={styles.statBox}>
+          <Text style={styles.statValue}>{stats.total}</Text>
+          <Text style={styles.statLabel}>Total</Text>
+        </View>
+        <View style={[styles.statBox, styles.statBoxWarning]}>
+          <Text style={[styles.statValue, { color: colors.warning }]}>{stats.pending}</Text>
+          <Text style={styles.statLabel}>Pending</Text>
+        </View>
+        <View style={[styles.statBox, styles.statBoxPrimary]}>
+          <Text style={[styles.statValue, { color: colors.primary }]}>{stats.printing}</Text>
+          <Text style={styles.statLabel}>Printing</Text>
+        </View>
+        <View style={[styles.statBox, styles.statBoxSuccess]}>
+          <Text style={[styles.statValue, { color: colors.success }]}>{stats.completedToday}</Text>
+          <Text style={styles.statLabel}>Done</Text>
+        </View>
+      </View>
     </View>
   )
 
@@ -422,8 +410,13 @@ export function PrintQueueScreen({ navigation, hideHeader }: { navigation: any; 
           }
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Ionicons name="print-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyText}>No jobs found</Text>
+              <View style={styles.emptyIcon}>
+                <Ionicons name="print-outline" size={40} color={colors.textMuted} />
+              </View>
+              <Text style={styles.emptyTitle}>No jobs found</Text>
+              <Text style={styles.emptySubtitle}>
+                {filter !== 'all' ? `No ${filter} jobs in the queue` : 'The print queue is empty'}
+              </Text>
             </View>
           }
         />
@@ -488,7 +481,7 @@ export function PrintQueueScreen({ navigation, hideHeader }: { navigation: any; 
                     <Card style={styles.detailCard}>
                       <View style={styles.productDetailRow}>
                         {selectedJob.productImage ? (
-                          <Image source={{ uri: selectedJob.productImage }} style={styles.productDetailImage} />
+                          <CachedImage source={{ uri: selectedJob.productImage }} style={styles.productDetailImage} />
                         ) : (
                           <View style={styles.productDetailImagePlaceholder}>
                             <Ionicons name="cube-outline" size={32} color={colors.textMuted} />
@@ -729,11 +722,40 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   statsContainer: {
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
-  statsScroll: {
-    paddingHorizontal: spacing.lg,
-    gap: spacing.md,
+  statsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  statBox: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  statBoxWarning: {
+    borderColor: `${colors.warning}40`,
+  },
+  statBoxPrimary: {
+    borderColor: `${colors.primary}40`,
+  },
+  statBoxSuccess: {
+    borderColor: `${colors.success}40`,
+  },
+  statValue: {
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+  },
+  statLabel: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: 2,
   },
   searchContainer: {
     paddingHorizontal: spacing.lg,
@@ -756,17 +778,15 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
   },
   filterContainer: {
-    maxHeight: 48,
     marginBottom: spacing.md,
   },
   filterContent: {
     paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
   },
   filterTab: {
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.md,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -783,6 +803,7 @@ const styles = StyleSheet.create({
   },
   filterTabTextActive: {
     color: colors.text,
+    fontWeight: fontWeight.semibold,
   },
   list: {
     paddingHorizontal: spacing.lg,
@@ -897,11 +918,27 @@ const styles = StyleSheet.create({
   empty: {
     alignItems: 'center',
     paddingVertical: spacing.xxxl,
+    paddingHorizontal: spacing.xl,
   },
-  emptyText: {
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
+  emptyTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+    marginBottom: spacing.xs,
+  },
+  emptySubtitle: {
     fontSize: fontSize.md,
     color: colors.textMuted,
-    marginTop: spacing.md,
+    textAlign: 'center',
   },
   // Modal Styles
   modalOverlay: {
