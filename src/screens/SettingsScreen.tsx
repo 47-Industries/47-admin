@@ -119,6 +119,13 @@ export function SettingsScreen({ navigation, hideHeader }: { navigation: any; hi
             subtitle="Location-based tax configuration"
             onPress={() => navigation.navigate('TaxSettings')}
           />
+          <View style={styles.divider} />
+          <SettingItem
+            icon="share-social-outline"
+            title="Social Media"
+            subtitle="Social profile links for website"
+            onPress={() => navigation.navigate('SocialSettings')}
+          />
         </Card>
 
         {/* Quick Links */}

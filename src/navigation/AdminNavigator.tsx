@@ -45,6 +45,7 @@ import { UserAffiliatesScreen } from '../screens/admin/UserAffiliatesScreen'
 import { UserAffiliateDetailScreen } from '../screens/admin/UserAffiliateDetailScreen'
 import { ShippingSettingsScreen } from '../screens/admin/ShippingSettingsScreen'
 import { TaxSettingsScreen } from '../screens/admin/TaxSettingsScreen'
+import { SocialSettingsScreen } from '../screens/admin/SocialSettingsScreen'
 import { PartnerLeadsScreen } from '../screens/admin/PartnerLeadsScreen'
 import { PartnerLeadDetailScreen } from '../screens/admin/PartnerLeadDetailScreen'
 import MarketingScreen from '../screens/MarketingScreen'
@@ -115,7 +116,7 @@ export default function AdminNavigator() {
     // People: Clients, Partners, Team, Affiliates, User Affiliates, Users
     const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'CustomerDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail', 'UserAffiliates', 'UserAffiliateDetail', 'PartnerApplications', 'PartnerInquiries']
     // Account: Profile, Email, Settings, Notifications, Marketing, Blog, Business Cards, Email Signatures, OAuth
-    const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'ShippingSettings', 'TaxSettings', 'Email', 'EmailSignatures', 'Marketing', 'Blog', 'BlogPostDetail', 'BusinessCards', 'CardGenerator', 'OAuthApplications']
+    const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'ShippingSettings', 'TaxSettings', 'SocialSettings', 'Email', 'EmailSignatures', 'Marketing', 'Blog', 'BlogPostDetail', 'BusinessCards', 'CardGenerator', 'OAuthApplications']
 
     if (salesScreens.includes(screenName)) return 'Sales'
     if (businessScreens.includes(screenName)) return 'Business'
@@ -167,6 +168,8 @@ export default function AdminNavigator() {
           return <ScreenWrapper><ShippingSettingsScreen navigation={navigation} /></ScreenWrapper>
         case 'TaxSettings':
           return <ScreenWrapper><TaxSettingsScreen navigation={navigation} /></ScreenWrapper>
+        case 'SocialSettings':
+          return <ScreenWrapper><SocialSettingsScreen navigation={navigation} /></ScreenWrapper>
         case 'Services':
           return <ScreenWrapper><ServicesScreen navigation={navigation} /></ScreenWrapper>
         case 'Email':
