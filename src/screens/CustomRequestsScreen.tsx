@@ -28,6 +28,8 @@ interface CustomRequest {
   finish?: string
   color?: string
   quantity: number
+  dimensions?: string
+  detailLevel?: string
   status: string
   estimatedPrice?: number
   createdAt: string

@@ -282,6 +282,12 @@ export default function CustomRequestDetailScreen({ navigation, route }: any) {
               <Text style={styles.specValue}>{request.dimensions}</Text>
             </View>
           )}
+          {request.detailLevel && (
+            <View style={styles.specRow}>
+              <Text style={styles.specLabel}>Design Complexity</Text>
+              <Text style={styles.specValue}>{request.detailLevel}</Text>
+            </View>
+          )}
           {request.scale && (
             <View style={styles.specRow}>
               <Text style={styles.specLabel}>Scale</Text>
