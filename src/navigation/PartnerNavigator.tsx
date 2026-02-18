@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { PartnerDashboardScreen, LeadsScreen, LeadDetailScreen, NewLeadScreen, CommissionsScreen, PayoutsScreen, PayoutSetupScreen, AffiliateLinksScreen, ContractScreen } from '../screens/partner'
+import { PartnerDashboardScreen, LeadsScreen, LeadDetailScreen, NewLeadScreen, CommissionsScreen, PayoutsScreen, PayoutSetupScreen, AffiliateLinksScreen, ContractScreen, RecruitScreen } from '../screens/partner'
 import { AccountScreen, ProfileEditScreen, ChangePasswordScreen } from '../screens/account'
 import { colors, portalColors, spacing, fontSize } from '../theme'
 
@@ -42,7 +42,7 @@ export default function PartnerNavigator() {
   const currentScreen = screenStack[screenStack.length - 1]
 
   const getParentTab = (screenName: string): TabName | null => {
-    const referralScreens = ['Leads', 'LeadDetail', 'NewLead', 'AffiliateLinks']
+    const referralScreens = ['Leads', 'LeadDetail', 'NewLead', 'AffiliateLinks', 'Recruit']
     const earningsScreens = ['Commissions', 'Payouts', 'PayoutSetup']
     const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Contract']
 
@@ -76,6 +76,8 @@ export default function PartnerNavigator() {
           return <ScreenWrapper><PayoutSetupScreen navigation={navigation} /></ScreenWrapper>
         case 'AffiliateLinks':
           return <ScreenWrapper><AffiliateLinksScreen navigation={navigation} /></ScreenWrapper>
+        case 'Recruit':
+          return <ScreenWrapper><RecruitScreen navigation={navigation} /></ScreenWrapper>
         case 'ProfileEdit':
           return <ScreenWrapper><ProfileEditScreen navigation={navigation} /></ScreenWrapper>
         case 'ChangePassword':
@@ -146,7 +148,7 @@ export default function PartnerNavigator() {
 }
 
 function ReferralsTabScreen({ navigation }: { navigation: any }) {
-  const [activeSection, setActiveSection] = useState<'leads' | 'links'>('leads')
+  const [activeSection, setActiveSection] = useState<'leads' | 'links' | 'recruit'>('leads')
 
   return (
     <SafeAreaView style={styles.tabContainer} edges={['top']}>
@@ -163,12 +165,20 @@ function ReferralsTabScreen({ navigation }: { navigation: any }) {
           onPress={() => setActiveSection('links')}
         >
           <Ionicons name="link-outline" size={18} color={activeSection === 'links' ? '#fff' : colors.textMuted} />
-          <Text style={[styles.segmentText, activeSection === 'links' && styles.segmentTextActive]}>Affiliate Links</Text>
+          <Text style={[styles.segmentText, activeSection === 'links' && styles.segmentTextActive]}>Links</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.segment, activeSection === 'recruit' && styles.segmentActiveRecruit]}
+          onPress={() => setActiveSection('recruit')}
+        >
+          <Ionicons name="git-network-outline" size={18} color={activeSection === 'recruit' ? '#fff' : colors.textMuted} />
+          <Text style={[styles.segmentText, activeSection === 'recruit' && styles.segmentTextActive]}>Recruit</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.tabContent}>
         {activeSection === 'leads' && <LeadsScreen navigation={navigation} hideHeader />}
         {activeSection === 'links' && <AffiliateLinksScreen navigation={navigation} hideHeader />}
+        {activeSection === 'recruit' && <RecruitScreen navigation={navigation} hideHeader />}
       </View>
     </SafeAreaView>
   )
@@ -261,6 +271,9 @@ const styles = StyleSheet.create({
   },
   segmentActive: {
     backgroundColor: portalColors.partner,
+  },
+  segmentActiveRecruit: {
+    backgroundColor: '#8b5cf6',
   },
   segmentText: {
     fontSize: fontSize.sm,

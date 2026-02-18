@@ -100,9 +100,16 @@ export function PartnerDashboardScreen({ navigation, hideHeader }: PartnerDashbo
             <View style={[styles.earningsCard, styles.earningsCardHighlight]}>
               <Text style={styles.earningsLabel}>Total Earned</Text>
               <Text style={[styles.earningsValue, { color: colors.success }]}>
-                {formatCurrency(dashboardData?.partner?.totalEarned || partner?.totalEarned || 0)}
+                {formatCurrency(
+                  (dashboardData?.partner?.totalEarned || partner?.totalEarned || 0) +
+                  (dashboardData?.partner?.overrideTotalEarned || 0)
+                )}
               </Text>
-              <Text style={styles.earningsSubtext}>All-time earnings</Text>
+              <Text style={styles.earningsSubtext}>
+                {dashboardData?.partner?.overrideTotalEarned > 0
+                  ? `incl. ${formatCurrency(dashboardData.partner.overrideTotalEarned)} overrides`
+                  : 'All-time earnings'}
+              </Text>
             </View>
             <View style={styles.earningsCard}>
               <Text style={styles.earningsLabel}>Pending</Text>
@@ -221,6 +228,21 @@ export function PartnerDashboardScreen({ navigation, hideHeader }: PartnerDashbo
             </View>
             <Text style={styles.quickLinkTitle}>Contract</Text>
             <Text style={styles.quickLinkSubtext}>{dashboardData?.partner?.contract?.status || 'View'}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.quickLinkItem}
+            onPress={() => navigation.navigate('Recruit')}
+          >
+            <View style={[styles.quickLinkIcon, { backgroundColor: '#8b5cf620' }]}>
+              <Ionicons name="git-network-outline" size={20} color="#8b5cf6" />
+            </View>
+            <Text style={styles.quickLinkTitle}>Recruit</Text>
+            <Text style={styles.quickLinkSubtext}>
+              {dashboardData?.partner?.recruitedPartnersCount > 0
+                ? `${dashboardData.partner.recruitedPartnersCount} recruits`
+                : 'Earn overrides'}
+            </Text>
           </TouchableOpacity>
         </ScrollView>
 

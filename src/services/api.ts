@@ -124,6 +124,17 @@ class ApiService {
     return this.request<{ commissions: any[]; total: number; totals: any }>(`/account/partner/commissions?${searchParams}`)
   }
 
+  async getPartnerRecruitData() {
+    return this.request<{
+      sponsorCode: string
+      recruitLink: string
+      sponsor: { name: string; partnerNumber: string } | null
+      overrideSummary: { total: number; pending: number; paid: number; recruitsCount: number }
+      downline: any[]
+      recentOverrides: any[]
+    }>('/partner/recruit')
+  }
+
   async getPartnerPayouts(params?: { page?: number; status?: string }) {
     const searchParams = new URLSearchParams()
     if (params?.page) searchParams.set('page', params.page.toString())

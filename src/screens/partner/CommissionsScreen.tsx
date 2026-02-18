@@ -8,6 +8,10 @@ import { EmptyState } from '../../components/EmptyState'
 import { colors, portalColors, spacing, borderRadius, fontSize, fontWeight } from '../../theme'
 import { Commission } from '../../types'
 
+const PURPLE = '#8b5cf6'
+
+type CommissionTab = 'service' | 'override'
+
 interface CommissionsScreenProps {
   navigation: {
     navigate: (screen: string, params?: any) => void
@@ -17,8 +21,10 @@ interface CommissionsScreenProps {
 }
 
 export function CommissionsScreen({ navigation, hideHeader }: CommissionsScreenProps) {
+  const [tab, setTab] = useState<CommissionTab>('service')
   const [commissions, setCommissions] = useState<Commission[]>([])
-  const [totals, setTotals] = useState({ pending: 0, paid: 0, total: 0 })
+  const [overrideCommissions, setOverrideCommissions] = useState<any[]>([])
+  const [totals, setTotals] = useState({ pending: 0, paid: 0, total: 0, overrideTotal: 0, overridePending: 0 })
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [activeFilter, setActiveFilter] = useState('ALL')
@@ -27,8 +33,14 @@ export function CommissionsScreen({ navigation, hideHeader }: CommissionsScreenP
     try {
       const params = activeFilter === 'ALL' ? {} : { status: activeFilter }
       const data = await api.getPartnerCommissions(params)
-      setCommissions(data.commissions)
-      setTotals(data.totals || { pending: 0, paid: 0, total: 0 })
+      setCommissions(data.commissions || [])
+      setOverrideCommissions((data as any).overrideCommissions || [])
+      const baseTotals = data.totals || { pending: 0, paid: 0, total: 0 }
+      setTotals({
+        ...baseTotals,
+        overrideTotal: (data as any).totals?.overrideTotal || 0,
+        overridePending: (data as any).totals?.overridePending || 0,
+      })
     } catch (error) {
       console.error('Failed to fetch commissions:', error)
     } finally {
@@ -46,22 +58,20 @@ export function CommissionsScreen({ navigation, hideHeader }: CommissionsScreenP
     fetchCommissions()
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount)
-  }
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount)
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
     })
-  }
 
-  const renderCommission = ({ item }: { item: Commission }) => (
+  const grandTotal = totals.total + totals.overrideTotal
+  const grandPending = totals.pending + totals.overridePending
+
+  const renderServiceCommission = ({ item }: { item: Commission }) => (
     <View style={styles.commissionCard}>
       <View style={styles.commissionHeader}>
         <View style={styles.typeIcon}>
@@ -82,15 +92,55 @@ export function CommissionsScreen({ navigation, hideHeader }: CommissionsScreenP
         <View style={styles.commissionInfo}>
           <Text style={styles.commissionType}>{item.type.replace(/_/g, ' ')}</Text>
           <Text style={styles.commissionDate}>{formatDate(item.createdAt)}</Text>
+          {item.description && (
+            <Text style={styles.commissionDescription}>{item.description}</Text>
+          )}
         </View>
         <View style={styles.commissionRight}>
-          <Text style={styles.commissionAmount}>{formatCurrency(item.amount)}</Text>
+          <Text style={[styles.commissionAmount, { color: colors.success }]}>
+            {formatCurrency(Number(item.amount))}
+          </Text>
           <StatusBadge status={getStatusType(item.status)} label={item.status} size="sm" />
         </View>
       </View>
-      {item.description && (
-        <Text style={styles.commissionDescription}>{item.description}</Text>
-      )}
+    </View>
+  )
+
+  const renderOverrideCommission = ({ item }: { item: any }) => (
+    <View style={styles.commissionCard}>
+      <View style={styles.commissionHeader}>
+        <View style={[styles.typeIcon, { backgroundColor: `${PURPLE}20` }]}>
+          <Ionicons name="git-network-outline" size={20} color={PURPLE} />
+        </View>
+        <View style={styles.commissionInfo}>
+          <View style={styles.overrideNameRow}>
+            <Text style={styles.commissionType}>
+              {item.downlinePartner?.name || 'Partner'}
+            </Text>
+            <View style={[
+              styles.levelBadge,
+              { backgroundColor: item.level === 1 ? `${portalColors.partner}20` : `${PURPLE}20` },
+            ]}>
+              <Text style={[
+                styles.levelBadgeText,
+                { color: item.level === 1 ? portalColors.partner : PURPLE },
+              ]}>
+                L{item.level}
+              </Text>
+            </View>
+          </View>
+          <Text style={styles.commissionDate}>
+            {Number(item.rate)}% of {formatCurrency(Number(item.baseAmount))} commission
+          </Text>
+          <Text style={styles.commissionDate}>{formatDate(item.createdAt)}</Text>
+        </View>
+        <View style={styles.commissionRight}>
+          <Text style={[styles.commissionAmount, { color: PURPLE }]}>
+            {formatCurrency(Number(item.amount))}
+          </Text>
+          <StatusBadge status={getStatusType(item.status)} label={item.status} size="sm" />
+        </View>
+      </View>
     </View>
   )
 
@@ -108,24 +158,49 @@ export function CommissionsScreen({ navigation, hideHeader }: CommissionsScreenP
         </View>
       )}
 
-      {/* Summary */}
+      {/* Grand summary */}
       <View style={styles.summary}>
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>Pending</Text>
-          <Text style={[styles.summaryValue, { color: colors.warning }]}>
-            {formatCurrency(totals.pending)}
-          </Text>
-        </View>
-        <View style={styles.summaryDivider} />
         <View style={styles.summaryItem}>
           <Text style={styles.summaryLabel}>Total Earned</Text>
           <Text style={[styles.summaryValue, { color: colors.success }]}>
-            {formatCurrency(totals.total)}
+            {formatCurrency(grandTotal)}
           </Text>
+          <Text style={styles.summarySubtext}>All sources</Text>
+        </View>
+        <View style={styles.summaryDivider} />
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryLabel}>Pending</Text>
+          <Text style={[styles.summaryValue, { color: colors.warning }]}>
+            {formatCurrency(grandPending)}
+          </Text>
+          <Text style={styles.summarySubtext}>Awaiting payout</Text>
         </View>
       </View>
 
-      {/* Filter */}
+      {/* Service / Override tab toggle */}
+      <View style={styles.tabToggle}>
+        <TouchableOpacity
+          style={[styles.tabButton, tab === 'service' && styles.tabButtonActive]}
+          onPress={() => setTab('service')}
+        >
+          <Text style={[styles.tabButtonText, tab === 'service' && styles.tabButtonTextActive]}>
+            Service ({commissions.length})
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tabButton, tab === 'override' && styles.tabButtonActiveOverride]}
+          onPress={() => setTab('override')}
+        >
+          <Text style={[
+            styles.tabButtonText,
+            tab === 'override' && styles.tabButtonTextActiveOverride,
+          ]}>
+            Overrides ({overrideCommissions.length})
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Status filter */}
       <View style={styles.filterContainer}>
         <FlatList
           horizontal
@@ -134,7 +209,10 @@ export function CommissionsScreen({ navigation, hideHeader }: CommissionsScreenP
           contentContainerStyle={styles.filterList}
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={[styles.filterChip, activeFilter === item && styles.filterChipActive]}
+              style={[
+                styles.filterChip,
+                activeFilter === item && (tab === 'override' ? styles.filterChipActiveOverride : styles.filterChipActive),
+              ]}
               onPress={() => setActiveFilter(item)}
             >
               <Text style={[styles.filterText, activeFilter === item && styles.filterTextActive]}>
@@ -146,24 +224,49 @@ export function CommissionsScreen({ navigation, hideHeader }: CommissionsScreenP
         />
       </View>
 
-      <FlatList
-        data={commissions}
-        renderItem={renderCommission}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={portalColors.partner} />
-        }
-        ListEmptyComponent={
-          !loading ? (
-            <EmptyState
-              icon="cash-outline"
-              title="No commissions yet"
-              description="Your commissions will appear here once you earn them"
-            />
-          ) : null
-        }
-      />
+      {/* Service commissions list */}
+      {tab === 'service' && (
+        <FlatList
+          data={commissions}
+          renderItem={renderServiceCommission}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={portalColors.partner} />
+          }
+          ListEmptyComponent={
+            !loading ? (
+              <EmptyState
+                icon="cash-outline"
+                title="No service commissions yet"
+                description="Commissions are created when your leads convert to clients"
+              />
+            ) : null
+          }
+        />
+      )}
+
+      {/* Override commissions list */}
+      {tab === 'override' && (
+        <FlatList
+          data={overrideCommissions}
+          renderItem={renderOverrideCommission}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={PURPLE} />
+          }
+          ListEmptyComponent={
+            !loading ? (
+              <EmptyState
+                icon="git-network-outline"
+                title="No override commissions yet"
+                description="Recruit partners to earn overrides on their commissions"
+              />
+            ) : null
+          }
+        />
+      )}
     </SafeAreaView>
   )
 }
@@ -216,10 +319,48 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
   },
+  summarySubtext: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
   summaryDivider: {
     width: 1,
     backgroundColor: colors.border,
     marginHorizontal: spacing.lg,
+  },
+  tabToggle: {
+    flexDirection: 'row',
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.sm,
+  },
+  tabButtonActive: {
+    backgroundColor: portalColors.partner,
+  },
+  tabButtonActiveOverride: {
+    backgroundColor: PURPLE,
+  },
+  tabButtonText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.textMuted,
+  },
+  tabButtonTextActive: {
+    color: colors.text,
+  },
+  tabButtonTextActiveOverride: {
+    color: colors.text,
   },
   filterContainer: {
     borderBottomWidth: 1,
@@ -238,6 +379,9 @@ const styles = StyleSheet.create({
   },
   filterChipActive: {
     backgroundColor: portalColors.partner,
+  },
+  filterChipActiveOverride: {
+    backgroundColor: PURPLE,
   },
   filterText: {
     fontSize: fontSize.sm,
@@ -259,7 +403,7 @@ const styles = StyleSheet.create({
   },
   commissionHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   typeIcon: {
     width: 40,
@@ -273,6 +417,21 @@ const styles = StyleSheet.create({
   commissionInfo: {
     flex: 1,
   },
+  overrideNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flexWrap: 'wrap',
+  },
+  levelBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+  },
+  levelBadgeText: {
+    fontSize: 10,
+    fontWeight: fontWeight.bold,
+  },
   commissionType: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.medium,
@@ -282,20 +441,20 @@ const styles = StyleSheet.create({
   commissionDate: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-  },
-  commissionRight: {
-    alignItems: 'flex-end',
-    gap: spacing.xs,
-  },
-  commissionAmount: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
-    color: colors.success,
+    marginTop: 2,
   },
   commissionDescription: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginTop: spacing.sm,
-    paddingLeft: 52,
+    marginTop: spacing.xs,
+  },
+  commissionRight: {
+    alignItems: 'flex-end',
+    gap: spacing.xs,
+    marginLeft: spacing.sm,
+  },
+  commissionAmount: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
   },
 })
