@@ -1460,6 +1460,17 @@ class ApiService {
     })
   }
 
+  async getAdminMLMConfig() {
+    return this.request<{ levels: Array<{ id: string; level: number; label: string; rate: number; isActive: boolean }> }>('/admin/partners/mlm-config')
+  }
+
+  async updateAdminMLMConfig(level: number, data: { rate?: number; isActive?: boolean }) {
+    return this.request<{ success: boolean; level: any }>('/admin/partners/mlm-config', {
+      method: 'PUT',
+      body: JSON.stringify({ level, ...data }),
+    })
+  }
+
   async getAdminPartnerLeads(partnerId: string, params?: { page?: number; status?: string }) {
     const searchParams = new URLSearchParams()
     if (params?.page) searchParams.set('page', params.page.toString())

@@ -65,6 +65,7 @@ import CustomerDesignDetailScreen from '../screens/CustomerDesignDetailScreen'
 import EmailSignaturesScreen from '../screens/admin/EmailSignaturesScreen'
 import { PartnerApplicationsScreen } from '../screens/admin/PartnerApplicationsScreen'
 import { PartnerInquiriesScreen } from '../screens/admin/PartnerInquiriesScreen'
+import { MLMConfigScreen } from '../screens/admin/MLMConfigScreen'
 import InventoryScreen from '../screens/InventoryScreen'
 import VariantsBulkEditScreen from '../screens/VariantsBulkEditScreen'
 import { PrintQueueScreen } from '../screens/admin/PrintQueueScreen'
@@ -114,7 +115,7 @@ export default function AdminNavigator() {
     // Business: Requests (Inquiries, 3D Prints) + Packages + Portfolio + Finance (Expenses, Reports) + Analytics + Operations (Print Queue)
     const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Portfolio', 'PortfolioDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills', 'Documents', 'PrintQueue']
     // People: Clients, Partners, Team, Affiliates, User Affiliates, Users
-    const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'CustomerDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail', 'UserAffiliates', 'UserAffiliateDetail', 'PartnerApplications', 'PartnerInquiries']
+    const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'CustomerDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail', 'UserAffiliates', 'UserAffiliateDetail', 'PartnerApplications', 'PartnerInquiries', 'MLMConfig']
     // Account: Profile, Email, Settings, Notifications, Marketing, Blog, Business Cards, Email Signatures, OAuth
     const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'ShippingSettings', 'TaxSettings', 'SocialSettings', 'Email', 'EmailSignatures', 'Marketing', 'Blog', 'BlogPostDetail', 'BusinessCards', 'CardGenerator', 'OAuthApplications']
 
@@ -256,6 +257,8 @@ export default function AdminNavigator() {
           return <ScreenWrapper><PartnerApplicationsScreen navigation={navigation} /></ScreenWrapper>
         case 'PartnerInquiries':
           return <ScreenWrapper><PartnerInquiriesScreen navigation={navigation} /></ScreenWrapper>
+        case 'MLMConfig':
+          return <ScreenWrapper><MLMConfigScreen navigation={navigation} /></ScreenWrapper>
         case 'OAuthApplications':
           return <ScreenWrapper><OAuthApplicationsScreen navigation={navigation} /></ScreenWrapper>
         case 'Inventory':
@@ -595,6 +598,18 @@ function PeopleTabScreen({ navigation }: { navigation: any }) {
   return (
     <SafeAreaView style={styles.tabContainer} edges={['top']}>
       <View style={styles.segmentWrapper}>
+        {['partners', 'applications', 'inquiries', 'leads'].includes(activeSection) && (
+          <View style={styles.peopleTabActions}>
+            <Text style={styles.peopleTabActionsLabel}>Partner Tools</Text>
+            <TouchableOpacity
+              style={styles.mlmConfigButton}
+              onPress={() => navigation.navigate('MLMConfig')}
+            >
+              <Ionicons name="git-network-outline" size={14} color="#8b5cf6" />
+              <Text style={styles.mlmConfigButtonText}>MLM Config</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segmentedControlWide}>
           <TouchableOpacity
             style={[styles.segmentPill, activeSection === 'users' && styles.segmentPillActive]}
@@ -747,12 +762,36 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   segmentWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
     gap: spacing.sm,
+  },
+  peopleTabActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  peopleTabActionsLabel: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+  },
+  mlmConfigButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    backgroundColor: '#8b5cf620',
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: '#8b5cf640',
+  },
+  mlmConfigButtonText: {
+    fontSize: 11,
+    fontWeight: fontWeight.medium,
+    color: '#8b5cf6',
   },
   segmentedControl: {
     flex: 1,

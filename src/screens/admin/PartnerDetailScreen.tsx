@@ -286,13 +286,17 @@ export function PartnerDetailScreen({ navigation, route }: PartnerDetailScreenPr
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Total Earned</Text>
             <Text style={[styles.statValue, { color: colors.success }]}>
-              {formatCurrency(Number(partner.totalEarned))}
+              {formatCurrency(
+                Number(partner.totalEarned) + Number(partner.overrideTotalEarned || 0)
+              )}
             </Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Pending</Text>
             <Text style={[styles.statValue, { color: colors.warning }]}>
-              {formatCurrency(Number(partner.pendingAmount))}
+              {formatCurrency(
+                Number(partner.pendingAmount) + Number(partner.overridePendingAmount || 0)
+              )}
             </Text>
           </View>
           <View style={styles.statCard}>
@@ -305,6 +309,20 @@ export function PartnerDetailScreen({ navigation, route }: PartnerDetailScreenPr
             <Text style={styles.statLabel}>Leads</Text>
             <Text style={styles.statValue}>{partner.leads?.length || 0}</Text>
           </View>
+          {Number(partner.overrideTotalEarned || 0) > 0 && (
+            <View style={[styles.statCard, { borderColor: '#8b5cf650' }]}>
+              <Text style={styles.statLabel}>Override Earned</Text>
+              <Text style={[styles.statValue, { color: '#8b5cf6' }]}>
+                {formatCurrency(Number(partner.overrideTotalEarned))}
+              </Text>
+            </View>
+          )}
+          {(partner.recruitedPartners?.length || 0) > 0 && (
+            <View style={styles.statCard}>
+              <Text style={styles.statLabel}>Recruits</Text>
+              <Text style={styles.statValue}>{partner.recruitedPartners.length}</Text>
+            </View>
+          )}
         </View>
 
         {/* Commission Rates */}
@@ -327,6 +345,55 @@ export function PartnerDetailScreen({ navigation, route }: PartnerDetailScreenPr
             )}
           </View>
         </Card>
+
+        {/* MLM / Recruit Info */}
+        {(partner.sponsorCode || partner.sponsor || (partner.recruitedPartners?.length || 0) > 0) && (
+          <Card style={styles.section}>
+            <Text style={styles.sectionTitle}>Recruitment</Text>
+
+            {/* Sponsor code */}
+            {partner.sponsorCode && (
+              <View style={styles.mlmRow}>
+                <Text style={styles.mlmLabel}>Sponsor Code</Text>
+                <Text style={styles.mlmCode}>{partner.sponsorCode}</Text>
+              </View>
+            )}
+
+            {/* Who recruited this partner */}
+            {partner.sponsor && (
+              <View style={styles.mlmRow}>
+                <Text style={styles.mlmLabel}>Recruited By</Text>
+                <Text style={styles.mlmValue}>
+                  {partner.sponsor.name}{' '}
+                  <Text style={styles.mlmSubValue}>({partner.sponsor.partnerNumber})</Text>
+                </Text>
+              </View>
+            )}
+
+            {/* Partners this partner recruited */}
+            {(partner.recruitedPartners?.length || 0) > 0 && (
+              <View style={styles.mlmRecruitSection}>
+                <Text style={styles.mlmLabel}>Recruits ({partner.recruitedPartners.length})</Text>
+                {partner.recruitedPartners.slice(0, 5).map((recruit: any) => (
+                  <TouchableOpacity
+                    key={recruit.id}
+                    style={styles.recruitItem}
+                    onPress={() => navigation.navigate('PartnerDetail', { id: recruit.id })}
+                  >
+                    <View style={styles.recruitInfo}>
+                      <Text style={styles.recruitName}>{recruit.name}</Text>
+                      <Text style={styles.recruitNumber}>{recruit.partnerNumber}</Text>
+                    </View>
+                    <View style={styles.recruitRight}>
+                      <Badge text={recruit.status} variant={recruit.status === 'ACTIVE' ? 'success' : 'default'} />
+                      <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </Card>
+        )}
 
         {/* Payment Methods */}
         {(partner.zelleEmail || partner.zellePhone || partner.venmoUsername || partner.cashAppTag) && (
@@ -846,6 +913,62 @@ const styles = StyleSheet.create({
   paymentValue: {
     fontSize: fontSize.sm,
     color: colors.text,
+  },
+  mlmRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  mlmLabel: {
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
+  },
+  mlmCode: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    color: '#8b5cf6',
+    letterSpacing: 2,
+  },
+  mlmValue: {
+    fontSize: fontSize.sm,
+    color: colors.text,
+    fontWeight: fontWeight.medium,
+  },
+  mlmSubValue: {
+    fontWeight: fontWeight.normal,
+    color: colors.textMuted,
+  },
+  mlmRecruitSection: {
+    marginTop: spacing.sm,
+  },
+  recruitItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  recruitInfo: {
+    flex: 1,
+  },
+  recruitName: {
+    fontSize: fontSize.sm,
+    color: colors.text,
+    fontWeight: fontWeight.medium,
+  },
+  recruitNumber: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  recruitRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   leadItem: {
     flexDirection: 'row',
