@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { api } from '../../services/api'
 import { colors, portalColors, spacing, borderRadius, fontSize, fontWeight } from '../../theme'
+import { EmptyState } from '../../components/EmptyState'
 
 const PURPLE = colors.purple
 
@@ -277,13 +278,7 @@ export function RecruitScreen({ navigation, hideHeader }: RecruitScreenProps) {
 
         {/* Empty state */}
         {!loading && (data?.downline?.length || 0) === 0 && (
-          <View style={styles.emptyState}>
-            <Ionicons name="people-outline" size={48} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>No recruits yet</Text>
-            <Text style={styles.emptyDesc}>
-              Share your recruitment link to start building your team and earning override commissions.
-            </Text>
-          </View>
+          <EmptyState icon="people-outline" title="No recruits yet" />
         )}
 
         <View style={{ height: 32 }} />

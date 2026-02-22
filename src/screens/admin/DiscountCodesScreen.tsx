@@ -20,6 +20,7 @@ import { Card } from '../../components/Card'
 import { Badge } from '../../components/Badge'
 import { api } from '../../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../theme'
+import { EmptyState } from '../../components/EmptyState'
 
 interface DiscountCode {
   id: string
@@ -592,13 +593,7 @@ export function DiscountCodesScreen({ navigation, hideHeader }: { navigation: an
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         ListEmptyComponent={
           !loading ? (
-            <View style={styles.empty}>
-              <Ionicons name="pricetags-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyText}>No discount codes found</Text>
-              <Text style={styles.emptySubtext}>
-                {search ? 'Try adjusting your search' : 'Tap + to create your first discount code'}
-              </Text>
-            </View>
+            <EmptyState icon="pricetags-outline" title="No discount codes found" />
           ) : (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />

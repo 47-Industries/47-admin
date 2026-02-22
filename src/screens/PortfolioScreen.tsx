@@ -6,6 +6,7 @@ import { Badge } from '../components/Badge'
 import { CachedImage } from '../components/CachedImage'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
+import { EmptyState } from '../components/EmptyState'
 
 const CATEGORY_LABELS: Record<string, string> = {
   WEB_DEVELOPMENT: 'Web Dev',
@@ -238,17 +239,7 @@ export default function PortfolioScreen({ navigation, hideHeader }: { navigation
         }
         ListEmptyComponent={
           !loading ? (
-            <View style={styles.empty}>
-              <Ionicons name="images-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyText}>No portfolio projects</Text>
-              <TouchableOpacity
-                style={styles.emptyButton}
-                onPress={() => navigation.navigate('PortfolioDetail', { isNew: true })}
-              >
-                <Ionicons name="add" size={18} color={colors.primary} />
-                <Text style={styles.emptyButtonText}>Add Project</Text>
-              </TouchableOpacity>
-            </View>
+            <EmptyState icon="images-outline" title="No portfolio projects" />
           ) : null
         }
       />

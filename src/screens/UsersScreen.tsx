@@ -21,6 +21,7 @@ import { Badge } from '../components/Badge'
 import { CachedImage } from '../components/CachedImage'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
+import { EmptyState } from '../components/EmptyState'
 import { User } from '../types'
 
 type RoleFilter = 'CUSTOMER' | 'ADMIN' | 'SUPER_ADMIN'
@@ -373,12 +374,7 @@ export function UsersScreen({ navigation, hideHeader }: { navigation: any; hideH
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
           !loading ? (
-            <View style={styles.empty}>
-              <Ionicons name="people-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyText}>
-                {debouncedSearch ? 'No users found matching your search' : 'No users found'}
-              </Text>
-            </View>
+            <EmptyState icon="people-outline" title={debouncedSearch ? 'No users found matching your search' : 'No users found'} />
           ) : null
         }
       />

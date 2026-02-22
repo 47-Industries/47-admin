@@ -5,6 +5,7 @@ import { WebView } from 'react-native-webview'
 import { Card } from '../components/Card'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
+import { EmptyState } from '../components/EmptyState'
 
 // Hardcoded folders like web app
 const FOLDERS = [
@@ -382,10 +383,7 @@ export default function EmailScreen({ navigation, hideHeader }: { navigation: an
         }
         ListEmptyComponent={
           !loading ? (
-            <View style={styles.empty}>
-              <Ionicons name="mail-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyText}>No emails in {selectedFolder}</Text>
-            </View>
+            <EmptyState icon="mail-outline" title={`No emails in ${selectedFolder}`} />
           ) : (
             <View style={styles.loading}>
               <ActivityIndicator color={colors.primary} />

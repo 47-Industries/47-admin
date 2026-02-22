@@ -19,6 +19,7 @@ import { Card } from '../../components/Card'
 import { Badge } from '../../components/Badge'
 import { api } from '../../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../theme'
+import { EmptyState } from '../../components/EmptyState'
 
 interface OAuthApp {
   id: string
@@ -554,18 +555,7 @@ export function OAuthApplicationsScreen({ navigation, hideHeader }: { navigation
           </View>
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <View style={styles.emptyIcon}>
-              <Ionicons name="key-outline" size={48} color={colors.textMuted} />
-            </View>
-            <Text style={styles.emptyTitle}>No OAuth Applications</Text>
-            <Text style={styles.emptySubtitle}>
-              Create an OAuth application to allow external services to authenticate using 47 Industries accounts
-            </Text>
-            <TouchableOpacity onPress={openCreateModal} style={styles.emptyCreateBtn}>
-              <Text style={styles.emptyCreateBtnText}>Create First Application</Text>
-            </TouchableOpacity>
-          </View>
+          <EmptyState icon="key-outline" title="No OAuth Applications" />
         }
       />
 

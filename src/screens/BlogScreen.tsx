@@ -6,6 +6,7 @@ import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
+import { EmptyState } from '../components/EmptyState'
 
 interface BlogPost {
   id: string
@@ -293,10 +294,7 @@ export default function BlogScreen({ navigation, hideHeader }: { navigation: any
           }
           ListEmptyComponent={
             !loading ? (
-              <View style={styles.empty}>
-                <Ionicons name="document-text-outline" size={48} color={colors.textMuted} />
-                <Text style={styles.emptyText}>No blog posts</Text>
-              </View>
+              <EmptyState icon="document-text-outline" title="No blog posts" />
             ) : null
           }
         />
@@ -313,10 +311,7 @@ export default function BlogScreen({ navigation, hideHeader }: { navigation: any
           }
           ListEmptyComponent={
             !loading ? (
-              <View style={styles.empty}>
-                <Ionicons name="folder-outline" size={48} color={colors.textMuted} />
-                <Text style={styles.emptyText}>No categories</Text>
-              </View>
+              <EmptyState icon="folder-outline" title="No categories" />
             ) : null
           }
         />
@@ -333,10 +328,7 @@ export default function BlogScreen({ navigation, hideHeader }: { navigation: any
           }
           ListEmptyComponent={
             !loading ? (
-              <View style={styles.empty}>
-                <Ionicons name="mail-outline" size={48} color={colors.textMuted} />
-                <Text style={styles.emptyText}>No email campaigns</Text>
-              </View>
+              <EmptyState icon="mail-outline" title="No email campaigns" />
             ) : null
           }
         />

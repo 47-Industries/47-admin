@@ -5,6 +5,7 @@ import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
+import { EmptyState } from '../components/EmptyState'
 import { Order } from '../types'
 
 const statusColors: Record<string, 'default' | 'success' | 'warning' | 'error' | 'primary'> = {
@@ -170,10 +171,7 @@ export function OrdersScreen({ navigation, hideHeader }: { navigation: any; hide
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
           !loading ? (
-            <View style={styles.empty}>
-              <Ionicons name="receipt-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyText}>No orders found</Text>
-            </View>
+            <EmptyState icon="receipt-outline" title="No orders found" />
           ) : null
         }
       />

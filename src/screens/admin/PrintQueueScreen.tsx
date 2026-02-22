@@ -20,6 +20,7 @@ import { Button } from '../../components/Button'
 import { CachedImage } from '../../components/CachedImage'
 import { api } from '../../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../theme'
+import { EmptyState } from '../../components/EmptyState'
 
 // Print Queue Job interface
 interface PrintQueueJob {
@@ -409,15 +410,7 @@ export function PrintQueueScreen({ navigation, hideHeader }: { navigation: any; 
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
           }
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <View style={styles.emptyIcon}>
-                <Ionicons name="print-outline" size={40} color={colors.textMuted} />
-              </View>
-              <Text style={styles.emptyTitle}>No jobs found</Text>
-              <Text style={styles.emptySubtitle}>
-                {filter !== 'all' ? `No ${filter} jobs in the queue` : 'The print queue is empty'}
-              </Text>
-            </View>
+            <EmptyState icon="print-outline" title="No jobs found" />
           }
         />
       )}

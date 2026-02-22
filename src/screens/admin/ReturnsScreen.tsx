@@ -18,6 +18,7 @@ import { Card } from '../../components/Card'
 import { Badge } from '../../components/Badge'
 import { api } from '../../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../theme'
+import { EmptyState } from '../../components/EmptyState'
 
 // Status configuration
 const statusColors: Record<string, 'default' | 'success' | 'warning' | 'error' | 'primary'> = {
@@ -662,13 +663,7 @@ export default function ReturnsScreen({ navigation, hideHeader }: { navigation: 
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         ListEmptyComponent={
           !loading ? (
-            <View style={styles.empty}>
-              <Ionicons name="return-down-back-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyText}>No returns found</Text>
-              <Text style={styles.emptySubtext}>
-                {search || statusFilter ? 'Try adjusting your filters' : 'Return requests will appear here'}
-              </Text>
-            </View>
+            <EmptyState icon="return-down-back-outline" title="No returns found" />
           ) : (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />

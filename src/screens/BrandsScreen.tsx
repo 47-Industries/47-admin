@@ -18,6 +18,7 @@ import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
+import { EmptyState } from '../components/EmptyState'
 
 interface Brand {
   id: string
@@ -310,11 +311,7 @@ export function BrandsScreen({ navigation, hideHeader }: { navigation: any; hide
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons name="pricetags-outline" size={48} color={colors.textMuted} />
-            <Text style={styles.emptyText}>No brands found</Text>
-            <Button title="Add Brand" onPress={openCreateModal} style={styles.emptyButton} />
-          </View>
+          <EmptyState icon="pricetags-outline" title="No brands found" />
         }
       />
 

@@ -5,6 +5,7 @@ import { Card } from '../../components/Card'
 import { Badge } from '../../components/Badge'
 import { api } from '../../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../theme'
+import { EmptyState } from '../../components/EmptyState'
 
 interface ExternalOrder {
   id: string
@@ -228,11 +229,7 @@ export function ExternalOrdersScreen({ navigation, hideHeader }: { navigation: a
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
           !loading ? (
-            <View style={styles.empty}>
-              <Ionicons name="storefront-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyText}>No external orders found</Text>
-              <Text style={styles.emptySubtext}>Orders from BookFade will appear here</Text>
-            </View>
+            <EmptyState icon="storefront-outline" title="No external orders found" />
           ) : null
         }
       />

@@ -5,6 +5,7 @@ import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
+import { EmptyState } from '../components/EmptyState'
 
 const CATEGORY_LABELS: Record<string, string> = {
   WEB_DEVELOPMENT: 'Web Dev',
@@ -178,17 +179,7 @@ export default function ServicesScreen({ navigation, hideHeader }: { navigation:
         }
         ListEmptyComponent={
           !loading ? (
-            <View style={styles.empty}>
-              <Ionicons name="cube-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyText}>No service packages</Text>
-              <TouchableOpacity
-                style={styles.emptyButton}
-                onPress={() => navigation.navigate('ServicePackageDetail', { isNew: true })}
-              >
-                <Ionicons name="add" size={18} color={colors.primary} />
-                <Text style={styles.emptyButtonText}>Create Package</Text>
-              </TouchableOpacity>
-            </View>
+            <EmptyState icon="cube-outline" title="No service packages" />
           ) : null
         }
       />

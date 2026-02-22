@@ -19,6 +19,7 @@ import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
+import { EmptyState } from '../components/EmptyState'
 
 interface Collection {
   id: string
@@ -467,11 +468,7 @@ export function CollectionsScreen({ navigation, hideHeader }: { navigation: any;
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons name="layers-outline" size={48} color={colors.textMuted} />
-            <Text style={styles.emptyText}>No collections found</Text>
-            <Button title="Create Collection" onPress={openCreateModal} style={styles.emptyButton} />
-          </View>
+          <EmptyState icon="layers-outline" title="No collections found" />
         }
       />
 

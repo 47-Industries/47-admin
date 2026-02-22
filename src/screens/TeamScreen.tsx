@@ -15,6 +15,7 @@ import { Badge } from '../components/Badge'
 import { ImageViewer } from '../components/ImageViewer'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
+import { EmptyState } from '../components/EmptyState'
 
 interface TeamMember {
   id: string
@@ -322,15 +323,7 @@ export function TeamScreen({ navigation, hideHeader }: { navigation: any; hideHe
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={
           !loading ? (
-            <View style={styles.empty}>
-              <Ionicons name="people-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyText}>No team members found</Text>
-              {(search || statusFilter !== 'ALL') && (
-                <Text style={styles.emptySubtext}>
-                  Try adjusting your search or filters
-                </Text>
-              )}
-            </View>
+            <EmptyState icon="people-outline" title="No team members found" />
           ) : null
         }
       />

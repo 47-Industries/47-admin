@@ -6,6 +6,7 @@ import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
+import { EmptyState } from '../components/EmptyState'
 import { ServiceInquiry } from '../types'
 
 const statusColors: Record<string, 'default' | 'success' | 'warning' | 'error' | 'primary'> = {
@@ -171,10 +172,7 @@ export function InquiriesScreen({ navigation, hideHeader }: { navigation: any; h
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
           !loading ? (
-            <View style={styles.empty}>
-              <Ionicons name="chatbubbles-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyText}>No inquiries yet</Text>
-            </View>
+            <EmptyState icon="chatbubbles-outline" title="No inquiries yet" />
           ) : null
         }
       />

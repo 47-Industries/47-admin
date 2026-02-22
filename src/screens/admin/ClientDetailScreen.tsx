@@ -22,6 +22,7 @@ import { Badge } from '../../components/Badge'
 import { Button } from '../../components/Button'
 import { api } from '../../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../theme'
+import { EmptyState } from '../../components/EmptyState'
 
 interface ClientDetailScreenProps {
   navigation: {
@@ -752,13 +753,7 @@ export function ClientDetailScreen({ navigation, route }: ClientDetailScreenProp
       </View>
 
       {projects.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="briefcase-outline" size={48} color={colors.textMuted} />
-          <Text style={styles.emptyStateText}>No projects yet</Text>
-          <TouchableOpacity style={styles.emptyStateButton} onPress={() => openProjectModal()}>
-            <Text style={styles.emptyStateButtonText}>Create First Project</Text>
-          </TouchableOpacity>
-        </View>
+        <EmptyState icon="briefcase-outline" title="No projects yet" />
       ) : (
         projects.map((project) => (
           <Card key={project.id} style={styles.projectCard}>
@@ -834,13 +829,7 @@ export function ClientDetailScreen({ navigation, route }: ClientDetailScreenProp
       </View>
 
       {contacts.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="people-outline" size={48} color={colors.textMuted} />
-          <Text style={styles.emptyStateText}>No contacts yet</Text>
-          <TouchableOpacity style={styles.emptyStateButton} onPress={() => openContactModal()}>
-            <Text style={styles.emptyStateButtonText}>Add First Contact</Text>
-          </TouchableOpacity>
-        </View>
+        <EmptyState icon="people-outline" title="No contacts yet" />
       ) : (
         contacts.map((contact) => (
           <Card key={contact.id} style={styles.contactCard}>
@@ -914,13 +903,7 @@ export function ClientDetailScreen({ navigation, route }: ClientDetailScreenProp
       </View>
 
       {notes.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="chatbubble-outline" size={48} color={colors.textMuted} />
-          <Text style={styles.emptyStateText}>No notes yet</Text>
-          <TouchableOpacity style={styles.emptyStateButton} onPress={() => openNoteModal()}>
-            <Text style={styles.emptyStateButtonText}>Add First Note</Text>
-          </TouchableOpacity>
-        </View>
+        <EmptyState icon="chatbubble-outline" title="No notes yet" />
       ) : (
         notes.map((note) => (
           <Card key={note.id} style={styles.noteCard}>
@@ -958,10 +941,7 @@ export function ClientDetailScreen({ navigation, route }: ClientDetailScreenProp
       </View>
 
       {activities.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="time-outline" size={48} color={colors.textMuted} />
-          <Text style={styles.emptyStateText}>No activity recorded yet</Text>
-        </View>
+        <EmptyState icon="time-outline" title="No activity recorded yet" />
       ) : (
         <View style={styles.activityTimeline}>
           {activities.map((activity, index) => (

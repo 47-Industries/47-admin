@@ -21,6 +21,7 @@ import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
+import { EmptyState } from '../components/EmptyState'
 
 interface CustomerDetailScreenProps {
   navigation: {
@@ -346,10 +347,7 @@ export default function CustomerDetailScreen({ navigation, route }: CustomerDeta
         {activeTab === 'orders' && (
           <Card style={styles.section}>
             {!customer.orders || customer.orders.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="receipt-outline" size={36} color={colors.textMuted} />
-                <Text style={styles.emptyText}>No orders yet</Text>
-              </View>
+              <EmptyState icon="receipt-outline" title="No orders yet" />
             ) : (
               customer.orders.map((order) => (
                 <TouchableOpacity
@@ -384,10 +382,7 @@ export default function CustomerDetailScreen({ navigation, route }: CustomerDeta
         {activeTab === 'activity' && (
           <Card style={styles.section}>
             {!customer.activityLog || customer.activityLog.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="time-outline" size={36} color={colors.textMuted} />
-                <Text style={styles.emptyText}>No activity recorded</Text>
-              </View>
+              <EmptyState icon="time-outline" title="No activity recorded" />
             ) : (
               customer.activityLog.map((entry) => (
                 <View key={entry.id} style={styles.activityItem}>

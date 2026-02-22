@@ -16,6 +16,7 @@ import { Badge } from '../../components/Badge'
 import { StatCard } from '../../components/StatCard'
 import { api } from '../../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../theme'
+import { EmptyState } from '../../components/EmptyState'
 
 interface UserAffiliate {
   id: string
@@ -424,22 +425,7 @@ export function UserAffiliatesScreen({ navigation, hideHeader }: UserAffiliatesS
         }
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons name="people-outline" size={48} color={colors.textMuted} />
-            <Text style={styles.emptyText}>No user affiliates found</Text>
-            {(search || statusFilter !== 'all' || tierFilter !== 'all') && (
-              <TouchableOpacity
-                style={styles.clearFiltersButton}
-                onPress={() => {
-                  setSearch('')
-                  setStatusFilter('all')
-                  setTierFilter('all')
-                }}
-              >
-                <Text style={styles.clearFiltersText}>Clear Filters</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <EmptyState icon="people-outline" title="No user affiliates found" />
         }
       />
     </View>

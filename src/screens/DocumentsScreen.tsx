@@ -19,6 +19,7 @@ import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
+import { EmptyState } from '../components/EmptyState'
 
 // Try to import expo-document-picker - if not installed, upload will show an alert
 let DocumentPicker: any = null
@@ -1022,12 +1023,7 @@ export function DocumentsScreen({ navigation, hideHeader }: { navigation: any; h
         ListHeaderComponent={ListHeader}
         ListEmptyComponent={
           !loading ? (
-            <View style={styles.empty}>
-              <Ionicons name="document-text-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyText}>
-                {search || categoryFilter ? 'No documents match your filters' : 'No documents in this folder'}
-              </Text>
-            </View>
+            <EmptyState icon="document-text-outline" title={search || categoryFilter ? 'No documents match your filters' : 'No documents in this folder'} />
           ) : (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />

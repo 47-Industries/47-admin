@@ -6,6 +6,7 @@ import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
+import { EmptyState } from '../components/EmptyState'
 
 const statusColors: Record<string, 'default' | 'success' | 'warning' | 'error' | 'primary'> = {
   PENDING: 'warning',
@@ -207,10 +208,7 @@ export default function CustomRequestsScreen({ navigation, hideHeader }: { navig
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
           !loading ? (
-            <View style={styles.empty}>
-              <Ionicons name="print-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyText}>No requests found</Text>
-            </View>
+            <EmptyState icon="print-outline" title="No requests found" />
           ) : null
         }
       />

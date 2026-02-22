@@ -19,6 +19,7 @@ import { Card } from '../../components/Card'
 import { Badge } from '../../components/Badge'
 import { api } from '../../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../theme'
+import { EmptyState } from '../../components/EmptyState'
 
 interface UserAffiliateDetailScreenProps {
   navigation: {
@@ -589,10 +590,7 @@ export function UserAffiliateDetailScreen({ navigation, route }: UserAffiliateDe
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
       }
       ListEmptyComponent={
-        <View style={styles.emptyTab}>
-          <Ionicons name="share-social-outline" size={48} color={colors.textMuted} />
-          <Text style={styles.emptyTabText}>No referrals yet</Text>
-        </View>
+        <EmptyState icon="share-social-outline" title="No referrals yet" />
       }
       renderItem={({ item }) => (
         <Card style={styles.listCard}>
@@ -638,10 +636,7 @@ export function UserAffiliateDetailScreen({ navigation, route }: UserAffiliateDe
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
       }
       ListEmptyComponent={
-        <View style={styles.emptyTab}>
-          <Ionicons name="cash-outline" size={48} color={colors.textMuted} />
-          <Text style={styles.emptyTabText}>No commissions yet</Text>
-        </View>
+        <EmptyState icon="cash-outline" title="No commissions yet" />
       }
       renderItem={({ item }) => (
         <Card style={styles.listCard}>
@@ -711,10 +706,7 @@ export function UserAffiliateDetailScreen({ navigation, route }: UserAffiliateDe
         )
       }
       ListEmptyComponent={
-        <View style={styles.emptyTab}>
-          <Ionicons name="star-outline" size={48} color={colors.textMuted} />
-          <Text style={styles.emptyTabText}>No point transactions yet</Text>
-        </View>
+        <EmptyState icon="star-outline" title="No point transactions yet" />
       }
       renderItem={({ item }) => (
         <Card style={styles.listCard}>

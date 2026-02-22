@@ -573,12 +573,7 @@ export default function InventoryScreen({ navigation, hideHeader }: { navigation
               />
             }
             ListEmptyComponent={
-              <View style={styles.empty}>
-                <Ionicons name="cube-outline" size={48} color={colors.textMuted} />
-                <Text style={styles.emptyText}>
-                  {search ? 'No products match your search' : 'No products found'}
-                </Text>
-              </View>
+              <EmptyState icon="cube-outline" title={search ? 'No products match your search' : 'No products found'} />
             }
           />
         </>
@@ -599,13 +594,7 @@ export default function InventoryScreen({ navigation, hideHeader }: { navigation
             />
           }
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <Ionicons name="swap-vertical-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyText}>No stock movements yet</Text>
-              <Text style={styles.emptySubtext}>
-                Stock movements will appear here when you adjust inventory
-              </Text>
-            </View>
+            <EmptyState icon="swap-vertical-outline" title="No stock movements yet" />
           }
         />
       )}

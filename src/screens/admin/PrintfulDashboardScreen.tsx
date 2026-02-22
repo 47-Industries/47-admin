@@ -16,6 +16,7 @@ import { Card } from '../../components/Card'
 import { Badge } from '../../components/Badge'
 import { api } from '../../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../theme'
+import { EmptyState } from '../../components/EmptyState'
 
 const { width } = Dimensions.get('window')
 
@@ -539,10 +540,7 @@ export function PrintfulDashboardScreen({ navigation, hideHeader }: { navigation
             contentContainerStyle={styles.ordersList}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
             ListEmptyComponent={
-              <View style={styles.empty}>
-                <Ionicons name="receipt-outline" size={48} color={colors.textMuted} />
-                <Text style={styles.emptyText}>No Printful orders found</Text>
-              </View>
+              <EmptyState icon="receipt-outline" title="No Printful orders found" />
             }
           />
         </View>

@@ -19,6 +19,7 @@ import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
+import { EmptyState } from '../components/EmptyState'
 
 interface EmailCampaign {
   id: string
@@ -325,19 +326,7 @@ export default function MarketingScreen({ navigation, hideHeader }: { navigation
         }
         ListEmptyComponent={
           !loading ? (
-            <View style={styles.empty}>
-              <Ionicons name="mail-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyText}>No campaigns found</Text>
-              <TouchableOpacity
-                style={styles.emptyButton}
-                onPress={() => {
-                  setSelectedCampaign(null)
-                  setShowCreateModal(true)
-                }}
-              >
-                <Text style={styles.emptyButtonText}>Create Campaign</Text>
-              </TouchableOpacity>
-            </View>
+            <EmptyState icon="mail-outline" title="No campaigns found" />
           ) : (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />
