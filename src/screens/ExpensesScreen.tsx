@@ -1819,7 +1819,7 @@ const styles = StyleSheet.create({
   billPaymentMethod: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   billAmount: {
     fontSize: fontSize.md,
@@ -1832,7 +1832,7 @@ const styles = StyleSheet.create({
   billDueDate: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   billDueDateOverdue: {
     color: colors.error,
@@ -1840,7 +1840,7 @@ const styles = StyleSheet.create({
   paidIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   paidText: {
     fontSize: fontSize.xs,
@@ -1942,7 +1942,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
     color: colors.error,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   owesForContainer: {
     marginTop: spacing.md,
@@ -2260,7 +2260,7 @@ const styles = StyleSheet.create({
   proposalMeta: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   proposalSubject: {
     fontSize: fontSize.xs,
@@ -2312,7 +2312,7 @@ const styles = StyleSheet.create({
   settingsRowSubtitle: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   toggleButton: {
     paddingHorizontal: spacing.md,
@@ -2434,7 +2434,7 @@ const styles = StyleSheet.create({
   transactionDescription: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   transactionMeta: {
     fontSize: fontSize.xs,
@@ -2512,7 +2512,7 @@ const styles = StyleSheet.create({
   billPickerMeta: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   billPickerAmount: {
     fontSize: fontSize.md,

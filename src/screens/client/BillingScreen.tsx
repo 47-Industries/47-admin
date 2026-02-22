@@ -609,7 +609,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: fontWeight.medium,
     color: colors.text,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   cardExpiry: {
     fontSize: fontSize.sm,
@@ -688,7 +688,7 @@ const styles = StyleSheet.create({
   autopayActiveDescription: {
     fontSize: fontSize.xs,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   upcomingPaymentCard: {
     flexDirection: 'row',
@@ -713,7 +713,7 @@ const styles = StyleSheet.create({
   upcomingPaymentDescription: {
     fontSize: fontSize.xs,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   historyList: {
     marginHorizontal: spacing.lg,
@@ -734,7 +734,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: fontWeight.medium,
     color: colors.text,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   historyDate: {
     fontSize: fontSize.sm,

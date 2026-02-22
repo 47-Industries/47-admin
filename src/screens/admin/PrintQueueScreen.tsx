@@ -755,7 +755,7 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   searchContainer: {
     paddingHorizontal: spacing.lg,

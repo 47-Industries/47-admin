@@ -952,7 +952,7 @@ const styles = StyleSheet.create({
   listItemSub: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   listItemAmount: {
     fontSize: fontSize.sm,

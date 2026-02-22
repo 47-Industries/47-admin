@@ -1166,7 +1166,7 @@ const styles = StyleSheet.create({
   userEmail: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   userMeta: {
     flexDirection: 'row',
@@ -1318,7 +1318,7 @@ const modalStyles = StyleSheet.create({
   switchDescription: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   colorPicker: {
     flexDirection: 'row',

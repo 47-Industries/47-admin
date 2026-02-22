@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   invoiceDueLabel: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   invoiceDue: {
     fontSize: fontSize.sm,
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   invoiceAmountLabel: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   invoiceAmount: {
     fontSize: fontSize.lg,

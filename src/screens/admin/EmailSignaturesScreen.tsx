@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   addButton: {
     backgroundColor: colors.primary,
@@ -861,7 +861,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: fontWeight.medium,
     color: colors.text,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   toggleDescription: {
     fontSize: fontSize.xs,

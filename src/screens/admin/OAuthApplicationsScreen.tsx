@@ -665,7 +665,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   appName: {
     fontSize: fontSize.md,

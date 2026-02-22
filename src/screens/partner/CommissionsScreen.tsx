@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   summarySubtext: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   summaryDivider: {
     width: 1,
@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
   commissionDate: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   commissionDescription: {
     fontSize: fontSize.sm,

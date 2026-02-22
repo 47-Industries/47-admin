@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
   earningsLabel: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   earningsValue: {
     fontSize: fontSize.xl,
@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
   earningsSubtext: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   payoutStatusRow: {
     flexDirection: 'row',
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
     color: colors.warning,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   payoutBannerDesc: {
     fontSize: fontSize.xs,
@@ -628,7 +628,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.textMuted,
     textAlign: 'center',
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   quickActions: {
     flexDirection: 'row',
@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
   leadContact: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   commissionCard: {
     flexDirection: 'row',
@@ -696,7 +696,7 @@ const styles = StyleSheet.create({
   commissionDesc: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   commissionAmount: {
     fontSize: fontSize.md,
@@ -835,7 +835,7 @@ const styles = StyleSheet.create({
   motorevStatLabel: {
     fontSize: 10,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   motorevShareSection: {
     marginHorizontal: spacing.md,

@@ -1055,7 +1055,7 @@ const styles = StyleSheet.create({
   profileEmail: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   codeRow: {
     flexDirection: 'row',
@@ -1222,7 +1222,7 @@ const styles = StyleSheet.create({
   listCardSubtitle: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   listCardDetails: {
     flexDirection: 'row',
@@ -1241,7 +1241,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
     color: colors.text,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   emptyTab: {
     alignItems: 'center',
@@ -1270,7 +1270,7 @@ const styles = StyleSheet.create({
   pointsHeaderLabel: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   pointsHeaderActions: {
     flexDirection: 'row',

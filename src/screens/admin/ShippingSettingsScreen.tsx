@@ -908,7 +908,7 @@ const styles = StyleSheet.create({
   zoneStates: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   zoneRateCount: {
     fontSize: fontSize.xs,
@@ -1019,12 +1019,12 @@ const styles = StyleSheet.create({
   rateFreeShipping: {
     fontSize: fontSize.xs,
     color: colors.success,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   rateDays: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   rateActions: {
     flexDirection: 'row',

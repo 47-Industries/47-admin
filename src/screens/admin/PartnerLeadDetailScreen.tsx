@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
   profileNumber: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   contactDetails: {
     gap: spacing.sm,
@@ -723,7 +723,7 @@ const styles = StyleSheet.create({
   partnerNumber: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   interestsGrid: {
     flexDirection: 'row',
@@ -779,7 +779,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
     color: colors.success,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   // Modal styles
   modalContainer: {

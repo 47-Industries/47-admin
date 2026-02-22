@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   dateLabel: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   dateValue: {
     fontSize: fontSize.sm,

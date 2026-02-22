@@ -964,7 +964,7 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   infoValue: {
     fontSize: fontSize.sm,

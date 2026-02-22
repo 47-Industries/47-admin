@@ -471,12 +471,12 @@ const styles = StyleSheet.create({
   memberTitle: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   memberEmail: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   memberMeta: {
     flexDirection: 'row',

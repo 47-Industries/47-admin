@@ -25,7 +25,13 @@ export const colors = {
 
   // Others
   purple: '#8b5cf6',
+  purpleBg: 'rgba(139, 92, 246, 0.1)',
+  purpleAlt: '#a855f7',
   pink: '#ec4899',
+  cyan: '#06b6d4',
+  cyanBg: 'rgba(6, 182, 212, 0.1)',
+  orange: '#f97316',
+  orangeBg: 'rgba(249, 115, 22, 0.1)',
 }
 
 // Portal-specific accent colors

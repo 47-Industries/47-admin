@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
     color: colors.text,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   contactName: {
     fontSize: fontSize.sm,

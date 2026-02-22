@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     fontWeight: fontWeight.semibold,
     color: colors.text,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   titleDisabled: {
     color: colors.textMuted,

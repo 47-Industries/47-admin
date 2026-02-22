@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   trend: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: spacing.xs,
   },
   trendValue: {
     fontSize: fontSize.xs,

@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
   profileNumber: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   statusBadge: {
     paddingHorizontal: spacing.md,
@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
   conversionSubtitle: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   commissionsPreview: {
     flexDirection: 'row',

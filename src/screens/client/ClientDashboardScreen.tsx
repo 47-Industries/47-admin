@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
   balanceDue: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   payButton: {
     flexDirection: 'row',
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
     color: colors.text,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   quickLinkSubtitle: {
     fontSize: fontSize.xs,
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
   invoiceDue: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   invoiceRight: {
     alignItems: 'flex-end',
@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
   contractValue: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   signButton: {
     backgroundColor: portalColors.client,

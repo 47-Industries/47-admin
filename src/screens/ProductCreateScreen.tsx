@@ -1809,7 +1809,7 @@ const styles = StyleSheet.create({
   fulfillmentOptionDesc: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   dimensionSeparator: {
     fontSize: fontSize.md,
@@ -1839,7 +1839,7 @@ const styles = StyleSheet.create({
   toggleDescription: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   submitContainer: {
     marginTop: spacing.xl,

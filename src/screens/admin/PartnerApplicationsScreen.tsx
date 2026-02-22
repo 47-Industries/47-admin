@@ -713,12 +713,12 @@ const styles = StyleSheet.create({
   applicationEmail: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   companyName: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   applicationRight: {
     flexDirection: 'row',

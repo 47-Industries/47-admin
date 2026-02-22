@@ -836,12 +836,12 @@ const styles = StyleSheet.create({
   profileNumber: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   profileEmail: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   badgeRow: {
     flexDirection: 'row',
@@ -891,7 +891,7 @@ const styles = StyleSheet.create({
   rateLabel: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   rateValue: {
     fontSize: fontSize.lg,
@@ -963,7 +963,7 @@ const styles = StyleSheet.create({
   recruitNumber: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   recruitRight: {
     flexDirection: 'row',
@@ -988,7 +988,7 @@ const styles = StyleSheet.create({
   leadDate: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   leadRight: {
     flexDirection: 'row',

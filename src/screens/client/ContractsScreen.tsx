@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
     color: colors.warning,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   signatureBannerText: {
     fontSize: fontSize.sm,
@@ -628,7 +628,7 @@ const styles = StyleSheet.create({
   valueLabel: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   valueAmount: {
     fontSize: fontSize.xl,
@@ -638,7 +638,7 @@ const styles = StyleSheet.create({
   monthlyValue: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   contractFooter: {
     flexDirection: 'row',
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
   dateLabel: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   dateValue: {
     fontSize: fontSize.sm,

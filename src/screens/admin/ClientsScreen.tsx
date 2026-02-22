@@ -735,12 +735,12 @@ const styles = StyleSheet.create({
   companyName: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   clientEmail: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   badgeRow: {
     flexDirection: 'row',
@@ -759,7 +759,7 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   statValue: {
     fontSize: fontSize.md,

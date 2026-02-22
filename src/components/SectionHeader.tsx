@@ -1,7 +1,7 @@
 import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { colors, spacing, fontSize, fontWeight } from '../theme'
+import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
 interface SectionHeaderProps {
   title: string
@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceHover,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
-    borderRadius: 10,
+    borderRadius: borderRadius.md,
   },
   countText: {
     fontSize: fontSize.xs,

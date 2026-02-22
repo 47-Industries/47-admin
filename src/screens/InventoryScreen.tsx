@@ -974,7 +974,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     color: colors.textMuted,
     fontFamily: 'monospace',
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   productCategory: {
     fontSize: fontSize.sm,
@@ -1059,12 +1059,12 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: fontWeight.medium,
     color: colors.text,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   movementMeta: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   movementDate: {
     fontSize: fontSize.xs,
@@ -1102,7 +1102,7 @@ const styles = StyleSheet.create({
   alertDescription: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   resolveButton: {
     paddingVertical: spacing.sm,

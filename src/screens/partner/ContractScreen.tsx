@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
   documentType: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   documentActionsRight: {
     flexDirection: 'row',
@@ -818,7 +818,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: fontWeight.medium,
     color: colors.text,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   rateDescription: {
     fontSize: fontSize.xs,

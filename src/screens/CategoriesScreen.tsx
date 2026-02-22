@@ -718,7 +718,7 @@ const styles = StyleSheet.create({
   switchSubtext: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   modalButtons: {
     flexDirection: 'row',

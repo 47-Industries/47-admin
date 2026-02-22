@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
   affiliateCode: {
     fontSize: fontSize.sm,
     color: colors.primary,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   badges: {
     flexDirection: 'row',
@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   affiliateFooter: {
     flexDirection: 'row',

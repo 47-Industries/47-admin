@@ -727,12 +727,12 @@ const styles = StyleSheet.create({
   inquiryEmail: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   companyName: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   inquiryNumber: {
     fontSize: fontSize.xs,

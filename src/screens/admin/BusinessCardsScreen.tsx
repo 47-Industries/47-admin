@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
     color: colors.text,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   generateSubtitle: {
     fontSize: fontSize.sm,

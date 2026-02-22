@@ -930,7 +930,7 @@ const styles = StyleSheet.create({
   userUsername: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   badges: {
     flexDirection: 'row',
@@ -1216,7 +1216,7 @@ const modalStyles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
     color: colors.text,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   roleLabelActive: {
     color: colors.primary,

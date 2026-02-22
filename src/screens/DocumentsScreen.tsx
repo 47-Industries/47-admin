@@ -1880,7 +1880,7 @@ const styles = StyleSheet.create({
   documentSubtitle: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   documentMeta: {
     flexDirection: 'row',

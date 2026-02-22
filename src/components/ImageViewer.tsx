@@ -9,7 +9,7 @@ import {
   StatusBar,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { colors, spacing } from '../theme'
+import { colors, spacing, borderRadius } from '../theme'
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
 
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     right: 20,
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: borderRadius.full,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',

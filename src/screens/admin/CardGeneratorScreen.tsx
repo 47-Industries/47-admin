@@ -913,7 +913,7 @@ const styles = StyleSheet.create({
   searchResultMeta: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   noResultsText: {
     marginTop: spacing.md,

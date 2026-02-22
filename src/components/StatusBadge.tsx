@@ -71,6 +71,6 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   textSm: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
   },
 })

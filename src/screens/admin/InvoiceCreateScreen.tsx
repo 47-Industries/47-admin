@@ -717,7 +717,7 @@ const styles = StyleSheet.create({
   selectedClientEmail: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
 
   // Date
@@ -986,12 +986,12 @@ const styles = StyleSheet.create({
   clientItemEmail: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   clientItemNumber: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   emptyClients: {
     padding: spacing.xl,

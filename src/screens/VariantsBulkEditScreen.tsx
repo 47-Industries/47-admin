@@ -994,13 +994,13 @@ const styles = StyleSheet.create({
   variantName: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   variantSku: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
     fontFamily: 'monospace',
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   variantMeta: {
     flexDirection: 'row',

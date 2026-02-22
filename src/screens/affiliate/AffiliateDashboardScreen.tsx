@@ -570,7 +570,7 @@ const styles = StyleSheet.create({
   pointsStatLabel: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   shareLinkCard: {
     backgroundColor: colors.surface,
@@ -859,7 +859,7 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.medium,
     color: colors.text,
     textAlign: 'center',
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   stepDesc: {
     fontSize: fontSize.xs,

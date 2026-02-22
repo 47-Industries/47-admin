@@ -742,7 +742,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rateInfo: {
-    gap: 2,
+    gap: spacing.xs,
   },
   rateName: {
     fontSize: fontSize.md,

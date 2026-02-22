@@ -848,7 +848,7 @@ const styles = StyleSheet.create({
   dateLabel: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   dateValue: {
     fontSize: fontSize.sm,
@@ -877,7 +877,7 @@ const styles = StyleSheet.create({
   partialPaymentRemaining: {
     fontSize: fontSize.xs,
     color: colors.warning,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   // Section
   section: {
@@ -921,17 +921,17 @@ const styles = StyleSheet.create({
   clientCompany: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   clientEmail: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   clientPhone: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   // Line Items
   lineItem: {
@@ -955,7 +955,7 @@ const styles = StyleSheet.create({
   lineItemMeta: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   lineItemTotal: {
     fontSize: fontSize.sm,
@@ -1032,12 +1032,12 @@ const styles = StyleSheet.create({
   paymentReference: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   paymentNotes: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
     fontStyle: 'italic',
   },
   paymentAmount: {

@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
   metricLabel: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   activityHeader: {
     flexDirection: 'row',
@@ -536,12 +536,12 @@ const styles = StyleSheet.create({
   activityName: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   activityBottom: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   activityDetail: {
     fontSize: fontSize.xs,
@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.sm,
   },
   statusText: {
-    fontSize: 10,
+    fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
     textTransform: 'uppercase',
   },

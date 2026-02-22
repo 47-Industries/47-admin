@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
   profileEmail: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   codeRow: {
     marginTop: spacing.xs,
@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
   referralDate: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   bottomSpacer: {
     height: spacing.xxxl,

@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     color: portalColors.partner,
     fontWeight: fontWeight.semibold,
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   levelBadgeRate: {
     fontSize: fontSize.xxl,
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   levelBadgeDesc: {
     fontSize: 10,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   levelArrow: {
     padding: spacing.xs,
@@ -516,12 +516,12 @@ const styles = StyleSheet.create({
   recruitNumber: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   recruitJoined: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   recruitRight: {
     alignItems: 'flex-end',
@@ -537,7 +537,7 @@ const styles = StyleSheet.create({
   recruitSubs: {
     fontSize: fontSize.xs,
     color: PURPLE,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   overrideCard: {
     flexDirection: 'row',
@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
   overrideDetail: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   overrideDate: {
     fontSize: fontSize.xs,
