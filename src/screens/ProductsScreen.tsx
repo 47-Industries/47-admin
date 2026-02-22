@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
 import { CachedImage } from '../components/CachedImage'
+import { SkeletonList } from '../components/Skeleton'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 import { Product } from '../types'
@@ -521,37 +522,41 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
         </View>
       )}
 
-      <FlatList
-        data={products}
-        renderItem={renderProduct}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
-        ListEmptyComponent={
-          !loading ? (
-            <View style={styles.empty}>
-              <Ionicons
-                name={activeTab === 'apparel' ? 'shirt-outline' : activeTab === 'digital' ? 'cloud-download-outline' : 'cube-outline'}
-                size={48}
-                color={colors.textMuted}
-              />
-              <Text style={styles.emptyText}>
-                {activeTab === 'apparel' ? 'No apparel products found' :
-                 activeTab === 'digital' ? 'No digital products found' :
-                 'No physical products found'}
-              </Text>
-              {activeTab === 'apparel' && (
-                <Text style={styles.emptySubtext}>Sync products from Printful to get started</Text>
-              )}
-              {activeTab === 'digital' && (
-                <Text style={styles.emptySubtext}>Create a digital product to get started</Text>
-              )}
-            </View>
-          ) : null
-        }
-      />
+      {loading && products.length === 0 ? (
+        <SkeletonList count={6} />
+      ) : (
+        <FlatList
+          data={products}
+          renderItem={renderProduct}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListEmptyComponent={
+            !loading ? (
+              <View style={styles.empty}>
+                <Ionicons
+                  name={activeTab === 'apparel' ? 'shirt-outline' : activeTab === 'digital' ? 'cloud-download-outline' : 'cube-outline'}
+                  size={48}
+                  color={colors.textMuted}
+                />
+                <Text style={styles.emptyText}>
+                  {activeTab === 'apparel' ? 'No apparel products found' :
+                   activeTab === 'digital' ? 'No digital products found' :
+                   'No physical products found'}
+                </Text>
+                {activeTab === 'apparel' && (
+                  <Text style={styles.emptySubtext}>Sync products from Printful to get started</Text>
+                )}
+                {activeTab === 'digital' && (
+                  <Text style={styles.emptySubtext}>Create a digital product to get started</Text>
+                )}
+              </View>
+            ) : null
+          }
+        />
+      )}
     </View>
   )
 }
@@ -605,7 +610,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.warning,
   },
   tabActiveDigital: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.purple,
   },
   tabIcon: {
     marginRight: spacing.xs,

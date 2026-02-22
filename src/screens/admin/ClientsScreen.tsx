@@ -20,6 +20,7 @@ import { Card } from '../../components/Card'
 import { Badge } from '../../components/Badge'
 import { Button } from '../../components/Button'
 import { EmptyState } from '../../components/EmptyState'
+import { SkeletonList } from '../../components/Skeleton'
 import { api } from '../../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../theme'
 import { Client, ClientType, ClientStatus } from '../../types'
@@ -391,28 +392,32 @@ export function ClientsScreen({ navigation, hideHeader }: ClientsScreenProps) {
       </View>
 
       {/* Client List */}
-      <FlatList
-        data={clients}
-        renderItem={renderClient}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-        }
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
-        ListEmptyComponent={
-          !loading ? (
-            <EmptyState
-              icon="people-outline"
-              title="No clients found"
-              description="Add your first client to get started"
-              actionLabel="Add Client"
-              onAction={openCreateModal}
-            />
-          ) : null
-        }
-      />
+      {loading && clients.length === 0 ? (
+        <SkeletonList count={6} />
+      ) : (
+        <FlatList
+          data={clients}
+          renderItem={renderClient}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+          }
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListEmptyComponent={
+            !loading ? (
+              <EmptyState
+                icon="people-outline"
+                title="No clients found"
+                description="Add your first client to get started"
+                actionLabel="Add Client"
+                onAction={openCreateModal}
+              />
+            ) : null
+          }
+        />
+      )}
 
       {/* Type Filter Modal */}
       <Modal visible={showTypeFilter} animationType="slide" transparent>

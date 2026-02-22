@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../../components/Card'
 import { Badge } from '../../components/Badge'
 import { EmptyState } from '../../components/EmptyState'
+import { SkeletonList } from '../../components/Skeleton'
 import { api } from '../../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../theme'
 import { Partner, PartnerStatus, PartnerType } from '../../types'
@@ -385,28 +386,32 @@ export function PartnersScreen({ navigation, hideHeader }: PartnersScreenProps) 
       </View>
 
       {/* Partner List */}
-      <FlatList
-        data={partners}
-        renderItem={renderPartner}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
-        }
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
-        ListEmptyComponent={
-          !loading ? (
-            <EmptyState
-              icon="people-outline"
-              title="No partners found"
-              description={search || statusFilter || typeFilter
-                ? "Try adjusting your filters"
-                : "Partners will appear here once added"}
-            />
-          ) : null
-        }
-      />
+      {loading && partners.length === 0 ? (
+        <SkeletonList count={6} />
+      ) : (
+        <FlatList
+          data={partners}
+          renderItem={renderPartner}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+          }
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListEmptyComponent={
+            !loading ? (
+              <EmptyState
+                icon="people-outline"
+                title="No partners found"
+                description={search || statusFilter || typeFilter
+                  ? "Try adjusting your filters"
+                  : "Partners will appear here once added"}
+              />
+            ) : null
+          }
+        />
+      )}
 
       {/* Type Filter Modal */}
       <Modal visible={showTypeFilter} animationType="slide" transparent>

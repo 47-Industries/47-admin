@@ -16,6 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
 import { Badge } from '../components/Badge'
+import { SkeletonList } from '../components/Skeleton'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
@@ -371,9 +372,13 @@ export default function InventoryScreen({ navigation, hideHeader }: { navigation
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Loading inventory...</Text>
+      <View style={styles.container}>
+        {!hideHeader && (
+          <View style={styles.header}>
+            <Text style={styles.title}>Inventory</Text>
+          </View>
+        )}
+        <SkeletonList count={8} />
       </View>
     )
   }
