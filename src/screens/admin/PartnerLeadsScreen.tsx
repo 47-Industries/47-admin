@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../../components/Card'
 import { Badge } from '../../components/Badge'
+import { SkeletonList } from '../../components/Skeleton'
 import { api } from '../../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../theme'
 
@@ -203,8 +204,8 @@ export function PartnerLeadsScreen({ navigation, hideHeader }: { navigation: any
 
   if (loading && leads.length === 0) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={styles.container}>
+        <SkeletonList count={8} />
       </View>
     )
   }
@@ -372,7 +373,7 @@ const styles = StyleSheet.create({
   interestTag: {
     backgroundColor: colors.primary + '20',
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
   },
   interestText: {

@@ -859,7 +859,7 @@ const styles = StyleSheet.create({
   },
   platformBadge: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
   },
   platformText: {
@@ -875,7 +875,7 @@ const styles = StyleSheet.create({
   inactiveBadge: {
     backgroundColor: `${colors.error}20`,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
   },
   inactiveText: {
@@ -975,7 +975,7 @@ const styles = StyleSheet.create({
   },
   statusBadge: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
     marginTop: spacing.xs,
   },

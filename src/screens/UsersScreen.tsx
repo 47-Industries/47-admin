@@ -1032,7 +1032,7 @@ const styles = StyleSheet.create({
   },
   filterCountBadge: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: spacing.xs,
     borderRadius: borderRadius.full,
     backgroundColor: colors.surfaceHover,
   },

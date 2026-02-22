@@ -1723,7 +1723,7 @@ const styles = StyleSheet.create({
   sourceCountBadge: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: spacing.xs,
     borderRadius: 10,
     marginLeft: 4,
   },

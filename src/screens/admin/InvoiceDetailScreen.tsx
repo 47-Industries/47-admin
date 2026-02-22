@@ -1015,7 +1015,7 @@ const styles = StyleSheet.create({
   paymentMethodBadge: {
     backgroundColor: colors.surfaceHover,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
     alignSelf: 'flex-start',
     marginBottom: spacing.xs,

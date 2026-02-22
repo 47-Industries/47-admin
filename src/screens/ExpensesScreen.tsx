@@ -2244,7 +2244,7 @@ const styles = StyleSheet.create({
   },
   confidenceBadge: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
   },
   confidenceText: {
@@ -2447,7 +2447,7 @@ const styles = StyleSheet.create({
   },
   matchStatusBadge: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
     marginTop: 4,
   },

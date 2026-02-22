@@ -589,7 +589,7 @@ const styles = StyleSheet.create({
   },
   overrideStatusBadge: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
   },
   overrideStatusText: {

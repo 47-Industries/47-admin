@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { api } from '../../services/api'
 import { StatusBadge, getStatusType } from '../../components/StatusBadge'
 import { EmptyState } from '../../components/EmptyState'
+import { SkeletonList } from '../../components/Skeleton'
 import { colors, portalColors, spacing, borderRadius, fontSize, fontWeight } from '../../theme'
 import { Payout } from '../../types'
 
@@ -144,12 +145,10 @@ export function PayoutsScreen({ navigation, hideHeader }: PayoutsScreenProps) {
 
   const statusFilters = ['ALL', 'PENDING', 'PROCESSING', 'COMPLETED', 'FAILED']
 
-  if (loading) {
+  if (loading && payouts.length === 0) {
     return (
       <SafeAreaView style={styles.container} edges={hideHeader ? [] : ['top']}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={portalColors.partner} />
-        </View>
+        <SkeletonList count={8} />
       </SafeAreaView>
     )
   }

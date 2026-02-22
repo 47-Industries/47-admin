@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
   sourceBadge: {
     backgroundColor: colors.warningBg,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
   },
   sourceText: {

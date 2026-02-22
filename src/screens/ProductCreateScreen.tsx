@@ -1683,7 +1683,7 @@ const styles = StyleSheet.create({
     left: 4,
     backgroundColor: colors.warning,
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
   },
   featuredBadgeText: {

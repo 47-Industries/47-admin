@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
   },
   countBadge: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: spacing.xs,
     borderRadius: borderRadius.full,
   },
   countBadgeText: {
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   brandTag: {
     alignSelf: 'flex-start',
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
   },
   brandTagText: {

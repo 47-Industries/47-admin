@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   interestTag: {
     backgroundColor: colors.surfaceHover,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
   },
   interestText: {
