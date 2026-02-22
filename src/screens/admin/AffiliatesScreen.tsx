@@ -11,6 +11,7 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../../components/Card'
+import { EmptyState } from '../../components/EmptyState'
 import { Badge } from '../../components/Badge'
 import { SkeletonList } from '../../components/Skeleton'
 import { api } from '../../services/api'
@@ -173,10 +174,7 @@ export function AffiliatesScreen({ navigation, hideHeader }: { navigation: any; 
         }
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons name="gift-outline" size={48} color={colors.textMuted} />
-            <Text style={styles.emptyText}>No affiliates found</Text>
-          </View>
+          <EmptyState icon="gift-outline" title="No affiliates found" />
         }
       />
     </View>

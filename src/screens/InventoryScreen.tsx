@@ -15,6 +15,7 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
+import { EmptyState } from '../components/EmptyState'
 import { Badge } from '../components/Badge'
 import { SkeletonList } from '../components/Skeleton'
 import { api } from '../services/api'
@@ -624,15 +625,11 @@ export default function InventoryScreen({ navigation, hideHeader }: { navigation
             />
           }
           ListEmptyComponent={
-            <View style={styles.emptyAlerts}>
-              <View style={styles.emptyAlertsIcon}>
-                <Ionicons name="checkmark-circle" size={48} color={colors.success} />
-              </View>
-              <Text style={styles.emptyText}>No active alerts</Text>
-              <Text style={styles.emptySubtext}>
-                All inventory levels are healthy
-              </Text>
-            </View>
+            <EmptyState
+              icon="checkmark-circle-outline"
+              title="No active alerts"
+              description="All inventory levels are healthy"
+            />
           }
         />
       )}

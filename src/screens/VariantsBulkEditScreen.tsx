@@ -14,6 +14,7 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
+import { EmptyState } from '../components/EmptyState'
 import { Badge } from '../components/Badge'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
@@ -619,12 +620,10 @@ export default function VariantsBulkEditScreen({ navigation, hideHeader }: { nav
           />
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons name="layers-outline" size={48} color={colors.textMuted} />
-            <Text style={styles.emptyText}>
-              {search ? 'No variants match your search' : 'No variants found'}
-            </Text>
-          </View>
+          <EmptyState
+            icon="layers-outline"
+            title={search ? 'No variants match your search' : 'No variants found'}
+          />
         }
       />
 
@@ -1036,12 +1035,6 @@ const styles = StyleSheet.create({
   empty: {
     alignItems: 'center',
     paddingVertical: spacing.xxxl,
-  },
-  emptyText: {
-    fontSize: fontSize.md,
-    color: colors.textMuted,
-    marginTop: spacing.md,
-    textAlign: 'center',
   },
   // Modal Styles
   modalOverlay: {

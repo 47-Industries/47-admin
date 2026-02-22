@@ -10,6 +10,7 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../../components/Card'
+import { EmptyState } from '../../components/EmptyState'
 import { Badge } from '../../components/Badge'
 import { api } from '../../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../theme'
@@ -197,14 +198,13 @@ export default function BusinessCardsScreen({ navigation }: { navigation: any })
   )
 
   const renderEmpty = () => (
-    <View style={styles.emptyState}>
-      <Ionicons name="card-outline" size={48} color={colors.textMuted} />
-      <Text style={styles.emptyStateTitle}>No Saved Designs</Text>
-      <Text style={styles.emptyStateText}>Generate your first business card to get started</Text>
-      <TouchableOpacity style={styles.emptyButton} onPress={handleGenerateNew}>
-        <Text style={styles.emptyButtonText}>Generate Card</Text>
-      </TouchableOpacity>
-    </View>
+    <EmptyState
+      icon="card-outline"
+      title="No Saved Designs"
+      description="Generate your first business card to get started"
+      actionLabel="Generate Card"
+      onAction={handleGenerateNew}
+    />
   )
 
   return (

@@ -12,6 +12,7 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../../components/Card'
+import { EmptyState } from '../../components/EmptyState'
 import { Badge } from '../../components/Badge'
 import { SkeletonList } from '../../components/Skeleton'
 import { api } from '../../services/api'
@@ -238,10 +239,7 @@ export function PartnerLeadsScreen({ navigation, hideHeader }: { navigation: any
         }
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons name="document-text-outline" size={48} color={colors.textMuted} />
-            <Text style={styles.emptyText}>No leads found</Text>
-          </View>
+          <EmptyState icon="people-outline" title="No leads found" />
         }
       />
     </View>

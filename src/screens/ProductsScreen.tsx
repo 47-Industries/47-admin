@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
+import { EmptyState } from '../components/EmptyState'
 import { Badge } from '../components/Badge'
 import { CachedImage } from '../components/CachedImage'
 import { SkeletonList } from '../components/Skeleton'
@@ -535,24 +536,14 @@ export function ProductsScreen({ navigation, hideHeader }: { navigation: any; hi
           onEndReachedThreshold={0.5}
           ListEmptyComponent={
             !loading ? (
-              <View style={styles.empty}>
-                <Ionicons
-                  name={activeTab === 'apparel' ? 'shirt-outline' : activeTab === 'digital' ? 'cloud-download-outline' : 'cube-outline'}
-                  size={48}
-                  color={colors.textMuted}
-                />
-                <Text style={styles.emptyText}>
-                  {activeTab === 'apparel' ? 'No apparel products found' :
-                   activeTab === 'digital' ? 'No digital products found' :
-                   'No physical products found'}
-                </Text>
-                {activeTab === 'apparel' && (
-                  <Text style={styles.emptySubtext}>Sync products from Printful to get started</Text>
-                )}
-                {activeTab === 'digital' && (
-                  <Text style={styles.emptySubtext}>Create a digital product to get started</Text>
-                )}
-              </View>
+              <EmptyState
+                icon={activeTab === 'apparel' ? 'shirt-outline' : activeTab === 'digital' ? 'cloud-download-outline' : 'cube-outline'}
+                title={
+                  activeTab === 'apparel' ? 'No apparel products found' :
+                  activeTab === 'digital' ? 'No digital products found' :
+                  'No products found'
+                }
+              />
             ) : null
           }
         />

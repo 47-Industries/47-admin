@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Tex
 import { CachedImage } from '../components/CachedImage'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
+import { EmptyState } from '../components/EmptyState'
 import { Badge } from '../components/Badge'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
@@ -241,11 +242,10 @@ export default function CustomerDesignsScreen({ navigation, hideHeader }: { navi
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
           !loading ? (
-            <View style={styles.empty}>
-              <Ionicons name="brush-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyText}>No designs found</Text>
-              <Text style={styles.emptySubtext}>Customer design files will appear here</Text>
-            </View>
+            <EmptyState
+              icon="brush-outline"
+              title="No designs found"
+            />
           ) : null
         }
       />

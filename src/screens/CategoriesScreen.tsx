@@ -14,6 +14,7 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
+import { EmptyState } from '../components/EmptyState'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
 import { api } from '../services/api'
@@ -252,11 +253,7 @@ export function CategoriesScreen({ navigation, hideHeader }: { navigation: any; 
 
     if (categories.length === 0) {
       return (
-        <View style={styles.empty}>
-          <Ionicons name="folder-outline" size={48} color={colors.textMuted} />
-          <Text style={styles.emptyText}>No categories found</Text>
-          <Button title="Add Category" onPress={openCreateModal} style={styles.emptyButton} />
-        </View>
+        <EmptyState icon="folder-outline" title="No categories found" />
       )
     }
 
@@ -295,17 +292,7 @@ export function CategoriesScreen({ navigation, hideHeader }: { navigation: any; 
     if ((typeFilter === 'PHYSICAL' && physicalCategories.length === 0) ||
         (typeFilter === 'DIGITAL' && digitalCategories.length === 0)) {
       return (
-        <View style={styles.empty}>
-          <Ionicons name="folder-outline" size={48} color={colors.textMuted} />
-          <Text style={styles.emptyText}>
-            No {typeFilter.toLowerCase()} categories found
-          </Text>
-          <Button
-            title={`Add ${typeFilter === 'PHYSICAL' ? 'Physical' : 'Digital'} Category`}
-            onPress={openCreateModal}
-            style={styles.emptyButton}
-          />
-        </View>
+        <EmptyState icon="folder-outline" title={`No ${typeFilter.toLowerCase()} categories found`} />
       )
     }
 

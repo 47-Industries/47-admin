@@ -12,6 +12,7 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../components/Card'
+import { EmptyState } from '../components/EmptyState'
 import { Badge } from '../components/Badge'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
@@ -346,19 +347,11 @@ export function NotificationsScreen({ navigation, hideHeader }: { navigation: an
   }
 
   const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <View style={styles.emptyIconContainer}>
-        <Ionicons name="notifications-off-outline" size={48} color={colors.textMuted} />
-      </View>
-      <Text style={styles.emptyTitle}>
-        {filter === 'unread' ? 'All caught up!' : 'No notifications yet'}
-      </Text>
-      <Text style={styles.emptySubtitle}>
-        {filter === 'unread'
-          ? 'You have no unread notifications'
-          : 'Notifications will appear here when there are updates'}
-      </Text>
-    </View>
+    <EmptyState
+      icon="notifications-off-outline"
+      title={filter === 'unread' ? 'All caught up!' : 'No notifications yet'}
+      description={filter === 'unread' ? 'You have no unread notifications' : 'Notifications will appear here when there are updates'}
+    />
   )
 
   const renderHeader = () => (
