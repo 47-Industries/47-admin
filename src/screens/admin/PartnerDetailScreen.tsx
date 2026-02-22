@@ -310,9 +310,9 @@ export function PartnerDetailScreen({ navigation, route }: PartnerDetailScreenPr
             <Text style={styles.statValue}>{partner.leads?.length || 0}</Text>
           </View>
           {Number(partner.overrideTotalEarned || 0) > 0 && (
-            <View style={[styles.statCard, { borderColor: '#8b5cf650' }]}>
+            <View style={[styles.statCard, { borderColor: 'rgba(139, 92, 246, 0.3)' }]}>
               <Text style={styles.statLabel}>Override Earned</Text>
-              <Text style={[styles.statValue, { color: '#8b5cf6' }]}>
+              <Text style={[styles.statValue, { color: colors.purple }]}>
                 {formatCurrency(Number(partner.overrideTotalEarned))}
               </Text>
             </View>
@@ -929,7 +929,7 @@ const styles = StyleSheet.create({
   mlmCode: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.bold,
-    color: '#8b5cf6',
+    color: colors.purple,
     letterSpacing: 2,
   },
   mlmValue: {

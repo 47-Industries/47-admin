@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
     backgroundColor: portalColors.partner,
   },
   segmentActiveRecruit: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: colors.purple,
   },
   segmentText: {
     fontSize: fontSize.sm,

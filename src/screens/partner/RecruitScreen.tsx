@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { api } from '../../services/api'
 import { colors, portalColors, spacing, borderRadius, fontSize, fontWeight } from '../../theme'
 
-const PURPLE = '#8b5cf6'
+const PURPLE = colors.purple
 
 interface RecruitScreenProps {
   navigation: {

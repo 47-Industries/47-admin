@@ -727,7 +727,7 @@ export default function CollectionDetailScreen({ navigation, route }: any) {
                   <Text style={styles.inputLabel}>Accent Color (hex)</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="#3b82f6"
+                    placeholder=colors.primary
                     placeholderTextColor={colors.textMuted}
                     value={formData.accentColor}
                     onChangeText={(text) => setFormData({ ...formData, accentColor: text })}

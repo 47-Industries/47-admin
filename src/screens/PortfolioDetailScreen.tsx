@@ -618,7 +618,7 @@ export default function PortfolioDetailScreen({ navigation, route }: any) {
               style={styles.input}
               value={formData.accentColor}
               onChangeText={text => setFormData(prev => ({ ...prev, accentColor: text }))}
-              placeholder="#3b82f6"
+              placeholder=colors.primary
               placeholderTextColor={colors.textMuted}
               autoCapitalize="none"
             />

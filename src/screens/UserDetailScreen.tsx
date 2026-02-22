@@ -910,7 +910,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   adminAvatar: {
-    backgroundColor: '#f59e0b',
+    backgroundColor: colors.warning,
   },
   avatarText: {
     fontSize: fontSize.xxl,
@@ -1195,7 +1195,7 @@ const modalStyles = StyleSheet.create({
   },
   roleCardActive: {
     borderColor: colors.primary,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    backgroundColor: colors.primaryBg,
   },
   roleIcon: {
     width: 48,

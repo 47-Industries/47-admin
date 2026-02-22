@@ -35,29 +35,29 @@ interface LiveStats {
 
 const statusColors: Record<string, { bg: string; text: string }> = {
   // Orders
-  PENDING: { bg: 'rgba(251, 191, 36, 0.15)', text: '#fbbf24' },
-  CONFIRMED: { bg: 'rgba(59, 130, 246, 0.15)', text: colors.primary },
-  PROCESSING: { bg: 'rgba(59, 130, 246, 0.15)', text: colors.primary },
-  SHIPPED: { bg: 'rgba(59, 130, 246, 0.15)', text: colors.primary },
-  DELIVERED: { bg: 'rgba(34, 197, 94, 0.15)', text: '#22c55e' },
-  CANCELLED: { bg: 'rgba(239, 68, 68, 0.15)', text: colors.error },
+  PENDING: { bg: 'rgba(251, 191, 36, 0.15)', text: colors.amber300 },
+  CONFIRMED: { bg: colors.primaryBgSubtle, text: colors.primary },
+  PROCESSING: { bg: colors.primaryBgSubtle, text: colors.primary },
+  SHIPPED: { bg: colors.primaryBgSubtle, text: colors.primary },
+  DELIVERED: { bg: colors.successBgSubtle, text: colors.green400 },
+  CANCELLED: { bg: colors.errorBg, text: colors.error },
   // 3D Print
-  NEW: { bg: 'rgba(251, 191, 36, 0.15)', text: '#fbbf24' },
-  QUOTED: { bg: 'rgba(59, 130, 246, 0.15)', text: colors.primary },
-  APPROVED: { bg: 'rgba(34, 197, 94, 0.15)', text: '#22c55e' },
-  IN_PROGRESS: { bg: 'rgba(168, 85, 247, 0.15)', text: colors.purpleAlt },
-  COMPLETED: { bg: 'rgba(34, 197, 94, 0.15)', text: '#22c55e' },
-  REJECTED: { bg: 'rgba(239, 68, 68, 0.15)', text: colors.error },
+  NEW: { bg: 'rgba(251, 191, 36, 0.15)', text: colors.amber300 },
+  QUOTED: { bg: colors.primaryBgSubtle, text: colors.primary },
+  APPROVED: { bg: colors.successBgSubtle, text: colors.green400 },
+  IN_PROGRESS: { bg: colors.purpleBgSubtle, text: colors.purpleAlt },
+  COMPLETED: { bg: colors.successBgSubtle, text: colors.green400 },
+  REJECTED: { bg: colors.errorBg, text: colors.error },
   // Leads
-  CONTACTED: { bg: 'rgba(59, 130, 246, 0.15)', text: colors.primary },
-  QUALIFIED: { bg: 'rgba(168, 85, 247, 0.15)', text: colors.purpleAlt },
-  CONVERTED: { bg: 'rgba(34, 197, 94, 0.15)', text: '#22c55e' },
-  LOST: { bg: 'rgba(239, 68, 68, 0.15)', text: colors.error },
+  CONTACTED: { bg: colors.primaryBgSubtle, text: colors.primary },
+  QUALIFIED: { bg: colors.purpleBgSubtle, text: colors.purpleAlt },
+  CONVERTED: { bg: colors.successBgSubtle, text: colors.green400 },
+  LOST: { bg: colors.errorBg, text: colors.error },
   // Email
-  SENT: { bg: 'rgba(34, 197, 94, 0.15)', text: '#22c55e' },
-  FAILED: { bg: 'rgba(239, 68, 68, 0.15)', text: colors.error },
+  SENT: { bg: colors.successBgSubtle, text: colors.green400 },
+  FAILED: { bg: colors.errorBg, text: colors.error },
   // Default
-  default: { bg: 'rgba(113, 113, 122, 0.15)', text: '#71717a' },
+  default: { bg: colors.neutralBgSubtle, text: colors.textMuted },
 }
 
 const typeConfig: Record<string, { icon: string; color: string; label: string }> = {
@@ -253,7 +253,7 @@ export function DashboardScreen({ navigation }: any) {
               <Text style={styles.metricLabel}>Orders</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.metricCard, { borderLeftColor: '#a855f7' }]}
+              style={[styles.metricCard, { borderLeftColor: colors.purpleAlt }]}
               onPress={() => navigation.navigate('CustomRequests')}
               activeOpacity={0.7}
             >
@@ -261,7 +261,7 @@ export function DashboardScreen({ navigation }: any) {
               <Text style={styles.metricLabel}>3D Prints</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.metricCard, { borderLeftColor: '#f59e0b' }]}
+              style={[styles.metricCard, { borderLeftColor: colors.warning }]}
               onPress={() => navigation.navigate('Inquiries')}
               activeOpacity={0.7}
             >
@@ -335,26 +335,26 @@ export function DashboardScreen({ navigation }: any) {
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.quickGrid}>
           <TouchableOpacity style={styles.quickCard} onPress={() => navigation.navigate('Orders')} activeOpacity={0.7}>
-            <View style={[styles.quickIcon, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
-              <Ionicons name="receipt" size={20} color=colors.primary />
+            <View style={[styles.quickIcon, { backgroundColor: colors.primaryBgSubtle }]}>
+              <Ionicons name="receipt" size={20} color={colors.primary} />
             </View>
             <Text style={styles.quickLabel}>Orders</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.quickCard} onPress={() => navigation.navigate('Products')} activeOpacity={0.7}>
-            <View style={[styles.quickIcon, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
-              <Ionicons name="cube" size={20} color=colors.purpleAlt />
+            <View style={[styles.quickIcon, { backgroundColor: colors.purpleBgSubtle }]}>
+              <Ionicons name="cube" size={20} color={colors.purpleAlt} />
             </View>
             <Text style={styles.quickLabel}>Products</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.quickCard} onPress={() => navigation.navigate('Email')} activeOpacity={0.7}>
-            <View style={[styles.quickIcon, { backgroundColor: 'rgba(34, 197, 94, 0.15)' }]}>
-              <Ionicons name="mail" size={20} color="#22c55e" />
+            <View style={[styles.quickIcon, { backgroundColor: colors.successBgSubtle }]}>
+              <Ionicons name="mail" size={20} color={colors.green400} />
             </View>
             <Text style={styles.quickLabel}>Email</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.quickCard} onPress={() => navigation.navigate('Settings')} activeOpacity={0.7}>
-            <View style={[styles.quickIcon, { backgroundColor: 'rgba(113, 113, 122, 0.15)' }]}>
-              <Ionicons name="settings" size={20} color="#71717a" />
+            <View style={[styles.quickIcon, { backgroundColor: colors.neutralBgSubtle }]}>
+              <Ionicons name="settings" size={20} color={colors.textMuted} />
             </View>
             <Text style={styles.quickLabel}>Settings</Text>
           </TouchableOpacity>

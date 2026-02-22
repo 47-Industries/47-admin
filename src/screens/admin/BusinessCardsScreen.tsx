@@ -87,9 +87,9 @@ export default function BusinessCardsScreen({ navigation }: { navigation: any })
       case 'FORTY_SEVEN_INDUSTRIES':
         return colors.primary
       case 'MOTOREV':
-        return '#ef4444'
+        return colors.error
       case 'BOOKFADE':
-        return '#9a58fd'
+        return colors.purpleAlt
       default:
         return colors.textMuted
     }

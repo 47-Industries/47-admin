@@ -83,7 +83,7 @@ export default function ReportsScreen({ navigation, hideHeader }: { navigation: 
         </Card>
         <Card style={styles.metricCard}>
           <View style={[styles.metricIcon, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
-            <Ionicons name="trending-up-outline" size={20} color="#a855f7" />
+            <Ionicons name="trending-up-outline" size={20} color=colors.purpleAlt />
           </View>
           <Text style={styles.metricValue}>{formatCurrency(salesData?.avgOrderValue || 0)}</Text>
           <Text style={styles.metricLabel}>Avg Order Value</Text>
@@ -161,7 +161,7 @@ export default function ReportsScreen({ navigation, hideHeader }: { navigation: 
         </Card>
         <Card style={styles.metricCard}>
           <View style={[styles.metricIcon, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
-            <Ionicons name="repeat-outline" size={20} color="#a855f7" />
+            <Ionicons name="repeat-outline" size={20} color=colors.purpleAlt />
           </View>
           <Text style={styles.metricValue}>{customerData?.repeatCustomers || 0}</Text>
           <Text style={styles.metricLabel}>Repeat Customers</Text>

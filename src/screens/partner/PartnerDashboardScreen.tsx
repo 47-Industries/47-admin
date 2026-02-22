@@ -179,8 +179,8 @@ export function PartnerDashboardScreen({ navigation, hideHeader }: PartnerDashbo
             style={styles.quickLinkItem}
             onPress={() => navigation.navigate('Leads')}
           >
-            <View style={[styles.quickLinkIcon, { backgroundColor: '#3b82f620' }]}>
-              <Ionicons name="clipboard-outline" size={20} color="#3b82f6" />
+            <View style={[styles.quickLinkIcon, { backgroundColor: colors.primaryBg }]}>
+              <Ionicons name="clipboard-outline" size={20} color=colors.primary />
             </View>
             <Text style={styles.quickLinkTitle}>My Leads</Text>
             <Text style={styles.quickLinkSubtext}>{dashboardData?.stats?.totalLeads || 0} total</Text>
@@ -190,8 +190,8 @@ export function PartnerDashboardScreen({ navigation, hideHeader }: PartnerDashbo
             style={styles.quickLinkItem}
             onPress={() => navigation.navigate('AffiliateLinks')}
           >
-            <View style={[styles.quickLinkIcon, { backgroundColor: '#10b98120' }]}>
-              <Ionicons name="link-outline" size={20} color="#10b981" />
+            <View style={[styles.quickLinkIcon, { backgroundColor: colors.successBg }]}>
+              <Ionicons name="link-outline" size={20} color=colors.success />
             </View>
             <Text style={styles.quickLinkTitle}>Affiliate Links</Text>
             <Text style={styles.quickLinkSubtext}>{dashboardData?.partner?.affiliateLinks?.length || 0} links</Text>
@@ -234,8 +234,8 @@ export function PartnerDashboardScreen({ navigation, hideHeader }: PartnerDashbo
             style={styles.quickLinkItem}
             onPress={() => navigation.navigate('Recruit')}
           >
-            <View style={[styles.quickLinkIcon, { backgroundColor: '#8b5cf620' }]}>
-              <Ionicons name="git-network-outline" size={20} color="#8b5cf6" />
+            <View style={[styles.quickLinkIcon, { backgroundColor: colors.purpleBg }]}>
+              <Ionicons name="git-network-outline" size={20} color=colors.purple />
             </View>
             <Text style={styles.quickLinkTitle}>Recruit</Text>
             <Text style={styles.quickLinkSubtext}>
@@ -249,13 +249,13 @@ export function PartnerDashboardScreen({ navigation, hideHeader }: PartnerDashbo
         {/* Quick Actions */}
         <View style={styles.quickActions}>
           <TouchableOpacity
-            style={[styles.quickAction, { backgroundColor: '#3b82f6' }]}
+            style={[styles.quickAction, { backgroundColor: colors.primary }]}
             onPress={() => navigation.navigate('NewLead')}
           >
             <Text style={styles.quickActionText}>Submit Lead</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.quickAction, { backgroundColor: '#10b981' }]}
+            style={[styles.quickAction, { backgroundColor: colors.success }]}
             onPress={() => navigation.navigate('AffiliateLinks')}
           >
             <Text style={styles.quickActionText}>Get Affiliate Links</Text>

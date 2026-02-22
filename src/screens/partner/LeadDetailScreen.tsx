@@ -31,13 +31,13 @@ interface LeadDetailScreenProps {
 }
 
 const statusColors: Record<string, { bg: string; text: string }> = {
-  NEW: { bg: 'rgba(59, 130, 246, 0.15)', text: '#3b82f6' },
-  CONTACTED: { bg: 'rgba(245, 158, 11, 0.15)', text: '#f59e0b' },
-  QUALIFIED: { bg: 'rgba(16, 185, 129, 0.15)', text: '#10b981' },
-  PROPOSAL: { bg: 'rgba(139, 92, 246, 0.15)', text: '#8b5cf6' },
-  NEGOTIATION: { bg: 'rgba(236, 72, 153, 0.15)', text: '#ec4899' },
-  WON: { bg: 'rgba(16, 185, 129, 0.15)', text: '#10b981' },
-  LOST: { bg: 'rgba(239, 68, 68, 0.15)', text: '#ef4444' },
+  NEW: { bg: 'rgba(59, 130, 246, 0.15)', text: colors.primary },
+  CONTACTED: { bg: 'rgba(245, 158, 11, 0.15)', text: colors.warning },
+  QUALIFIED: { bg: 'rgba(16, 185, 129, 0.15)', text: colors.success },
+  PROPOSAL: { bg: 'rgba(139, 92, 246, 0.15)', text: colors.purple },
+  NEGOTIATION: { bg: 'rgba(236, 72, 153, 0.15)', text: colors.pink },
+  WON: { bg: 'rgba(16, 185, 129, 0.15)', text: colors.success },
+  LOST: { bg: 'rgba(239, 68, 68, 0.15)', text: colors.error },
 }
 
 export function LeadDetailScreen({ navigation, route }: LeadDetailScreenProps) {

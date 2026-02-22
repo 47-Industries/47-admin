@@ -8,7 +8,7 @@ import { EmptyState } from '../../components/EmptyState'
 import { colors, portalColors, spacing, borderRadius, fontSize, fontWeight } from '../../theme'
 import { Commission } from '../../types'
 
-const PURPLE = '#8b5cf6'
+const PURPLE = colors.purple
 
 type CommissionTab = 'service' | 'override'
 

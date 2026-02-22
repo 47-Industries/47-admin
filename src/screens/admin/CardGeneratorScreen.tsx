@@ -68,9 +68,9 @@ interface CardGeneratorScreenProps {
 }
 
 const BRAND_OPTIONS: { key: BrandType; label: string; color: string }[] = [
-  { key: 'FORTY_SEVEN_INDUSTRIES', label: '47 Industries', color: '#3b82f6' },
-  { key: 'MOTOREV', label: 'MotoRev', color: '#ef4444' },
-  { key: 'BOOKFADE', label: 'BookFade', color: '#9a58fd' },
+  { key: 'FORTY_SEVEN_INDUSTRIES', label: '47 Industries', color: colors.primary },
+  { key: 'MOTOREV', label: 'MotoRev', color: colors.error },
+  { key: 'BOOKFADE', label: 'BookFade', color: colors.purpleAlt },
   { key: 'CUSTOM', label: 'Custom', color: '#71717a' },
 ]
 
@@ -81,7 +81,7 @@ const LAYOUT_OPTIONS: { id: LayoutType; name: string; description: string }[] = 
   { id: 'photo-hero', name: 'Photo Hero', description: 'Large profile image emphasis' },
 ]
 
-const COLOR_PRESETS = ['#3b82f6', '#9a58fd', '#ef4444', '#10b981', '#f59e0b', '#ec4899']
+const COLOR_PRESETS = [colors.primary, colors.purpleAlt, colors.error, colors.success, colors.warning, colors.pink]
 
 export default function CardGeneratorScreen({ navigation, route }: CardGeneratorScreenProps) {
   const existingDesign = route?.params?.design
@@ -98,7 +98,7 @@ export default function CardGeneratorScreen({ navigation, route }: CardGenerator
   const [phone, setPhone] = useState('')
   const [website, setWebsite] = useState('')
   const [profileImage, setProfileImage] = useState('')
-  const [themeColor, setThemeColor] = useState('#3b82f6')
+  const [themeColor, setThemeColor] = useState(colors.primary)
 
   // QR Code
   const [qrEnabled, setQrEnabled] = useState(false)
@@ -137,7 +137,7 @@ export default function CardGeneratorScreen({ navigation, route }: CardGenerator
       setPhone((data.phone as string) || '')
       setWebsite((data.website as string) || '')
       setProfileImage((data.profileImage as string) || '')
-      setThemeColor((data.themeColor as string) || '#3b82f6')
+      setThemeColor((data.themeColor as string) || colors.primary)
       setSelectedLayout((data.layout as LayoutType) || 'standard')
 
       const qrCode = data.qrCode as { enabled?: boolean; url?: string; label?: string } | undefined
@@ -156,24 +156,24 @@ export default function CardGeneratorScreen({ navigation, route }: CardGenerator
         case 'FORTY_SEVEN_INDUSTRIES':
           setCompany('47 Industries')
           setWebsite('47industries.com')
-          setThemeColor('#3b82f6')
+          setThemeColor(colors.primary)
           setQrUrl('https://47industries.com')
           break
         case 'MOTOREV':
           setCompany('MotoRev')
           setWebsite('motorevapp.com')
-          setThemeColor('#ef4444')
+          setThemeColor(colors.error)
           setQrUrl('https://motorevapp.com')
           break
         case 'BOOKFADE':
           setCompany('')
           setWebsite('bookfade.app')
-          setThemeColor('#9a58fd')
+          setThemeColor(colors.purpleAlt)
           setQrEnabled(true)
           setQrLabel('Scan to Book')
           break
         case 'CUSTOM':
-          setThemeColor('#3b82f6')
+          setThemeColor(colors.primary)
           break
       }
     }
@@ -194,7 +194,7 @@ export default function CardGeneratorScreen({ navigation, route }: CardGenerator
         setTitle(barber.cardData?.tagline || 'Professional Barber')
         setCompany(barber.businessName || '')
         setProfileImage(barber.profileImage || '')
-        setThemeColor(barber.themeColor || '#9a58fd')
+        setThemeColor(barber.themeColor || colors.purpleAlt)
         setQrEnabled(true)
         setQrUrl(`https://bookfade.app/b/${barber.slug}`)
         setQrLabel('Scan to Book')
@@ -364,9 +364,9 @@ export default function CardGeneratorScreen({ navigation, route }: CardGenerator
 
         {/* 47 Industries Team Import */}
         {selectedBrand === 'FORTY_SEVEN_INDUSTRIES' && (
-          <Card style={styles.importCard} borderColor="#3b82f6">
+          <Card style={styles.importCard} borderColor=colors.primary>
             <View style={styles.importHeader}>
-              <Ionicons name="people-outline" size={20} color="#3b82f6" />
+              <Ionicons name="people-outline" size={20} color=colors.primary />
               <Text style={styles.importTitle}>Import from Team</Text>
             </View>
             <View style={styles.importRow}>
@@ -381,7 +381,7 @@ export default function CardGeneratorScreen({ navigation, route }: CardGenerator
                 returnKeyType="search"
               />
               <TouchableOpacity
-                style={[styles.importButton, { backgroundColor: '#3b82f6' }, searchingTeam && styles.importButtonDisabled]}
+                style={[styles.importButton, { backgroundColor: colors.primary }, searchingTeam && styles.importButtonDisabled]}
                 onPress={handleSearchTeam}
                 disabled={searchingTeam}
               >
@@ -408,7 +408,7 @@ export default function CardGeneratorScreen({ navigation, route }: CardGenerator
                           <Text style={styles.avatarText}>{(member.name || 'U').charAt(0)}</Text>
                         </View>
                       ) : (
-                        <View style={[styles.avatarImage, { backgroundColor: '#3b82f6' }]}>
+                        <View style={[styles.avatarImage, { backgroundColor: colors.primary }]}>
                           <Text style={styles.avatarText}>{(member.name || 'U').charAt(0)}</Text>
                         </View>
                       )}
@@ -433,9 +433,9 @@ export default function CardGeneratorScreen({ navigation, route }: CardGenerator
 
         {/* BookFade Import */}
         {selectedBrand === 'BOOKFADE' && (
-          <Card style={styles.importCard} borderColor="#9a58fd">
+          <Card style={styles.importCard} borderColor=colors.purpleAlt>
             <View style={styles.importHeader}>
-              <Ionicons name="cloud-download-outline" size={20} color="#9a58fd" />
+              <Ionicons name="cloud-download-outline" size={20} color=colors.purpleAlt />
               <Text style={styles.importTitle}>Import from BookFade</Text>
             </View>
             <View style={styles.importRow}>
@@ -623,7 +623,7 @@ export default function CardGeneratorScreen({ navigation, route }: CardGenerator
             style={[styles.input, styles.colorInput]}
             value={themeColor}
             onChangeText={setThemeColor}
-            placeholder="#3b82f6"
+            placeholder=colors.primary
             placeholderTextColor={colors.textMuted}
           />
         </View>
@@ -862,7 +862,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
   },
   importButton: {
-    backgroundColor: '#9a58fd',
+    backgroundColor: colors.purpleAlt,
     paddingHorizontal: spacing.lg,
     borderRadius: borderRadius.md,
     alignItems: 'center',
@@ -1122,7 +1122,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: '#ef4444',
+    backgroundColor: colors.error,
     paddingVertical: spacing.lg,
     borderRadius: borderRadius.md,
   },

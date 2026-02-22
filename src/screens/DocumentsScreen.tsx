@@ -44,19 +44,19 @@ type DocumentSource = 'all' | 'company' | 'contracts' | 'partner-contracts' | 't
 const SOURCE_FILTERS: { value: DocumentSource; label: string; color: string }[] = [
   { value: 'all', label: 'All', color: colors.textMuted },
   { value: 'company', label: 'Company', color: colors.primary },
-  { value: 'contracts', label: 'Contracts', color: '#8b5cf6' },
+  { value: 'contracts', label: 'Contracts', color: colors.purple },
   { value: 'partner-contracts', label: 'Partner', color: colors.success },
-  { value: 'team', label: 'Team', color: '#f59e0b' },
-  { value: 'requests', label: 'Requests', color: '#06b6d4' },
+  { value: 'team', label: 'Team', color: colors.warning },
+  { value: 'requests', label: 'Requests', color: colors.cyan },
 ]
 
 function getSourceColor(source: string | undefined): string {
   switch (source) {
     case 'company': return colors.primary
-    case 'contracts': return '#8b5cf6'
+    case 'contracts': return colors.purple
     case 'partner-contracts': return colors.success
-    case 'team': return '#f59e0b'
-    case 'requests': return '#06b6d4'
+    case 'team': return colors.warning
+    case 'requests': return colors.cyan
     default: return colors.textMuted
   }
 }
@@ -83,26 +83,26 @@ function getContractStatusVariant(status: string | undefined): 'default' | 'succ
 }
 
 const FOLDER_COLORS = [
-  '#3b82f6',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#8b5cf6',
-  '#ec4899',
-  '#06b6d4',
-  '#f97316',
+  colors.primary,
+  colors.success,
+  colors.warning,
+  colors.error,
+  colors.purple,
+  colors.pink,
+  colors.cyan,
+  colors.orange,
 ]
 
 function getFileIcon(fileType: string | null): { name: string; color: string } {
   if (!fileType) return { name: 'document-outline', color: colors.textMuted }
-  if (fileType.includes('pdf')) return { name: 'document-text-outline', color: '#ef4444' }
-  if (fileType.includes('image')) return { name: 'image-outline', color: '#3b82f6' }
-  if (fileType.includes('spreadsheet') || fileType.includes('excel') || fileType.includes('csv')) return { name: 'grid-outline', color: '#10b981' }
-  if (fileType.includes('word') || fileType.includes('document') || fileType.includes('msword')) return { name: 'document-outline', color: '#3b82f6' }
-  if (fileType.includes('presentation') || fileType.includes('powerpoint')) return { name: 'easel-outline', color: '#f59e0b' }
-  if (fileType.includes('zip') || fileType.includes('archive') || fileType.includes('compressed')) return { name: 'archive-outline', color: '#8b5cf6' }
-  if (fileType.includes('video')) return { name: 'videocam-outline', color: '#ec4899' }
-  if (fileType.includes('audio')) return { name: 'musical-notes-outline', color: '#f97316' }
+  if (fileType.includes('pdf')) return { name: 'document-text-outline', color: colors.error }
+  if (fileType.includes('image')) return { name: 'image-outline', color: colors.primary }
+  if (fileType.includes('spreadsheet') || fileType.includes('excel') || fileType.includes('csv')) return { name: 'grid-outline', color: colors.success }
+  if (fileType.includes('word') || fileType.includes('document') || fileType.includes('msword')) return { name: 'document-outline', color: colors.primary }
+  if (fileType.includes('presentation') || fileType.includes('powerpoint')) return { name: 'easel-outline', color: colors.warning }
+  if (fileType.includes('zip') || fileType.includes('archive') || fileType.includes('compressed')) return { name: 'archive-outline', color: colors.purple }
+  if (fileType.includes('video')) return { name: 'videocam-outline', color: colors.pink }
+  if (fileType.includes('audio')) return { name: 'musical-notes-outline', color: colors.orange }
   if (fileType.includes('text')) return { name: 'document-text-outline', color: colors.textSecondary }
   return { name: 'document-outline', color: colors.textMuted }
 }
@@ -162,7 +162,7 @@ const VIRTUAL_FOLDER_STRUCTURE: VirtualFolder[] = [
   {
     id: 'virtual_client_contracts',
     name: 'Client Contracts',
-    color: '#8b5cf6',
+    color: colors.purple,
     icon: 'briefcase-outline',
     parentId: null,
     children: [],
@@ -170,7 +170,7 @@ const VIRTUAL_FOLDER_STRUCTURE: VirtualFolder[] = [
   {
     id: 'virtual_team_documents',
     name: 'Team Documents',
-    color: '#f59e0b',
+    color: colors.warning,
     icon: 'people-outline',
     parentId: null,
     children: [],
@@ -178,7 +178,7 @@ const VIRTUAL_FOLDER_STRUCTURE: VirtualFolder[] = [
   {
     id: 'virtual_partner_contracts',
     name: 'Partner Contracts',
-    color: '#10b981',
+    color: colors.success,
     icon: 'handshake-outline',
     parentId: null,
     children: [],
@@ -186,7 +186,7 @@ const VIRTUAL_FOLDER_STRUCTURE: VirtualFolder[] = [
   {
     id: 'virtual_taxes',
     name: 'Taxes',
-    color: '#3b82f6',
+    color: colors.primary,
     icon: 'calculator-outline',
     parentId: null,
     children: [],
@@ -194,7 +194,7 @@ const VIRTUAL_FOLDER_STRUCTURE: VirtualFolder[] = [
   {
     id: 'virtual_requests',
     name: 'Requests',
-    color: '#06b6d4',
+    color: colors.cyan,
     icon: 'cube-outline',
     parentId: null,
     children: [],

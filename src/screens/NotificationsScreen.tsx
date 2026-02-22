@@ -54,7 +54,7 @@ const TYPE_COLOR_MAP: Record<string, string> = {
   INVENTORY_LOW: colors.warning,
   INVENTORY_OUT: colors.error,
   CUSTOM_REQUEST: colors.purple,
-  SERVICE_INQUIRY: '#06b6d4',
+  SERVICE_INQUIRY: colors.cyan,
   REVIEW_NEW: colors.warning,
   USER_SIGNUP: colors.success,
   SYSTEM: colors.textMuted,

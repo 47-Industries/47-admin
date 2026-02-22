@@ -14,6 +14,7 @@ export const colors = {
   // Primary
   primary: '#3b82f6',
   primaryHover: '#2563eb',
+  primaryBg: 'rgba(59, 130, 246, 0.1)',
 
   // Status
   success: '#10b981',
@@ -26,12 +27,22 @@ export const colors = {
   // Others
   purple: '#8b5cf6',
   purpleBg: 'rgba(139, 92, 246, 0.1)',
+  purpleBg30: 'rgba(139, 92, 246, 0.3)',
+  purpleBgSubtle: 'rgba(168, 85, 247, 0.15)',
   purpleAlt: '#a855f7',
   pink: '#ec4899',
+  pinkBg: 'rgba(236, 72, 153, 0.1)',
   cyan: '#06b6d4',
   cyanBg: 'rgba(6, 182, 212, 0.1)',
   orange: '#f97316',
   orangeBg: 'rgba(249, 115, 22, 0.1)',
+  // Subtle tinted backgrounds (0.15 alpha — for icon containers)
+  primaryBgSubtle: 'rgba(59, 130, 246, 0.15)',
+  successBgSubtle: 'rgba(34, 197, 94, 0.15)',
+  neutralBgSubtle: 'rgba(113, 113, 122, 0.15)',
+  // Extended greens not in success palette
+  green400: '#22c55e',
+  amber300: '#fbbf24',
 }
 
 // Portal-specific accent colors

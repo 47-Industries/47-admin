@@ -191,7 +191,7 @@ export function AffiliateLinksScreen({ navigation, hideHeader }: AffiliateLinksS
   }
 
   const getPlatformColor = (platform: string) => {
-    return platform === 'MOTOREV' ? '#8b5cf6' : '#10b981'
+    return platform === 'MOTOREV' ? colors.purple : colors.success
   }
 
   const getEventLabel = (event: string) => {
@@ -275,8 +275,8 @@ export function AffiliateLinksScreen({ navigation, hideHeader }: AffiliateLinksS
               {/* Shop */}
               <View style={styles.rateCard}>
                 <View style={styles.rateHeader}>
-                  <View style={[styles.rateIcon, { backgroundColor: '#10b98120' }]}>
-                    <Ionicons name="cart-outline" size={18} color="#10b981" />
+                  <View style={[styles.rateIcon, { backgroundColor: colors.successBg }]}>
+                    <Ionicons name="cart-outline" size={18} color=colors.success />
                   </View>
                   <View style={styles.rateInfo}>
                     <Text style={styles.rateName}>Shop Orders</Text>
@@ -286,7 +286,7 @@ export function AffiliateLinksScreen({ navigation, hideHeader }: AffiliateLinksS
                   </View>
                 </View>
                 <View style={styles.rateValue}>
-                  <Text style={[styles.ratePercent, { color: '#10b981' }]}>
+                  <Text style={[styles.ratePercent, { color: colors.success }]}>
                     {stats.settings.shopCommissionRate || 5}%
                   </Text>
                   <Text style={styles.rateLabel}>Commission</Text>
@@ -296,8 +296,8 @@ export function AffiliateLinksScreen({ navigation, hideHeader }: AffiliateLinksS
               {/* MotoRev */}
               <View style={styles.rateCard}>
                 <View style={styles.rateHeader}>
-                  <View style={[styles.rateIcon, { backgroundColor: '#8b5cf620' }]}>
-                    <Ionicons name="phone-portrait-outline" size={18} color="#8b5cf6" />
+                  <View style={[styles.rateIcon, { backgroundColor: colors.purpleBg }]}>
+                    <Ionicons name="phone-portrait-outline" size={18} color=colors.purple />
                   </View>
                   <View style={styles.rateInfo}>
                     <Text style={styles.rateName}>MotoRev</Text>
@@ -307,7 +307,7 @@ export function AffiliateLinksScreen({ navigation, hideHeader }: AffiliateLinksS
                   </View>
                 </View>
                 <View style={styles.rateValue}>
-                  <Text style={[styles.ratePercent, { color: '#8b5cf6' }]}>
+                  <Text style={[styles.ratePercent, { color: colors.purple }]}>
                     {formatCurrency(stats.settings.motorevProBonus || 2.5)}
                   </Text>
                   <Text style={styles.rateLabel}>Per Pro</Text>

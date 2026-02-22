@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { api } from '../../services/api'
 import { colors, spacing, borderRadius, fontSize, fontWeight } from '../../theme'
 
-const PURPLE = '#8b5cf6'
+const PURPLE = colors.purple
 
 interface MLMConfigScreenProps {
   navigation: {

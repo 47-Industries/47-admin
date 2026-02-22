@@ -348,11 +348,11 @@ export function UserAffiliateDetailScreen({ navigation, route }: UserAffiliateDe
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      PENDING: '#f59e0b',
-      APPROVED: '#3b82f6',
-      PAID: '#10b981',
-      APPLIED: '#a855f7',
-      COMPLETED: '#10b981',
+      PENDING: colors.warning,
+      APPROVED: colors.primary,
+      PAID: colors.success,
+      APPLIED: colors.purpleAlt,
+      COMPLETED: colors.success,
     }
     return colors[status] || '#6b7280'
   }

@@ -55,21 +55,21 @@ const INITIAL_FORM_DATA: FormData = {
   key: '',
   tagline: '',
   description: '',
-  accentColor: '#3b82f6',
+  accentColor: colors.primary,
   logo: '',
   active: true,
 }
 
 // Preset accent colors for quick selection
 const PRESET_COLORS = [
-  '#3b82f6', // Blue
-  '#10b981', // Green
-  '#f59e0b', // Amber
-  '#ef4444', // Red
-  '#8b5cf6', // Purple
-  '#ec4899', // Pink
-  '#06b6d4', // Cyan
-  '#f97316', // Orange
+  colors.primary, // Blue
+  colors.success, // Green
+  colors.warning, // Amber
+  colors.error, // Red
+  colors.purple, // Purple
+  colors.pink, // Pink
+  colors.cyan, // Cyan
+  colors.orange, // Orange
 ]
 
 export function BrandsScreen({ navigation, hideHeader }: { navigation: any; hideHeader?: boolean }) {
@@ -134,7 +134,7 @@ export function BrandsScreen({ navigation, hideHeader }: { navigation: any; hide
       key: brand.key,
       tagline: brand.tagline || '',
       description: brand.description || '',
-      accentColor: brand.accentColor || '#3b82f6',
+      accentColor: brand.accentColor || colors.primary,
       logo: brand.logo || '',
       active: brand.active,
     })
@@ -388,7 +388,7 @@ export function BrandsScreen({ navigation, hideHeader }: { navigation: any; hide
                     </View>
                     <TextInput
                       style={[styles.input, { marginTop: spacing.sm }]}
-                      placeholder="#3b82f6"
+                      placeholder=colors.primary
                       placeholderTextColor={colors.textMuted}
                       value={formData.accentColor}
                       onChangeText={(text) => setFormData({ ...formData, accentColor: text })}

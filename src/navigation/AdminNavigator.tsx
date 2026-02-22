@@ -605,7 +605,7 @@ function PeopleTabScreen({ navigation }: { navigation: any }) {
               style={styles.mlmConfigButton}
               onPress={() => navigation.navigate('MLMConfig')}
             >
-              <Ionicons name="git-network-outline" size={14} color="#8b5cf6" />
+              <Ionicons name="git-network-outline" size={14} color=colors.purple />
               <Text style={styles.mlmConfigButtonText}>MLM Config</Text>
             </TouchableOpacity>
           </View>
@@ -783,15 +783,15 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
-    backgroundColor: '#8b5cf620',
+    backgroundColor: colors.purpleBg,
     borderRadius: borderRadius.sm,
     borderWidth: 1,
-    borderColor: '#8b5cf640',
+    borderColor: 'rgba(139, 92, 246, 0.25)',
   },
   mlmConfigButtonText: {
     fontSize: 11,
     fontWeight: fontWeight.medium,
-    color: '#8b5cf6',
+    color: colors.purple,
   },
   segmentedControl: {
     flex: 1,
