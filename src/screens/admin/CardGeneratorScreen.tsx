@@ -14,6 +14,8 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { WebView } from 'react-native-webview'
+import * as Print from 'expo-print'
+import * as Sharing from 'expo-sharing'
 import { Card } from '../../components/Card'
 import { ZoomableView } from '../../components/ZoomableView'
 import { Badge } from '../../components/Badge'
@@ -301,6 +303,75 @@ export default function CardGeneratorScreen({ navigation, route }: CardGenerator
       Alert.alert('Error', error.message || 'Failed to save design')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const printCard = async (side: 'front' | 'back') => {
+    const html = side === 'front' ? frontHtml : backHtml
+    if (!html) {
+      Alert.alert('Error', 'Generate a card preview first')
+      return
+    }
+    try {
+      await Print.printAsync({ html })
+    } catch (error: any) {
+      if (error.message !== 'Printing did not complete') {
+        Alert.alert('Error', error.message || 'Failed to print')
+      }
+    }
+  }
+
+  const shareCardPdf = async (side: 'front' | 'back') => {
+    const html = side === 'front' ? frontHtml : backHtml
+    if (!html) {
+      Alert.alert('Error', 'Generate a card preview first')
+      return
+    }
+    try {
+      const { uri } = await Print.printToFileAsync({ html })
+      const canShare = await Sharing.isAvailableAsync()
+      if (canShare) {
+        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf' })
+      } else {
+        Alert.alert('Sharing not available', 'Your device does not support file sharing')
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to generate PDF')
+    }
+  }
+
+  const printSheet = async (side: 'front' | 'back') => {
+    const html = side === 'front' ? frontHtml : backHtml
+    if (!html) {
+      Alert.alert('Error', 'Generate a card preview first')
+      return
+    }
+    // 10-up sheet: 2 cols x 5 rows on 8.5"x11" (792x1008pt at 96dpi)
+    // card 3.5"x2" = 336x192pt, margins: left=72pt, top=48pt
+    const sheetHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      @page { size: 8.5in 11in; margin: 0; }
+      body { margin: 0; padding: 0; width: 8.5in; height: 11in; }
+      .sheet { width: 8.5in; height: 11in; position: relative; }
+      .card { position: absolute; width: 3.5in; height: 2in; overflow: hidden; }
+      ${[0,1,2,3,4].map(row => [0,1].map(col =>
+        `.card-${row}-${col} { left: ${0.75 + col * 3.5}in; top: ${0.5 + row * 2}in; }`
+      ).join('\n')).join('\n')}
+      iframe { width: 3.5in; height: 2in; border: none; display: block; }
+    </style></head><body><div class="sheet">
+      ${[0,1,2,3,4].map(row => [0,1].map(col =>
+        `<div class="card card-${row}-${col}"><iframe srcdoc="${html.replace(/"/g, '&quot;').replace(/'/g, '&#39;')}"></iframe></div>`
+      ).join('')).join('')}
+    </div></body></html>`
+    try {
+      const { uri } = await Print.printToFileAsync({ html: sheetHtml, width: 816, height: 1056 })
+      const canShare = await Sharing.isAvailableAsync()
+      if (canShare) {
+        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf' })
+      } else {
+        Alert.alert('Sharing not available', 'Your device does not support file sharing')
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to generate print sheet')
     }
   }
 
@@ -738,18 +809,44 @@ export default function CardGeneratorScreen({ navigation, route }: CardGenerator
 
           {/* PDF Actions */}
           <View style={styles.modalActions}>
+            <View style={styles.printRow}>
+              <TouchableOpacity
+                style={[styles.pdfButton, { flex: 1 }]}
+                onPress={() => printCard('front')}
+              >
+                <Ionicons name="print-outline" size={18} color="#fff" />
+                <Text style={styles.pdfButtonText}>Print Front</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.pdfButton, { flex: 1 }]}
+                onPress={() => printCard('back')}
+              >
+                <Ionicons name="print-outline" size={18} color="#fff" />
+                <Text style={styles.pdfButtonText}>Print Back</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.printRow}>
+              <TouchableOpacity
+                style={[styles.shareButton, { flex: 1 }]}
+                onPress={() => shareCardPdf('front')}
+              >
+                <Ionicons name="share-outline" size={18} color="#fff" />
+                <Text style={styles.pdfButtonText}>Save Front PDF</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.shareButton, { flex: 1 }]}
+                onPress={() => shareCardPdf('back')}
+              >
+                <Ionicons name="share-outline" size={18} color="#fff" />
+                <Text style={styles.pdfButtonText}>Save Back PDF</Text>
+              </TouchableOpacity>
+            </View>
             <TouchableOpacity
-              style={styles.pdfButton}
-              onPress={() => {
-                Alert.alert(
-                  'Generate PDF',
-                  'PDF generation is available in the web admin panel. Use the web version to download print-ready PDFs.',
-                  [{ text: 'OK' }]
-                )
-              }}
+              style={styles.sheetButton}
+              onPress={() => printSheet(previewSide)}
             >
-              <Ionicons name="document-outline" size={20} color="#fff" />
-              <Text style={styles.pdfButtonText}>Generate PDF</Text>
+              <Ionicons name="document-outline" size={18} color="#fff" />
+              <Text style={styles.pdfButtonText}>10-Up Sheet ({previewSide === 'front' ? 'Front' : 'Back'})</Text>
             </TouchableOpacity>
           </View>
 
@@ -757,7 +854,8 @@ export default function CardGeneratorScreen({ navigation, route }: CardGenerator
           <View style={styles.printInfo}>
             <Text style={styles.printInfoTitle}>Print Specifications</Text>
             <Text style={styles.printInfoText}>Finished size: 3.5" x 2" (US Standard)</Text>
-            <Text style={styles.printInfoText}>PDF includes: 0.125" bleed on all sides</Text>
+            <Text style={styles.printInfoText}>10-up sheet: 2 cols x 5 rows on 8.5" x 11"</Text>
+            <Text style={styles.printInfoText}>Use perforated business card paper for best results</Text>
           </View>
         </View>
       </Modal>
@@ -1116,14 +1214,37 @@ const styles = StyleSheet.create({
   },
   modalActions: {
     padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  printRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
   pdfButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+  },
+  shareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.success,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+  },
+  sheetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.error,
-    paddingVertical: spacing.lg,
+    backgroundColor: colors.purpleAlt,
+    paddingVertical: spacing.md,
     borderRadius: borderRadius.md,
   },
   pdfButtonText: {
