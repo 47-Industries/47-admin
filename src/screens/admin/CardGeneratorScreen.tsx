@@ -340,29 +340,65 @@ export default function CardGeneratorScreen({ navigation, route }: CardGenerator
     }
   }
 
+  const buildSheetHtml = (cardHtml: string): string => {
+    // Extract <style> blocks from card HTML
+    const styleMatches = cardHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || []
+    const cardStyles = styleMatches.map(s => s.replace(/<\/?style[^>]*>/gi, '')).join('\n')
+
+    // Extract <body> inner content
+    const bodyMatch = cardHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/i)
+    const cardBody = bodyMatch ? bodyMatch[1].trim() : ''
+
+    // Card is designed at 3.75in x 2.25in. Slot is 3.5in x 2.0in.
+    // Scale = 3.5/3.75 = 0.9333 (width-driven)
+    // After scale, height = 2.25 * 0.9333 = 2.1in — clip 0.1in with overflow:hidden
+    const SCALE = 3.5 / 3.75  // 0.9333
+
+    // Build 10 card slots: 2 cols x 5 rows, 0.75in left margin, 0.5in top margin
+    const slots = []
+    for (let row = 0; row < 5; row++) {
+      for (let col = 0; col < 2; col++) {
+        const left = 0.75 + col * 3.5
+        const top = 0.5 + row * 2.0
+        slots.push(`
+          <div style="position:absolute;left:${left}in;top:${top}in;width:3.5in;height:2.0in;overflow:hidden;">
+            <div style="transform:scale(${SCALE});transform-origin:top left;width:3.75in;height:2.25in;">
+              ${cardBody}
+            </div>
+          </div>`)
+      }
+    }
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+@page { size: 8.5in 11in; margin: 0; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; width: 8.5in; height: 11in; background: #fff; }
+${cardStyles}
+/* Override card page-level styles that would expand beyond slot */
+html { min-height: unset !important; }
+body { min-height: unset !important; padding: 0 !important; display: block !important; }
+</style>
+</head>
+<body>
+<div style="position:relative;width:8.5in;height:11in;">
+${slots.join('')}
+</div>
+</body>
+</html>`
+  }
+
   const printSheet = async (side: 'front' | 'back') => {
     const html = side === 'front' ? frontHtml : backHtml
     if (!html) {
       Alert.alert('Error', 'Generate a card preview first')
       return
     }
-    // 10-up sheet: 2 cols x 5 rows on 8.5"x11" (792x1008pt at 96dpi)
-    // card 3.5"x2" = 336x192pt, margins: left=72pt, top=48pt
-    const sheetHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
-      @page { size: 8.5in 11in; margin: 0; }
-      body { margin: 0; padding: 0; width: 8.5in; height: 11in; }
-      .sheet { width: 8.5in; height: 11in; position: relative; }
-      .card { position: absolute; width: 3.5in; height: 2in; overflow: hidden; }
-      ${[0,1,2,3,4].map(row => [0,1].map(col =>
-        `.card-${row}-${col} { left: ${0.75 + col * 3.5}in; top: ${0.5 + row * 2}in; }`
-      ).join('\n')).join('\n')}
-      iframe { width: 3.5in; height: 2in; border: none; display: block; }
-    </style></head><body><div class="sheet">
-      ${[0,1,2,3,4].map(row => [0,1].map(col =>
-        `<div class="card card-${row}-${col}"><iframe srcdoc="${html.replace(/"/g, '&quot;').replace(/'/g, '&#39;')}"></iframe></div>`
-      ).join('')).join('')}
-    </div></body></html>`
     try {
+      const sheetHtml = buildSheetHtml(html)
       const { uri } = await Print.printToFileAsync({ html: sheetHtml, width: 816, height: 1056 })
       const canShare = await Sharing.isAvailableAsync()
       if (canShare) {
