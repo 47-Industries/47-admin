@@ -71,6 +71,10 @@ import VariantsBulkEditScreen from '../screens/VariantsBulkEditScreen'
 import { PrintQueueScreen } from '../screens/admin/PrintQueueScreen'
 import { PrintfulDashboardScreen } from '../screens/admin/PrintfulDashboardScreen'
 import { OAuthApplicationsScreen } from '../screens/admin/OAuthApplicationsScreen'
+import TimeclockScreen from '../screens/timeclock/TimeclockScreen'
+import TimesheetsScreen from '../screens/timeclock/TimesheetsScreen'
+import TimeclockReportsScreen from '../screens/timeclock/TimeclockReportsScreen'
+import TimeclockTeamScreen from '../screens/timeclock/TimeclockTeamScreen'
 import { colors, portalColors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
 type TabName = 'Home' | 'Sales' | 'Business' | 'People' | 'Account'
@@ -263,6 +267,14 @@ export default function AdminNavigator() {
           return <ScreenWrapper><OAuthApplicationsScreen navigation={navigation} /></ScreenWrapper>
         case 'Inventory':
           return <ScreenWrapper><InventoryScreen navigation={navigation} /></ScreenWrapper>
+        case 'Timeclock':
+          return <ScreenWrapper><TimeclockScreen navigation={navigation} /></ScreenWrapper>
+        case 'Timesheets':
+          return <ScreenWrapper><TimesheetsScreen navigation={navigation} /></ScreenWrapper>
+        case 'TimeclockReports':
+          return <ScreenWrapper><TimeclockReportsScreen navigation={navigation} /></ScreenWrapper>
+        case 'TimeclockTeam':
+          return <ScreenWrapper><TimeclockTeamScreen navigation={navigation} /></ScreenWrapper>
       }
     }
 
@@ -465,22 +477,25 @@ function SalesTabScreen({ navigation }: { navigation: any }) {
   )
 }
 
-// Business Tab - Services, Finance, Operations, Analytics, and Documents as top-level categories
-type BusinessCategory = 'services' | 'finance' | 'operations' | 'analytics' | 'documents'
+// Business Tab - Services, Finance, Operations, Timeclock, Analytics, and Documents as top-level categories
+type BusinessCategory = 'services' | 'finance' | 'operations' | 'timeclock' | 'analytics' | 'documents'
 type ServiceSection = 'inquiries' | 'packages' | 'portfolio'
 type FinanceSection = 'expenses' | 'reports'
 type OperationsSection = 'print-queue' | 'printful'
+type TimeclockSection = 'clock' | 'timesheets' | 'reports' | 'team'
 
 function BusinessTabScreen({ navigation }: { navigation: any }) {
   const [category, setCategory] = useState<BusinessCategory>('services')
   const [serviceSection, setServiceSection] = useState<ServiceSection>('inquiries')
   const [financeSection, setFinanceSection] = useState<FinanceSection>('expenses')
   const [operationsSection, setOperationsSection] = useState<OperationsSection>('print-queue')
+  const [timeclockSection, setTimeclockSection] = useState<TimeclockSection>('clock')
 
   const categoryConfig: Record<BusinessCategory, { icon: string; label: string }> = {
     services: { icon: 'construct-outline', label: 'Services' },
     finance: { icon: 'wallet-outline', label: 'Finance' },
     operations: { icon: 'print-outline', label: 'Operations' },
+    timeclock: { icon: 'time-outline', label: 'Time Clock' },
     analytics: { icon: 'analytics-outline', label: 'Analytics' },
     documents: { icon: 'document-text-outline', label: 'Documents' },
   }
@@ -571,6 +586,37 @@ function BusinessTabScreen({ navigation }: { navigation: any }) {
         </View>
       )}
 
+      {category === 'timeclock' && (
+        <View style={styles.segmentWrapper}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segmentedControlWide}>
+            <TouchableOpacity
+              style={[styles.segmentPill, timeclockSection === 'clock' && styles.segmentPillActive]}
+              onPress={() => setTimeclockSection('clock')}
+            >
+              <Text style={[styles.segmentText, timeclockSection === 'clock' && styles.segmentTextActive]}>Clock In/Out</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segmentPill, timeclockSection === 'timesheets' && styles.segmentPillActive]}
+              onPress={() => setTimeclockSection('timesheets')}
+            >
+              <Text style={[styles.segmentText, timeclockSection === 'timesheets' && styles.segmentTextActive]}>Timesheets</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segmentPill, timeclockSection === 'reports' && styles.segmentPillActive]}
+              onPress={() => setTimeclockSection('reports')}
+            >
+              <Text style={[styles.segmentText, timeclockSection === 'reports' && styles.segmentTextActive]}>Reports</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segmentPill, timeclockSection === 'team' && styles.segmentPillActive]}
+              onPress={() => setTimeclockSection('team')}
+            >
+              <Text style={[styles.segmentText, timeclockSection === 'team' && styles.segmentTextActive]}>Team</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      )}
+
       {/* Content */}
       <View style={styles.tabContent}>
         {category === 'services' && serviceSection === 'inquiries' && <InquiriesScreen navigation={navigation} hideHeader />}
@@ -582,6 +628,11 @@ function BusinessTabScreen({ navigation }: { navigation: any }) {
 
         {category === 'operations' && operationsSection === 'print-queue' && <PrintQueueScreen navigation={navigation} hideHeader />}
         {category === 'operations' && operationsSection === 'printful' && <PrintfulDashboardScreen navigation={navigation} hideHeader />}
+
+        {category === 'timeclock' && timeclockSection === 'clock' && <TimeclockScreen navigation={navigation} hideHeader />}
+        {category === 'timeclock' && timeclockSection === 'timesheets' && <TimesheetsScreen navigation={navigation} hideHeader />}
+        {category === 'timeclock' && timeclockSection === 'reports' && <TimeclockReportsScreen navigation={navigation} hideHeader />}
+        {category === 'timeclock' && timeclockSection === 'team' && <TimeclockTeamScreen navigation={navigation} hideHeader />}
 
         {category === 'analytics' && <AnalyticsScreen navigation={navigation} hideHeader />}
 
