@@ -75,6 +75,10 @@ import TimeclockScreen from '../screens/timeclock/TimeclockScreen'
 import TimesheetsScreen from '../screens/timeclock/TimesheetsScreen'
 import TimeclockReportsScreen from '../screens/timeclock/TimeclockReportsScreen'
 import TimeclockTeamScreen from '../screens/timeclock/TimeclockTeamScreen'
+import FinanceOverviewScreen from '../screens/finance/FinanceOverviewScreen'
+import FinanceLedgerScreen from '../screens/finance/FinanceLedgerScreen'
+import FinancePayrollScreen from '../screens/finance/FinancePayrollScreen'
+import FinanceQuarterlyScreen from '../screens/finance/FinanceQuarterlyScreen'
 import { colors, portalColors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 
 type TabName = 'Home' | 'Sales' | 'Business' | 'People' | 'Account'
@@ -116,8 +120,8 @@ export default function AdminNavigator() {
   const getParentTab = (screenName: string): TabName | null => {
     // Sales: Orders, Invoices, Returns, External Orders + Products, Categories, Brands, Collections, Inventory, Customer Designs
     const salesScreens = ['OrderDetail', 'Returns', 'AdminInvoices', 'InvoiceDetail', 'InvoiceCreate', 'Products', 'ProductDetail', 'ProductCreate', 'Categories', 'Brands', 'Collections', 'CollectionDetail', 'Inventory', 'Variants', 'ExternalOrders', 'ExternalOrderDetail', 'CustomerDesigns', 'CustomerDesignDetail']
-    // Business: Requests (Inquiries, 3D Prints) + Packages + Portfolio + Finance (Expenses, Reports) + Analytics + Operations (Print Queue)
-    const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Portfolio', 'PortfolioDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills', 'Documents', 'PrintQueue']
+    // Business: Requests (Inquiries, 3D Prints) + Packages + Portfolio + Finance (Expenses, Reports, Finance screens) + Analytics + Operations (Print Queue)
+    const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Portfolio', 'PortfolioDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills', 'Documents', 'PrintQueue', 'FinanceOverview', 'FinanceLedger', 'FinancePayroll', 'FinanceQuarterly']
     // People: Clients, Partners, Team, Affiliates, User Affiliates, Users
     const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'CustomerDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail', 'UserAffiliates', 'UserAffiliateDetail', 'PartnerApplications', 'PartnerInquiries', 'MLMConfig']
     // Account: Profile, Email, Settings, Notifications, Marketing, Blog, Business Cards, Email Signatures, OAuth
@@ -275,6 +279,14 @@ export default function AdminNavigator() {
           return <ScreenWrapper><TimeclockReportsScreen navigation={navigation} /></ScreenWrapper>
         case 'TimeclockTeam':
           return <ScreenWrapper><TimeclockTeamScreen navigation={navigation} /></ScreenWrapper>
+        case 'FinanceOverview':
+          return <ScreenWrapper><FinanceOverviewScreen navigation={navigation} /></ScreenWrapper>
+        case 'FinanceLedger':
+          return <ScreenWrapper><FinanceLedgerScreen navigation={navigation} /></ScreenWrapper>
+        case 'FinancePayroll':
+          return <ScreenWrapper><FinancePayrollScreen navigation={navigation} /></ScreenWrapper>
+        case 'FinanceQuarterly':
+          return <ScreenWrapper><FinanceQuarterlyScreen navigation={navigation} /></ScreenWrapper>
       }
     }
 
@@ -480,14 +492,14 @@ function SalesTabScreen({ navigation }: { navigation: any }) {
 // Business Tab - Services, Finance, Operations, Timeclock, Analytics, and Documents as top-level categories
 type BusinessCategory = 'services' | 'finance' | 'operations' | 'timeclock' | 'analytics' | 'documents'
 type ServiceSection = 'inquiries' | 'packages' | 'portfolio'
-type FinanceSection = 'expenses' | 'reports'
+type FinanceSection = 'overview' | 'expenses' | 'reports' | 'payroll' | 'quarterly' | 'ledger'
 type OperationsSection = 'print-queue' | 'printful'
 type TimeclockSection = 'clock' | 'timesheets' | 'reports' | 'team'
 
 function BusinessTabScreen({ navigation }: { navigation: any }) {
   const [category, setCategory] = useState<BusinessCategory>('services')
   const [serviceSection, setServiceSection] = useState<ServiceSection>('inquiries')
-  const [financeSection, setFinanceSection] = useState<FinanceSection>('expenses')
+  const [financeSection, setFinanceSection] = useState<FinanceSection>('overview')
   const [operationsSection, setOperationsSection] = useState<OperationsSection>('print-queue')
   const [timeclockSection, setTimeclockSection] = useState<TimeclockSection>('clock')
 
@@ -550,20 +562,44 @@ function BusinessTabScreen({ navigation }: { navigation: any }) {
 
       {category === 'finance' && (
         <View style={styles.segmentWrapper}>
-          <View style={styles.segmentedControl}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.segmentedControlWide}>
             <TouchableOpacity
-              style={[styles.segment, financeSection === 'expenses' && styles.segmentActive]}
+              style={[styles.segmentPill, financeSection === 'overview' && styles.segmentPillActive]}
+              onPress={() => setFinanceSection('overview')}
+            >
+              <Text style={[styles.segmentText, financeSection === 'overview' && styles.segmentTextActive]}>Overview</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segmentPill, financeSection === 'expenses' && styles.segmentPillActive]}
               onPress={() => setFinanceSection('expenses')}
             >
               <Text style={[styles.segmentText, financeSection === 'expenses' && styles.segmentTextActive]}>Expenses</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.segment, financeSection === 'reports' && styles.segmentActive]}
+              style={[styles.segmentPill, financeSection === 'ledger' && styles.segmentPillActive]}
+              onPress={() => setFinanceSection('ledger')}
+            >
+              <Text style={[styles.segmentText, financeSection === 'ledger' && styles.segmentTextActive]}>Ledger</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segmentPill, financeSection === 'payroll' && styles.segmentPillActive]}
+              onPress={() => setFinanceSection('payroll')}
+            >
+              <Text style={[styles.segmentText, financeSection === 'payroll' && styles.segmentTextActive]}>Payroll</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segmentPill, financeSection === 'quarterly' && styles.segmentPillActive]}
+              onPress={() => setFinanceSection('quarterly')}
+            >
+              <Text style={[styles.segmentText, financeSection === 'quarterly' && styles.segmentTextActive]}>Quarterly</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segmentPill, financeSection === 'reports' && styles.segmentPillActive]}
               onPress={() => setFinanceSection('reports')}
             >
               <Text style={[styles.segmentText, financeSection === 'reports' && styles.segmentTextActive]}>Reports</Text>
             </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
       )}
 
@@ -623,7 +659,11 @@ function BusinessTabScreen({ navigation }: { navigation: any }) {
         {category === 'services' && serviceSection === 'packages' && <ServicesScreen navigation={navigation} hideHeader />}
         {category === 'services' && serviceSection === 'portfolio' && <PortfolioScreen navigation={navigation} hideHeader />}
 
+        {category === 'finance' && financeSection === 'overview' && <FinanceOverviewScreen navigation={navigation} />}
         {category === 'finance' && financeSection === 'expenses' && <ExpensesScreen navigation={navigation} hideHeader />}
+        {category === 'finance' && financeSection === 'ledger' && <FinanceLedgerScreen navigation={navigation} />}
+        {category === 'finance' && financeSection === 'payroll' && <FinancePayrollScreen navigation={navigation} />}
+        {category === 'finance' && financeSection === 'quarterly' && <FinanceQuarterlyScreen navigation={navigation} />}
         {category === 'finance' && financeSection === 'reports' && <ReportsScreen navigation={navigation} hideHeader />}
 
         {category === 'operations' && operationsSection === 'print-queue' && <PrintQueueScreen navigation={navigation} hideHeader />}
