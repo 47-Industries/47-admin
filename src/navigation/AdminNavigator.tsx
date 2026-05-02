@@ -65,6 +65,10 @@ import CustomerDesignDetailScreen from '../screens/CustomerDesignDetailScreen'
 import EmailSignaturesScreen from '../screens/admin/EmailSignaturesScreen'
 import { PartnerApplicationsScreen } from '../screens/admin/PartnerApplicationsScreen'
 import { PartnerInquiriesScreen } from '../screens/admin/PartnerInquiriesScreen'
+import { LearnDashboardScreen } from '../screens/admin/LearnDashboardScreen'
+import { LearnSubscribersScreen } from '../screens/admin/LearnSubscribersScreen'
+import { LearnWaitlistScreen } from '../screens/admin/LearnWaitlistScreen'
+import { LearnBmpLeadsScreen } from '../screens/admin/LearnBmpLeadsScreen'
 import { MLMConfigScreen } from '../screens/admin/MLMConfigScreen'
 import InventoryScreen from '../screens/InventoryScreen'
 import VariantsBulkEditScreen from '../screens/VariantsBulkEditScreen'
@@ -124,8 +128,8 @@ export default function AdminNavigator() {
     const businessScreens = ['CustomRequests', 'CustomRequestDetail', 'InquiryDetail', 'Inquiries', 'Services', 'ServicePackageDetail', 'Portfolio', 'PortfolioDetail', 'Expenses', 'Reports', 'Analytics', 'RecurringBills', 'Documents', 'PrintQueue', 'FinanceOverview', 'FinanceLedger', 'FinancePayroll', 'FinanceQuarterly']
     // People: Clients, Partners, Team, Affiliates, User Affiliates, Users
     const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'CustomerDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail', 'UserAffiliates', 'UserAffiliateDetail', 'PartnerApplications', 'PartnerInquiries', 'MLMConfig']
-    // Account: Profile, Email, Settings, Notifications, Marketing, Blog, Business Cards, Email Signatures, OAuth
-    const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'ShippingSettings', 'TaxSettings', 'SocialSettings', 'Email', 'EmailSignatures', 'Marketing', 'Blog', 'BlogPostDetail', 'BusinessCards', 'CardGenerator', 'OAuthApplications']
+    // Account: Profile, Email, Settings, Notifications, Marketing, Blog, Learn, Business Cards, Email Signatures, OAuth
+    const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'ShippingSettings', 'TaxSettings', 'SocialSettings', 'Email', 'EmailSignatures', 'Marketing', 'Blog', 'BlogPostDetail', 'Learn', 'LearnSubscribers', 'LearnWaitlist', 'LearnBmpLeads', 'BusinessCards', 'CardGenerator', 'OAuthApplications']
 
     if (salesScreens.includes(screenName)) return 'Sales'
     if (businessScreens.includes(screenName)) return 'Business'
@@ -265,6 +269,14 @@ export default function AdminNavigator() {
           return <ScreenWrapper><PartnerApplicationsScreen navigation={navigation} /></ScreenWrapper>
         case 'PartnerInquiries':
           return <ScreenWrapper><PartnerInquiriesScreen navigation={navigation} /></ScreenWrapper>
+        case 'Learn':
+          return <ScreenWrapper><LearnDashboardScreen navigation={navigation} /></ScreenWrapper>
+        case 'LearnSubscribers':
+          return <ScreenWrapper><LearnSubscribersScreen /></ScreenWrapper>
+        case 'LearnWaitlist':
+          return <ScreenWrapper><LearnWaitlistScreen /></ScreenWrapper>
+        case 'LearnBmpLeads':
+          return <ScreenWrapper><LearnBmpLeadsScreen /></ScreenWrapper>
         case 'MLMConfig':
           return <ScreenWrapper><MLMConfigScreen navigation={navigation} /></ScreenWrapper>
         case 'OAuthApplications':

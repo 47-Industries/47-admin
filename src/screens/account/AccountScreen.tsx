@@ -175,6 +175,17 @@ export function AccountScreen({ navigation, hideHeader }: AccountScreenProps) {
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('Learn')}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="library-outline" size={20} color={colors.textSecondary} />
+              <Text style={styles.menuItemText}>Learn / Resource Hub</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          </TouchableOpacity>
         </View>
 
         {/* Tools */}

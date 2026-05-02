@@ -2558,8 +2558,8 @@ class ApiService {
         audience: string
         reason: string
         status: string
-        leadchopperId?: string
-        leadchopperOrgId?: string
+        leadslicerId?: string
+        leadslicerOrgId?: string
         reviewedBy?: string
         reviewedAt?: string
         reviewNotes?: string
@@ -2598,8 +2598,8 @@ class ApiService {
         audience: string
         reason: string
         status: string
-        leadchopperId?: string
-        leadchopperOrgId?: string
+        leadslicerId?: string
+        leadslicerOrgId?: string
         reviewedBy?: string
         reviewedAt?: string
         reviewNotes?: string
@@ -2865,6 +2865,88 @@ class ApiService {
     return this.request<{ success: boolean; updated: number }>('/admin/user-affiliates/commissions', {
       method: 'PUT',
       body: JSON.stringify({ commissionIds, action: 'approve' }),
+    })
+  }
+
+  // Learn / Resource Hub
+  async getLearnStats() {
+    return this.request<{
+      subscribers: { total: number; confirmed: number; pendingLast30: number }
+      pulseWaitlist: { total: number; confirmed: number; invited: number }
+      buildMyPulse: { total: number; new: number; qualified: number; closedWon: number }
+      prompts: { total: number; published: number }
+      contentSubscriptions: { active: number }
+      leadMagnets: { active: number }
+    }>('/admin/learn/stats')
+  }
+
+  async getLearnSubscribers(params?: { status?: string; search?: string }) {
+    const qs = new URLSearchParams()
+    if (params?.status) qs.set('status', params.status)
+    if (params?.search) qs.set('search', params.search)
+    return this.request<{ subscribers: any[] }>(`/admin/learn/subscribers?${qs}`)
+  }
+
+  async updateLearnSubscriber(id: string, data: { status?: string }) {
+    return this.request<{ subscriber: any }>(`/admin/learn/subscribers/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async getLearnWaitlist(params?: { status?: string; search?: string }) {
+    const qs = new URLSearchParams()
+    if (params?.status) qs.set('status', params.status)
+    if (params?.search) qs.set('search', params.search)
+    return this.request<{ entries: any[] }>(`/admin/learn/waitlist?${qs}`)
+  }
+
+  async updateLearnWaitlist(id: string, data: { status?: string; notes?: string }) {
+    return this.request<{ entry: any }>(`/admin/learn/waitlist/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async getLearnBmpLeads(params?: { status?: string; search?: string }) {
+    const qs = new URLSearchParams()
+    if (params?.status) qs.set('status', params.status)
+    if (params?.search) qs.set('search', params.search)
+    return this.request<{ leads: any[] }>(`/admin/learn/build-my-pulse?${qs}`)
+  }
+
+  async updateLearnBmpLead(id: string, data: { status?: string; notes?: string }) {
+    return this.request<{ lead: any }>(`/admin/learn/build-my-pulse/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async getLearnPrompts(params?: { status?: string; tier?: string; search?: string; targetModel?: string }) {
+    const qs = new URLSearchParams()
+    if (params?.status) qs.set('status', params.status)
+    if (params?.tier) qs.set('tier', params.tier)
+    if (params?.search) qs.set('search', params.search)
+    if (params?.targetModel) qs.set('targetModel', params.targetModel)
+    qs.set('limit', '200')
+    return this.request<{ prompts: any[]; categories: any[] }>(`/admin/learn/prompts?${qs}`)
+  }
+
+  async updateLearnPrompt(id: string, data: any) {
+    return this.request<{ prompt: any }>(`/admin/learn/prompts/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async getLearnLeadMagnets() {
+    return this.request<{ magnets: any[] }>('/admin/learn/lead-magnets')
+  }
+
+  async updateLearnLeadMagnet(id: string, data: any) {
+    return this.request<{ magnet: any }>(`/admin/learn/lead-magnets/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
     })
   }
 }
