@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
+    "scheme": "fortysevenadmin",
     "owner": "47-industries",
     "splash": {
       "backgroundColor": "#0a0a0a"
@@ -37,7 +38,8 @@
           }
         }
       ],
-      "expo-video"
+      "expo-video",
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {

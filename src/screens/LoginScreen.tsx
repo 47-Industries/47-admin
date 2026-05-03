@@ -14,10 +14,15 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import * as WebBrowser from 'expo-web-browser'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import Svg, { Path, G } from 'react-native-svg'
 import { useAuthStore } from '../store/auth'
 import { api } from '../services/api'
 import { colors, portalColors, spacing, borderRadius, fontSize, fontWeight } from '../theme'
 import { PortalType, PortalAccess } from '../types'
+
+WebBrowser.maybeCompleteAuthSession()
 
 type ScreenState = 'login' | 'portal_selection'
 
@@ -71,6 +76,71 @@ export function LoginScreen() {
 
   const login = useAuthStore((state) => state.login)
   const setUserDirectly = useAuthStore((state) => state.setUser)
+
+  const handleOAuthSignIn = async () => {
+    const redirectUri = 'fortysevenadmin://oauth/callback'
+    const handoffUrl =
+      'https://47industries.com/api/auth/mobile-oauth-handoff?next=' + encodeURIComponent(redirectUri)
+    const startUrl =
+      'https://47industries.com/login?callbackUrl=' + encodeURIComponent(handoffUrl)
+
+    setLoading(true)
+    try {
+      const result = await WebBrowser.openAuthSessionAsync(startUrl, redirectUri)
+      if (result.type !== 'success' || !result.url) {
+        // user backed out
+        return
+      }
+      const fragment = result.url.split('#')[1] || ''
+      const params = new URLSearchParams(fragment)
+      const token = params.get('token')
+      if (!token) {
+        Alert.alert('Sign-in failed', 'No token returned from 47 Industries.')
+        return
+      }
+      const access: PortalAccess = {
+        admin: params.get('portal_admin') === '1',
+        partner: params.get('portal_partner') === '1',
+        client: params.get('portal_client') === '1',
+        affiliate: params.get('portal_affiliate') === '1',
+      }
+
+      // Persist the token and fetch the full user record
+      await api.setToken(token)
+      const me = await api.getMe()
+      const user = me.user
+
+      const availablePortals = (Object.keys(access) as PortalType[]).filter((k) => access[k])
+      if (availablePortals.length === 0) {
+        Alert.alert('Access Denied', 'You do not have access to any portals.')
+        await api.setToken(null)
+        return
+      }
+
+      if (availablePortals.length === 1) {
+        const portal = availablePortals[0]
+        await AsyncStorage.setItem('portal_type', portal)
+        useAuthStore.setState({
+          user,
+          token,
+          isAuthenticated: true,
+          isLoading: false,
+          portalType: portal,
+          portalAccess: access,
+          partner: me.partner || null,
+          client: me.client || null,
+          affiliate: me.affiliate || null,
+        })
+      } else {
+        setPendingLoginData({ token, user, portalAccess: access })
+        setScreenState('portal_selection')
+      }
+    } catch (err: any) {
+      Alert.alert('Sign-in failed', err?.message || 'Could not complete sign-in')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -314,6 +384,33 @@ export function LoginScreen() {
                 </>
               )}
             </TouchableOpacity>
+
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.ssoButton, loading && styles.buttonDisabled]}
+              onPress={handleOAuthSignIn}
+              disabled={loading}
+            >
+              <Svg width={22} height={22} viewBox="0 0 512 512">
+                <G transform="translate(56, 56)">
+                  <Path
+                    d="M0 320 L0 224 L112 112 L112 192 L56 248 L56 320 L168 320 L168 192 L112 192 L224 80 L224 400 L168 400 L168 376 L0 376 L0 320Z"
+                    fill="#ffffff"
+                  />
+                  <Path
+                    d="M184 80 L400 80 L400 136 L304 136 L192 320 L192 400 L136 400 L136 320 L232 152 L184 152 L184 80Z"
+                    fill="#ffffff"
+                  />
+                </G>
+              </Svg>
+              <Text style={styles.ssoButtonText}>Continue with 47 Industries</Text>
+            </TouchableOpacity>
+            <Text style={styles.ssoHint}>Sign in with Google, Apple, or MotoRev</Text>
           </View>
 
           <View style={styles.footerInfo}>
@@ -426,6 +523,45 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     marginTop: spacing.md,
     backgroundColor: colors.primary,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginVertical: spacing.lg,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  ssoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    padding: spacing.lg,
+    borderRadius: borderRadius.md,
+    backgroundColor: '#000000',
+    borderWidth: 1,
+    borderColor: '#27272a',
+  },
+  ssoButtonText: {
+    color: '#ffffff',
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+  },
+  ssoHint: {
+    textAlign: 'center',
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    marginTop: spacing.sm,
   },
   buttonDisabled: {
     opacity: 0.6,
