@@ -14,7 +14,18 @@ import { api } from '../../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../theme'
 
 interface Stats {
-  subscribers: { total: number; confirmed: number; pendingLast30: number }
+  subscribers: {
+    total: number
+    confirmed: number
+    pendingLast30: number
+    suppressed?: number
+    bouncesLast30?: number
+    complaintsLast30?: number
+    bounceRate30?: number
+    complaintRate30?: number
+    sendsLast30?: number
+    broadcastsLast30?: number
+  }
   pulseWaitlist: { total: number; confirmed: number; invited: number }
   buildMyPulse: { total: number; new: number; qualified: number; closedWon: number }
   prompts: { total: number; published: number }
@@ -66,13 +77,43 @@ export function LearnDashboardScreen({ navigation }: { navigation: any }) {
       ) : (
         <>
           <View style={styles.grid}>
-            <StatCard label="Newsletter — confirmed" value={stats.subscribers.confirmed} sub={`${stats.subscribers.total} total`} accent="#3b82f6" />
+            <StatCard label="Newsletter — sendable" value={stats.subscribers.confirmed} sub={`${stats.subscribers.total} total · ${stats.subscribers.suppressed ?? 0} supp.`} accent="#3b82f6" />
             <StatCard label="Newsletter — pending 30d" value={stats.subscribers.pendingLast30} sub="Need follow-up" accent="#f59e0b" />
             <StatCard label="Pulse waitlist" value={stats.pulseWaitlist.confirmed} sub={`${stats.pulseWaitlist.invited} invited`} accent="#3b82f6" />
             <StatCard label="Build My Pulse — new" value={stats.buildMyPulse.new} sub={`${stats.buildMyPulse.total} total · ${stats.buildMyPulse.closedWon} won`} accent="#10b981" />
             <StatCard label="Prompts published" value={stats.prompts.published} sub={`${stats.prompts.total} total`} accent="#7c3aed" />
             <StatCard label="Active subscriptions" value={stats.contentSubscriptions.active} sub="Playbook + Inner Circle" accent="#10b981" />
             <StatCard label="Lead magnets active" value={stats.leadMagnets.active} sub="" accent="#a1a1aa" />
+          </View>
+
+          <Text style={styles.sectionLabel}>Deliverability — last 30 days</Text>
+          <View style={styles.grid}>
+            <StatCard
+              label="Sends (30d)"
+              value={stats.subscribers.sendsLast30 ?? 0}
+              sub={`${stats.subscribers.broadcastsLast30 ?? 0} broadcasts`}
+              accent="#3b82f6"
+            />
+            <StatCard
+              label="Bounce rate (30d)"
+              value={stats.subscribers.bounceRate30 != null ? Number((stats.subscribers.bounceRate30 * 100).toFixed(2)) : 0}
+              sub={`${stats.subscribers.bouncesLast30 ?? 0} hard bounces`}
+              accent={(stats.subscribers.bounceRate30 ?? 0) > 0.02 ? '#ef4444' : '#10b981'}
+              isPercent
+            />
+            <StatCard
+              label="Complaint rate (30d)"
+              value={stats.subscribers.complaintRate30 != null ? Number((stats.subscribers.complaintRate30 * 100).toFixed(3)) : 0}
+              sub={`${stats.subscribers.complaintsLast30 ?? 0} spam reports`}
+              accent={(stats.subscribers.complaintRate30 ?? 0) > 0.001 ? '#ef4444' : '#10b981'}
+              isPercent
+            />
+            <StatCard
+              label="Suppressed total"
+              value={stats.subscribers.suppressed ?? 0}
+              sub="Bounce or complaint"
+              accent="#f87171"
+            />
           </View>
 
           <Text style={styles.sectionLabel}>Manage</Text>
@@ -108,12 +149,17 @@ export function LearnDashboardScreen({ navigation }: { navigation: any }) {
   )
 }
 
-function StatCard({ label, value, sub, accent }: { label: string; value: number; sub: string; accent: string }) {
+function StatCard({ label, value, sub, accent, isPercent }: { label: string; value: number; sub: string; accent: string; isPercent?: boolean }) {
+  const display = value == null
+    ? '—'
+    : isPercent
+      ? `${value}%`
+      : String(value)
   return (
     <View style={styles.statCard}>
       <View style={[styles.statDot, { backgroundColor: accent }]} />
       <Text style={styles.statLabel}>{label}</Text>
-      <Text style={styles.statValue}>{value ?? '—'}</Text>
+      <Text style={styles.statValue}>{display}</Text>
       {sub ? <Text style={styles.statSub}>{sub}</Text> : null}
     </View>
   )

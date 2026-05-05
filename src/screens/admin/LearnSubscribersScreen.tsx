@@ -16,9 +16,13 @@ interface Subscriber {
   status: string
   confirmedAt: string | null
   createdAt: string
+  bounceCount?: number
+  complaintCount?: number
+  suppressedAt?: string | null
+  suppressionReason?: string | null
 }
 
-const STATUS_FILTERS = ['ALL', 'PENDING', 'CONFIRMED', 'UNSUBSCRIBED', 'BOUNCED']
+const STATUS_FILTERS = ['ALL', 'PENDING', 'CONFIRMED', 'UNSUBSCRIBED', 'BOUNCED', 'SUPPRESSED']
 
 export function LearnSubscribersScreen() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([])
@@ -67,12 +71,22 @@ export function LearnSubscribersScreen() {
           <Text style={styles.email}>{item.email}</Text>
           {item.name ? <Text style={styles.name}>{item.name}</Text> : null}
         </View>
-        <Badge text={item.status} variant={badgeVariant(item.status)} />
+        <View style={{ alignItems: 'flex-end', gap: 4 }}>
+          <Badge text={item.status} variant={badgeVariant(item.status)} />
+          {item.suppressedAt ? (
+            <Badge text="SUPPRESSED" variant="error" />
+          ) : (item.bounceCount ?? 0) > 0 ? (
+            <Badge text={`${item.bounceCount} bounce${item.bounceCount === 1 ? '' : 's'}`} variant="warning" />
+          ) : null}
+        </View>
       </View>
       <View style={styles.meta}>
         <Text style={styles.metaText}>Source: {item.source || '—'}</Text>
         <Text style={styles.metaText}>Joined: {new Date(item.createdAt).toLocaleDateString()}</Text>
       </View>
+      {item.suppressionReason ? (
+        <Text style={[styles.metaText, { color: colors.error }]}>Reason: {item.suppressionReason}</Text>
+      ) : null}
       {item.status === 'PENDING' && (
         <TouchableOpacity style={styles.actionBtn} onPress={() => changeStatus(item.id, 'CONFIRMED')}>
           <Text style={styles.actionText}>Mark confirmed</Text>
