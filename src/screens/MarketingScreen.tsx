@@ -20,6 +20,7 @@ import { Badge } from '../components/Badge'
 import { api } from '../services/api'
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../theme'
 import { EmptyState } from '../components/EmptyState'
+import { EmailActivityScreen } from './admin/EmailActivityScreen'
 
 interface EmailCampaign {
   id: string
@@ -60,6 +61,7 @@ const AUDIENCE_OPTIONS = [
 ]
 
 export default function MarketingScreen({ navigation, hideHeader }: { navigation: any; hideHeader?: boolean }) {
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'activity'>('campaigns')
   const [campaigns, setCampaigns] = useState<EmailCampaign[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -245,17 +247,39 @@ export default function MarketingScreen({ navigation, hideHeader }: { navigation
       {!hideHeader && (
         <View style={styles.header}>
           <Text style={styles.title}>Marketing</Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => {
-              setSelectedCampaign(null)
-              setShowCreateModal(true)
-            }}
-          >
-            <Ionicons name="add" size={24} color={colors.text} />
-          </TouchableOpacity>
+          {activeTab === 'campaigns' && (
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => {
+                setSelectedCampaign(null)
+                setShowCreateModal(true)
+              }}
+            >
+              <Ionicons name="add" size={24} color={colors.text} />
+            </TouchableOpacity>
+          )}
         </View>
       )}
+
+      {/* Tab segment */}
+      <View style={styles.tabSegment}>
+        <TouchableOpacity
+          style={[styles.tabSegmentItem, activeTab === 'campaigns' && styles.tabSegmentItemActive]}
+          onPress={() => setActiveTab('campaigns')}
+        >
+          <Text style={[styles.tabSegmentText, activeTab === 'campaigns' && styles.tabSegmentTextActive]}>Campaigns</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tabSegmentItem, activeTab === 'activity' && styles.tabSegmentItemActive]}
+          onPress={() => setActiveTab('activity')}
+        >
+          <Text style={[styles.tabSegmentText, activeTab === 'activity' && styles.tabSegmentTextActive]}>Email Activity</Text>
+        </TouchableOpacity>
+      </View>
+
+      {activeTab === 'activity' && <EmailActivityScreen />}
+
+      {activeTab === 'campaigns' && <>
 
       {/* Stats Row */}
       <View style={styles.statsContainer}>
@@ -370,6 +394,8 @@ export default function MarketingScreen({ navigation, hideHeader }: { navigation
           setSelectedCampaign(null)
         }}
       />
+
+      </>}
     </View>
   )
 }
@@ -900,6 +926,35 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
+  },
+  tabSegment: {
+    flexDirection: 'row',
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  tabSegmentItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.sm,
+  },
+  tabSegmentItemActive: {
+    backgroundColor: colors.primary,
+  },
+  tabSegmentText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium as any,
+    color: colors.textMuted,
+  },
+  tabSegmentTextActive: {
+    color: '#fff',
+    fontWeight: fontWeight.semibold as any,
   },
   title: {
     fontSize: fontSize.xxl,
