@@ -75,6 +75,7 @@ import VariantsBulkEditScreen from '../screens/VariantsBulkEditScreen'
 import { PrintQueueScreen } from '../screens/admin/PrintQueueScreen'
 import { PrintfulDashboardScreen } from '../screens/admin/PrintfulDashboardScreen'
 import { OAuthApplicationsScreen } from '../screens/admin/OAuthApplicationsScreen'
+import { EmailActivityScreen } from '../screens/admin/EmailActivityScreen'
 import TimeclockScreen from '../screens/timeclock/TimeclockScreen'
 import TimesheetsScreen from '../screens/timeclock/TimesheetsScreen'
 import TimeclockReportsScreen from '../screens/timeclock/TimeclockReportsScreen'
@@ -129,7 +130,7 @@ export default function AdminNavigator() {
     // People: Clients, Partners, Team, Affiliates, User Affiliates, Users
     const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'CustomerDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail', 'UserAffiliates', 'UserAffiliateDetail', 'PartnerApplications', 'PartnerInquiries', 'MLMConfig']
     // Account: Profile, Email, Settings, Notifications, Marketing, Blog, Learn, Business Cards, Email Signatures, OAuth
-    const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'ShippingSettings', 'TaxSettings', 'SocialSettings', 'Email', 'EmailSignatures', 'Marketing', 'Blog', 'BlogPostDetail', 'Learn', 'LearnSubscribers', 'LearnWaitlist', 'LearnBmpLeads', 'BusinessCards', 'CardGenerator', 'OAuthApplications']
+    const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'ShippingSettings', 'TaxSettings', 'SocialSettings', 'Email', 'EmailActivity', 'EmailSignatures', 'Marketing', 'Blog', 'BlogPostDetail', 'Learn', 'LearnSubscribers', 'LearnWaitlist', 'LearnBmpLeads', 'BusinessCards', 'CardGenerator', 'OAuthApplications']
 
     if (salesScreens.includes(screenName)) return 'Sales'
     if (businessScreens.includes(screenName)) return 'Business'
@@ -187,6 +188,8 @@ export default function AdminNavigator() {
           return <ScreenWrapper><ServicesScreen navigation={navigation} /></ScreenWrapper>
         case 'Email':
           return <ScreenWrapper><EmailScreen navigation={navigation} /></ScreenWrapper>
+        case 'EmailActivity':
+          return <ScreenWrapper><EmailActivityScreen /></ScreenWrapper>
         case 'Reports':
           return <ScreenWrapper><ReportsScreen navigation={navigation} /></ScreenWrapper>
         case 'RecurringBills':
