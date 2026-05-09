@@ -18,6 +18,8 @@ interface Lead {
   budget: string | null
   timeline: string | null
   status: string
+  tier: string | null
+  quotedAmount: string | null
   depositPaid: boolean
   notes: string | null
   createdAt: string
@@ -79,6 +81,9 @@ export function LearnBmpLeadsScreen() {
             </View>
             <View style={styles.statusCol}>
               <Badge text={item.status} variant={badgeVariant(item.status)} />
+              {item.tier && (
+                <Text style={styles.tierText}>{item.tier.toUpperCase()}</Text>
+              )}
               {item.depositPaid && (
                 <View style={styles.depositBadge}>
                   <Ionicons name="checkmark-circle" size={12} color={colors.success} />
@@ -90,6 +95,8 @@ export function LearnBmpLeadsScreen() {
 
           {isOpen && (
             <View style={styles.expanded}>
+              {item.tier ? <Field label="Tier" value={item.tier.charAt(0).toUpperCase() + item.tier.slice(1)} /> : null}
+              {item.quotedAmount ? <Field label="Quoted deposit" value={`$${Number(item.quotedAmount).toLocaleString()}`} /> : null}
               {item.phone ? <Field label="Phone" value={item.phone} /> : null}
               {item.budget ? <Field label="Budget" value={item.budget} /> : null}
               {item.timeline ? <Field label="Timeline" value={item.timeline} /> : null}
@@ -195,6 +202,7 @@ const styles = StyleSheet.create({
   statusCol: { alignItems: 'flex-end', gap: 6 },
   depositBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   depositText: { fontSize: 10, color: colors.success, fontWeight: fontWeight.semibold as any },
+  tierText: { fontSize: 9, color: '#a78bfa', fontWeight: fontWeight.bold as any, letterSpacing: 0.5 },
   expanded: { marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border, gap: spacing.md },
   fieldLabel: { fontSize: 11, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4, fontWeight: fontWeight.semibold as any },
   fieldValue: { fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20 },
