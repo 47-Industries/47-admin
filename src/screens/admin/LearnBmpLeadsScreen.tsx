@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, TextInput, ActivityIndicator, ScrollView,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl, TextInput, ActivityIndicator, ScrollView, Linking,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../../components/Card'
@@ -97,7 +97,14 @@ export function LearnBmpLeadsScreen() {
             <View style={styles.expanded}>
               {item.tier ? <Field label="Tier" value={item.tier.charAt(0).toUpperCase() + item.tier.slice(1)} /> : null}
               {item.quotedAmount ? <Field label="Quoted deposit" value={`$${Number(item.quotedAmount).toLocaleString()}`} /> : null}
-              {item.phone ? <Field label="Phone" value={item.phone} /> : null}
+              {item.phone ? (
+                <TouchableOpacity onPress={() => Linking.openURL(`tel:${item.phone}`)}>
+                  <View>
+                    <Text style={styles.fieldLabel}>Phone</Text>
+                    <Text style={[styles.fieldValue, { color: colors.success }]}>{item.phone}</Text>
+                  </View>
+                </TouchableOpacity>
+              ) : null}
               {item.budget ? <Field label="Budget" value={item.budget} /> : null}
               {item.timeline ? <Field label="Timeline" value={item.timeline} /> : null}
               <Field label="Use case" value={item.useCase} />
