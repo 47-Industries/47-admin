@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import {
   View,
   Text,
@@ -78,12 +78,83 @@ export function TeamMemberDetailScreen({ navigation, route }: any) {
   const [deleting, setDeleting] = useState(false)
   const [formData, setFormData] = useState<Partial<TeamMember>>({})
   const [viewingImage, setViewingImage] = useState<string | null>(null)
+  const [contentSubs, setContentSubs] = useState<any[]>([])
+  const [contentSubsLoading, setContentSubsLoading] = useState(false)
+  const [showGrantModal, setShowGrantModal] = useState(false)
+  const [grantTier, setGrantTier] = useState('PLAYBOOK_LIFETIME')
+  const [granting, setGranting] = useState(false)
+  const [grantError, setGrantError] = useState('')
+
+  const fetchContentSubs = useCallback(async (email: string) => {
+    setContentSubsLoading(true)
+    try {
+      const data = await api.request<{ subscriptions: any[] }>(`/admin/learn/subscriptions?search=${encodeURIComponent(email)}`)
+      setContentSubs(data.subscriptions.filter((s: any) => s.email === email))
+    } catch {
+      // non-fatal
+    } finally {
+      setContentSubsLoading(false)
+    }
+  }, [])
+
+  const handleGrantAccess = async () => {
+    if (!member) return
+    const email = member.user?.email || member.email
+    setGranting(true)
+    setGrantError('')
+    try {
+      const data = await api.request<any>('/admin/learn/subscriptions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, tier: grantTier }),
+      })
+      setContentSubs((prev) => [...prev.filter((s) => s.id !== data.id), data])
+      setShowGrantModal(false)
+    } catch (e: any) {
+      setGrantError(e.message || 'Failed to grant access')
+    } finally {
+      setGranting(false)
+    }
+  }
+
+  const handleRevokeAccess = (subId: string, tierLabel: string) => {
+    Alert.alert('Revoke Access', `Revoke ${tierLabel} access?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Revoke',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await api.request(`/admin/learn/subscriptions?id=${subId}`, { method: 'DELETE' })
+            setContentSubs((prev) => prev.map((s) => s.id === subId ? { ...s, status: 'CANCELLED' } : s))
+          } catch (e: any) {
+            Alert.alert('Error', e.message || 'Failed to revoke')
+          }
+        },
+      },
+    ])
+  }
+
+  const handleReactivateAccess = async (subId: string) => {
+    try {
+      await api.request<any>('/admin/learn/subscriptions', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: subId, status: 'ACTIVE' }),
+      })
+      setContentSubs((prev) => prev.map((s) => s.id === subId ? { ...s, status: 'ACTIVE' } : s))
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to reactivate')
+    }
+  }
 
   const fetchMember = async () => {
     try {
       const data = await api.getTeamMember(id)
       setMember(data.teamMember)
       setFormData(data.teamMember)
+      const email = data.teamMember.user?.email || data.teamMember.email
+      if (email) fetchContentSubs(email)
     } catch (error) {
       console.error('Failed to fetch team member:', error)
       Alert.alert('Error', 'Failed to load team member')
@@ -444,6 +515,55 @@ export function TeamMemberDetailScreen({ navigation, route }: any) {
           </Card>
         )}
 
+        {/* Premium Access */}
+        <Card style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sectionTitle}>Premium Access</Text>
+              <Text style={styles.sectionSubtitle}>Playbook and Inner Circle subscriptions</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.grantButton}
+              onPress={() => { setGrantTier('PLAYBOOK_LIFETIME'); setGrantError(''); setShowGrantModal(true) }}
+            >
+              <Ionicons name="add" size={16} color="#34d399" />
+              <Text style={styles.grantButtonText}>Grant</Text>
+            </TouchableOpacity>
+          </View>
+          {contentSubsLoading ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : contentSubs.length === 0 ? (
+            <Text style={styles.emptyText}>No active subscriptions</Text>
+          ) : (
+            contentSubs.map((s) => {
+              const tierLabel =
+                s.tier === 'PLAYBOOK_LIFETIME' ? 'Playbook Lifetime'
+                : s.tier === 'INNER_CIRCLE_MONTHLY' ? 'Inner Circle Monthly'
+                : s.tier === 'INNER_CIRCLE_ANNUAL' ? 'Inner Circle Annual'
+                : s.tier
+              const tierColor = s.tier === 'PLAYBOOK_LIFETIME' ? '#34d399' : '#a78bfa'
+              const source = s.stripeSubscriptionId ? 'Stripe Sub' : s.stripeCheckoutSessionId ? 'Stripe Payment' : 'Manual Grant'
+              return (
+                <View key={s.id} style={styles.subRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.subTier, { color: tierColor }]}>{tierLabel}</Text>
+                    <Text style={styles.subSource}>{source}{s.status !== 'ACTIVE' ? ` - ${s.status}` : ''}</Text>
+                  </View>
+                  {s.status === 'ACTIVE' ? (
+                    <TouchableOpacity onPress={() => handleRevokeAccess(s.id, tierLabel)} style={styles.revokeButton}>
+                      <Text style={styles.revokeText}>Revoke</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity onPress={() => handleReactivateAccess(s.id)} style={styles.reactivateButton}>
+                      <Text style={styles.reactivateText}>Reactivate</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )
+            })
+          )}
+        </Card>
+
         <View style={{ height: spacing.xxl }} />
       </ScrollView>
 
@@ -452,6 +572,54 @@ export function TeamMemberDetailScreen({ navigation, route }: any) {
         imageUrl={viewingImage}
         onClose={() => setViewingImage(null)}
       />
+
+      {/* Grant Access Modal */}
+      <Modal visible={showGrantModal} animationType="slide" transparent>
+        <KeyboardAvoidingView style={styles.grantModalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={styles.grantModalContent}>
+            <View style={styles.grantModalHeader}>
+              <Text style={styles.grantModalTitle}>Grant Premium Access</Text>
+              <TouchableOpacity onPress={() => setShowGrantModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.inputLabel}>Select Tier</Text>
+            {['PLAYBOOK_LIFETIME', 'INNER_CIRCLE_MONTHLY', 'INNER_CIRCLE_ANNUAL'].map((tier) => {
+              const label = tier === 'PLAYBOOK_LIFETIME' ? 'Playbook Lifetime' : tier === 'INNER_CIRCLE_MONTHLY' ? 'Inner Circle Monthly' : 'Inner Circle Annual'
+              return (
+                <TouchableOpacity
+                  key={tier}
+                  style={[styles.tierOption, grantTier === tier && styles.tierOptionActive]}
+                  onPress={() => setGrantTier(tier)}
+                >
+                  <Text style={[styles.tierOptionText, grantTier === tier && { color: colors.primary }]}>{label}</Text>
+                  {grantTier === tier && <Ionicons name="checkmark-circle" size={18} color={colors.primary} />}
+                </TouchableOpacity>
+              )
+            })}
+            {grantError ? <Text style={styles.grantErrorText}>{grantError}</Text> : null}
+            <View style={styles.grantModalButtons}>
+              <TouchableOpacity
+                style={[styles.grantModalBtn, styles.grantModalBtnOutline]}
+                onPress={() => setShowGrantModal(false)}
+              >
+                <Text style={styles.grantModalBtnOutlineText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.grantModalBtn, styles.grantModalBtnPrimary, granting && { opacity: 0.6 }]}
+                onPress={handleGrantAccess}
+                disabled={granting}
+              >
+                {granting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.grantModalBtnPrimaryText}>Grant Access</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Edit Modal */}
       <Modal
@@ -763,6 +931,73 @@ export function TeamMemberDetailScreen({ navigation, route }: any) {
 }
 
 const styles = StyleSheet.create({
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: spacing.md },
+  sectionSubtitle: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
+  grantButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(52, 211, 153, 0.1)',
+    borderRadius: borderRadius.sm,
+  },
+  grantButtonText: { fontSize: fontSize.sm, color: '#34d399', fontWeight: fontWeight.medium },
+  emptyText: { fontSize: fontSize.sm, color: colors.textMuted, fontStyle: 'italic' },
+  subRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  subTier: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
+  subSource: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
+  revokeButton: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: colors.error,
+    borderRadius: borderRadius.sm,
+  },
+  revokeText: { fontSize: fontSize.xs, color: colors.error },
+  reactivateButton: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: borderRadius.sm,
+  },
+  reactivateText: { fontSize: fontSize.xs, color: colors.primary },
+  grantModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'flex-end' },
+  grantModalContent: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    padding: spacing.xl,
+  },
+  grantModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
+  grantModalTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.text },
+  tierOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.sm,
+  },
+  tierOptionActive: { borderColor: colors.primary, backgroundColor: 'rgba(59, 130, 246, 0.1)' },
+  tierOptionText: { fontSize: fontSize.md, color: colors.text },
+  grantErrorText: { fontSize: fontSize.sm, color: colors.error, marginTop: spacing.sm },
+  grantModalButtons: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg },
+  grantModalBtn: { flex: 1, paddingVertical: spacing.md, borderRadius: borderRadius.md, alignItems: 'center' },
+  grantModalBtnOutline: { borderWidth: 1, borderColor: colors.border },
+  grantModalBtnOutlineText: { fontSize: fontSize.md, color: colors.text, fontWeight: fontWeight.medium },
+  grantModalBtnPrimary: { backgroundColor: colors.primary },
+  grantModalBtnPrimaryText: { fontSize: fontSize.md, color: '#fff', fontWeight: fontWeight.semibold },
   container: {
     flex: 1,
     backgroundColor: colors.background,
