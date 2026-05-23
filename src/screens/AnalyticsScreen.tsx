@@ -10,18 +10,24 @@ const { width } = Dimensions.get('window')
 
 type TimeRange = '24h' | '7d' | '30d' | '90d'
 
+function formatDuration(seconds: number): string {
+  if (!seconds || seconds <= 0) return '—'
+  if (seconds < 60) return `${seconds}s`
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return s > 0 ? `${m}m ${s}s` : `${m}m`
+}
+
 export default function AnalyticsScreen({ navigation, asTab, hideHeader }: { navigation: any; asTab?: boolean; hideHeader?: boolean }) {
   const [timeRange, setTimeRange] = useState<TimeRange>('7d')
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [analytics, setAnalytics] = useState<any>(null)
-  const [liveStats, setLiveStats] = useState<any>(null)
 
   const fetchAnalytics = async () => {
     try {
-      const analyticsData = await api.getAnalytics(timeRange)
-      setAnalytics(analyticsData)
-      setLiveStats({ activeUsers: analyticsData.activeUsers ?? 0 })
+      const data = await api.getAnalytics(timeRange)
+      setAnalytics(data)
     } catch (error) {
       console.error('Failed to fetch analytics:', error)
     } finally {
@@ -31,10 +37,10 @@ export default function AnalyticsScreen({ navigation, asTab, hideHeader }: { nav
   }
 
   useEffect(() => {
+    setLoading(true)
     fetchAnalytics()
   }, [timeRange])
 
-  // Auto-refresh every 30 seconds
   useEffect(() => {
     const interval = setInterval(fetchAnalytics, 30000)
     return () => clearInterval(interval)
@@ -45,20 +51,25 @@ export default function AnalyticsScreen({ navigation, asTab, hideHeader }: { nav
     fetchAnalytics()
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount || 0)
-  }
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount || 0)
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
     if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
-    return num.toString()
+    return (num || 0).toString()
   }
 
   const formatPercentChange = (current: number, previous: number) => {
-    if (!previous) return { value: 0, positive: true }
+    if (!previous) return null
     const change = ((current - previous) / previous) * 100
     return { value: Math.abs(change).toFixed(1), positive: change >= 0 }
+  }
+
+  const bounceColor = (rate: number) => {
+    if (rate < 50) return colors.success
+    if (rate < 70) return colors.warning
+    return colors.error
   }
 
   const TimeRangeButton = ({ range, label }: { range: TimeRange; label: string }) => (
@@ -79,24 +90,31 @@ export default function AnalyticsScreen({ navigation, asTab, hideHeader }: { nav
       <Text style={styles.statTitle}>{title}</Text>
       {change && (
         <View style={styles.changeContainer}>
-          <Ionicons
-            name={change.positive ? 'arrow-up' : 'arrow-down'}
-            size={12}
-            color={change.positive ? colors.success : colors.error}
-          />
-          <Text style={[styles.changeText, { color: change.positive ? colors.success : colors.error }]}>
-            {change.value}%
-          </Text>
+          <Ionicons name={change.positive ? 'arrow-up' : 'arrow-down'} size={12} color={change.positive ? colors.success : colors.error} />
+          <Text style={[styles.changeText, { color: change.positive ? colors.success : colors.error }]}>{change.value}%</Text>
         </View>
       )}
     </Card>
   )
 
-  // Use SafeAreaView when used as standalone tab (asTab), otherwise regular View
+  const BarRow = ({ label, count, total, color = colors.primary }: { label: string; count: number; total: number; color?: string }) => {
+    const pct = total > 0 ? Math.min(100, (count / total) * 100) : 0
+    return (
+      <View style={styles.barRow}>
+        <View style={styles.barInfo}>
+          <Text style={styles.barLabel} numberOfLines={1}>{label}</Text>
+          <Text style={styles.barCount}>{formatNumber(count)}</Text>
+        </View>
+        <View style={styles.barTrack}>
+          <View style={[styles.barFill, { width: `${pct}%` as any, backgroundColor: color }]} />
+        </View>
+        <Text style={styles.barPct}>{Math.round(pct)}%</Text>
+      </View>
+    )
+  }
+
   const Wrapper = asTab ? SafeAreaView : View
   const wrapperProps = asTab ? { edges: ['top'] as const, style: styles.container } : { style: styles.container }
-
-  // Show header when not embedded as tab and not hideHeader
   const showHeader = !asTab && !hideHeader
 
   return (
@@ -115,23 +133,36 @@ export default function AnalyticsScreen({ navigation, asTab, hideHeader }: { nav
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
-        {/* Live Stats */}
-        {liveStats && (
-          <Card style={styles.liveCard}>
-            <View style={styles.liveHeader}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveTitle}>Live</Text>
+        {/* Live Card */}
+        <Card style={styles.liveCard}>
+          <View style={styles.liveHeader}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveTitle}>Live</Text>
+          </View>
+          <View style={styles.liveStats}>
+            <View style={styles.liveStat}>
+              <Text style={styles.liveValue}>{analytics?.activeUsers || 0}</Text>
+              <Text style={styles.liveLabel}>Active Now</Text>
             </View>
-            <View style={styles.liveStats}>
-              <View style={styles.liveStat}>
-                <Text style={styles.liveValue}>{liveStats.activeUsers || 0}</Text>
-                <Text style={styles.liveLabel}>Active Users</Text>
-              </View>
+            <View style={styles.liveDivider} />
+            <View style={styles.liveStat}>
+              <Text style={styles.liveValue}>{formatNumber(analytics?.totalPageViews || 0)}</Text>
+              <Text style={styles.liveLabel}>Page Views</Text>
             </View>
-          </Card>
-        )}
+            <View style={styles.liveDivider} />
+            <View style={styles.liveStat}>
+              <Text style={styles.liveValue}>{formatNumber(analytics?.uniqueVisitors || 0)}</Text>
+              <Text style={styles.liveLabel}>Visitors</Text>
+            </View>
+            <View style={styles.liveDivider} />
+            <View style={styles.liveStat}>
+              <Text style={styles.liveValue}>{formatNumber(analytics?.uniqueSessions || 0)}</Text>
+              <Text style={styles.liveLabel}>Sessions</Text>
+            </View>
+          </View>
+        </Card>
 
-        {/* Time Range Selector */}
+        {/* Time Range */}
         <View style={styles.timeSelector}>
           <TimeRangeButton range="24h" label="24H" />
           <TimeRangeButton range="7d" label="7D" />
@@ -139,8 +170,50 @@ export default function AnalyticsScreen({ navigation, asTab, hideHeader }: { nav
           <TimeRangeButton range="90d" label="90D" />
         </View>
 
-        {/* Key Metrics */}
-        <Text style={styles.sectionTitle}>Key Metrics</Text>
+        {/* Traffic KPIs */}
+        <Text style={styles.sectionTitle}>Traffic</Text>
+        <View style={styles.statsGrid}>
+          <StatCard
+            title="Unique Visitors"
+            value={formatNumber(analytics?.uniqueVisitors || 0)}
+            icon="people-outline"
+            color={colors.purple}
+            change={analytics?.visitors ? formatPercentChange(analytics.visitors.current, analytics.visitors.previous) : null}
+          />
+          <StatCard
+            title="Sessions"
+            value={formatNumber(analytics?.uniqueSessions || 0)}
+            icon="globe-outline"
+            color={colors.warning}
+          />
+          <StatCard
+            title="Bounce Rate"
+            value={analytics?.bounceRate != null ? `${analytics.bounceRate.toFixed(1)}%` : '—'}
+            icon="arrow-undo-outline"
+            color={bounceColor(analytics?.bounceRate || 0)}
+          />
+          <StatCard
+            title="Avg Duration"
+            value={formatDuration(analytics?.avgDuration || 0)}
+            icon="time-outline"
+            color="#ec4899"
+          />
+          <StatCard
+            title="New Visitors"
+            value={formatNumber(analytics?.newVisitors || 0)}
+            icon="person-add-outline"
+            color="#14b8a6"
+          />
+          <StatCard
+            title="Returning"
+            value={formatNumber(analytics?.returningVisitors || 0)}
+            icon="repeat-outline"
+            color="#6366f1"
+          />
+        </View>
+
+        {/* Revenue */}
+        <Text style={styles.sectionTitle}>Revenue</Text>
         <View style={styles.statsGrid}>
           <StatCard
             title="Revenue"
@@ -157,90 +230,100 @@ export default function AnalyticsScreen({ navigation, asTab, hideHeader }: { nav
             change={analytics?.orders ? formatPercentChange(analytics.orders.current, analytics.orders.previous) : null}
           />
           <StatCard
-            title="Visitors"
-            value={formatNumber(analytics?.visitors?.current || 0)}
-            icon="people-outline"
-            color={colors.purple}
-            change={analytics?.visitors ? formatPercentChange(analytics.visitors.current, analytics.visitors.previous) : null}
+            title="Avg Order"
+            value={formatCurrency(analytics?.avgOrderValue || 0)}
+            icon="pricetag-outline"
+            color={colors.warning}
           />
           <StatCard
             title="Conversion"
             value={`${analytics?.conversionRate?.current?.toFixed(1) || 0}%`}
             icon="trending-up-outline"
-            color={colors.warning}
+            color="#10b981"
             change={analytics?.conversionRate ? formatPercentChange(analytics.conversionRate.current, analytics.conversionRate.previous) : null}
           />
         </View>
 
-        {/* Sales Summary */}
-        <Text style={styles.sectionTitle}>Sales Summary</Text>
-        <Card style={styles.summaryCard}>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Total Revenue</Text>
-            <Text style={styles.summaryValue}>{formatCurrency(analytics?.revenue?.current || 0)}</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Total Orders</Text>
-            <Text style={styles.summaryValue}>{analytics?.orders?.current || 0}</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Avg Order Value</Text>
-            <Text style={styles.summaryValue}>{formatCurrency(analytics?.avgOrderValue || 0)}</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Refunds</Text>
-            <Text style={[styles.summaryValue, { color: colors.error }]}>
-              {formatCurrency(analytics?.refunds || 0)}
-            </Text>
-          </View>
-        </Card>
+        {/* Top Pages */}
+        {analytics?.topPages && analytics.topPages.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>Top Pages</Text>
+            <Card style={styles.listCard}>
+              {analytics.topPages.slice(0, 10).map((page: any, index: number) => {
+                const maxViews = analytics.topPages[0]?.views || 1
+                const pct = (page.views / maxViews) * 100
+                return (
+                  <View key={page.path} style={[styles.pageRow, index > 0 && styles.pageBorder]}>
+                    <Text style={styles.pageRank}>{index + 1}</Text>
+                    <View style={styles.pageInfo}>
+                      <Text style={styles.pagePath} numberOfLines={1}>
+                        {page.path === '/' ? '/ (Home)' : page.path}
+                      </Text>
+                      <View style={styles.pageBarTrack}>
+                        <View style={[styles.pageBarFill, { width: `${pct}%` as any }]} />
+                      </View>
+                    </View>
+                    <View style={styles.pageRight}>
+                      <Text style={styles.pageViews}>{formatNumber(page.views)}</Text>
+                      {page.avgScrollDepth != null && (
+                        <Text style={styles.pageScroll}>{Math.round(page.avgScrollDepth)}% scroll</Text>
+                      )}
+                    </View>
+                  </View>
+                )
+              })}
+            </Card>
+          </>
+        )}
+
+        {/* UTM Attribution */}
+        {(analytics?.utmSources?.length > 0 || analytics?.utmCampaigns?.length > 0) && (
+          <>
+            <Text style={styles.sectionTitle}>Campaigns</Text>
+            {analytics?.utmSources?.length > 0 && (
+              <Card style={styles.listCard}>
+                <Text style={styles.subSectionTitle}>Sources</Text>
+                {analytics.utmSources.map((s: any, i: number) => (
+                  <BarRow key={i} label={s.source} count={s.count} total={analytics.totalPageViews} color="#10b981" />
+                ))}
+              </Card>
+            )}
+            {analytics?.utmCampaigns?.length > 0 && (
+              <Card style={[styles.listCard, { marginTop: spacing.md }]}>
+                <Text style={styles.subSectionTitle}>Campaigns</Text>
+                {analytics.utmCampaigns.map((c: any, i: number) => (
+                  <BarRow key={i} label={c.campaign} count={c.count} total={analytics.totalPageViews} color="#f59e0b" />
+                ))}
+              </Card>
+            )}
+          </>
+        )}
 
         {/* Traffic Sources */}
-        {analytics?.trafficSources && (
+        {analytics?.trafficSources && analytics.trafficSources.length > 0 && (
           <>
             <Text style={styles.sectionTitle}>Traffic Sources</Text>
-            <Card style={styles.trafficCard}>
+            <Card style={styles.listCard}>
               {analytics.trafficSources.map((source: any, index: number) => (
-                <View key={index} style={styles.trafficRow}>
-                  <View style={styles.trafficInfo}>
-                    <Text style={styles.trafficSource}>{source.name}</Text>
-                    <Text style={styles.trafficCount}>{formatNumber(source.visitors)} visitors</Text>
-                  </View>
-                  <View style={styles.trafficBarContainer}>
-                    <View
-                      style={[
-                        styles.trafficBar,
-                        { width: `${source.percentage}%` },
-                      ]}
-                    />
-                  </View>
-                  <Text style={styles.trafficPercent}>{source.percentage}%</Text>
-                </View>
+                <BarRow key={index} label={source.name} count={source.visitors} total={analytics.totalPageViews} color={colors.primary} />
               ))}
             </Card>
           </>
         )}
 
-        {/* Top Products */}
-        {analytics?.topProducts && (
+        {/* Countries */}
+        {analytics?.countryBreakdown && analytics.countryBreakdown.length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>Top Products</Text>
-            <Card style={styles.productsCard}>
-              {analytics.topProducts.slice(0, 5).map((product: any, index: number) => (
-                <View key={index} style={[styles.productRow, index > 0 && styles.productBorder]}>
-                  <Text style={styles.productRank}>#{index + 1}</Text>
-                  <View style={styles.productInfo}>
-                    <Text style={styles.productName} numberOfLines={1}>{product.name}</Text>
-                    <Text style={styles.productSales}>{product.sales} sold</Text>
-                  </View>
-                  <Text style={styles.productRevenue}>{formatCurrency(product.revenue)}</Text>
-                </View>
+            <Text style={styles.sectionTitle}>Countries</Text>
+            <Card style={styles.listCard}>
+              {analytics.countryBreakdown.slice(0, 8).map((item: any, index: number) => (
+                <BarRow key={index} label={item.country || 'Unknown'} count={item.count} total={analytics.uniqueVisitors} color="#8b5cf6" />
               ))}
             </Card>
           </>
         )}
 
-        {/* Device Breakdown */}
+        {/* Devices */}
         {analytics?.deviceBreakdown && analytics.deviceBreakdown.length > 0 && (
           <>
             <Text style={styles.sectionTitle}>Devices</Text>
@@ -252,7 +335,7 @@ export default function AnalyticsScreen({ navigation, asTab, hideHeader }: { nav
                   <Card key={item.device} style={styles.deviceCard}>
                     <Ionicons name={iconName} size={24} color={color} />
                     <Text style={styles.deviceValue}>{item.percentage}%</Text>
-                    <Text style={styles.deviceLabel}>{item.device?.charAt(0).toUpperCase() + item.device?.slice(1) || 'Unknown'}</Text>
+                    <Text style={styles.deviceLabel}>{(item.device?.charAt(0).toUpperCase() + item.device?.slice(1)) || 'Unknown'}</Text>
                   </Card>
                 )
               })}
@@ -260,63 +343,43 @@ export default function AnalyticsScreen({ navigation, asTab, hideHeader }: { nav
           </>
         )}
 
-        {/* Browser Breakdown */}
+        {/* Browsers */}
         {analytics?.browserBreakdown && analytics.browserBreakdown.length > 0 && (
           <>
             <Text style={styles.sectionTitle}>Browsers</Text>
-            <Card style={styles.trafficCard}>
+            <Card style={styles.listCard}>
               {analytics.browserBreakdown.map((item: any, index: number) => (
-                <View key={index} style={styles.trafficRow}>
-                  <View style={styles.trafficInfo}>
-                    <Text style={styles.trafficSource}>{item.browser || 'Unknown'}</Text>
-                    <Text style={styles.trafficCount}>{formatNumber(item.count)} views</Text>
-                  </View>
-                  <View style={styles.trafficBarContainer}>
-                    <View style={[styles.trafficBar, { width: `${item.percentage}%`, backgroundColor: '#f59e0b' }]} />
-                  </View>
-                  <Text style={styles.trafficPercent}>{item.percentage}%</Text>
-                </View>
+                <BarRow key={index} label={item.browser || 'Unknown'} count={item.count} total={analytics.totalPageViews} color="#f59e0b" />
               ))}
             </Card>
           </>
         )}
 
-        {/* OS Breakdown */}
+        {/* OS */}
         {analytics?.osBreakdown && analytics.osBreakdown.length > 0 && (
           <>
             <Text style={styles.sectionTitle}>Operating Systems</Text>
-            <Card style={styles.trafficCard}>
+            <Card style={styles.listCard}>
               {analytics.osBreakdown.map((item: any, index: number) => (
-                <View key={index} style={styles.trafficRow}>
-                  <View style={styles.trafficInfo}>
-                    <Text style={styles.trafficSource}>{item.os || 'Unknown'}</Text>
-                    <Text style={styles.trafficCount}>{formatNumber(item.count)} views</Text>
-                  </View>
-                  <View style={styles.trafficBarContainer}>
-                    <View style={[styles.trafficBar, { width: `${item.percentage}%`, backgroundColor: '#ec4899' }]} />
-                  </View>
-                  <Text style={styles.trafficPercent}>{item.percentage}%</Text>
-                </View>
+                <BarRow key={index} label={item.os || 'Unknown'} count={item.count} total={analytics.totalPageViews} color="#ec4899" />
               ))}
             </Card>
           </>
         )}
 
-        {/* Countries */}
-        {analytics?.countryBreakdown && analytics.countryBreakdown.length > 0 && (
+        {/* Top Products */}
+        {analytics?.topProducts && analytics.topProducts.length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>Countries</Text>
-            <Card style={styles.trafficCard}>
-              {analytics.countryBreakdown.slice(0, 8).map((item: any, index: number) => (
-                <View key={index} style={styles.trafficRow}>
-                  <View style={styles.trafficInfo}>
-                    <Text style={styles.trafficSource}>{item.country || 'Unknown'}</Text>
-                    <Text style={styles.trafficCount}>{formatNumber(item.count)} visitors</Text>
+            <Text style={styles.sectionTitle}>Top Products</Text>
+            <Card style={styles.listCard}>
+              {analytics.topProducts.slice(0, 5).map((product: any, index: number) => (
+                <View key={index} style={[styles.pageRow, index > 0 && styles.pageBorder]}>
+                  <Text style={styles.pageRank}>{index + 1}</Text>
+                  <View style={styles.pageInfo}>
+                    <Text style={styles.pagePath} numberOfLines={1}>{product.name}</Text>
+                    <Text style={styles.pageScroll}>{product.sales} sold</Text>
                   </View>
-                  <View style={styles.trafficBarContainer}>
-                    <View style={[styles.trafficBar, { width: `${item.percentage}%`, backgroundColor: '#8b5cf6' }]} />
-                  </View>
-                  <Text style={styles.trafficPercent}>{item.percentage}%</Text>
+                  <Text style={[styles.pageViews, { color: colors.success }]}>{formatCurrency(product.revenue)}</Text>
                 </View>
               ))}
             </Card>
@@ -349,15 +412,11 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
     color: colors.text,
   },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: spacing.lg,
-  },
+  scroll: { flex: 1 },
+  scrollContent: { padding: spacing.lg },
   liveCard: {
     marginBottom: spacing.lg,
-    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+    backgroundColor: 'rgba(34, 197, 94, 0.08)',
     borderColor: colors.success,
   },
   liveHeader: {
@@ -379,17 +438,26 @@ const styles = StyleSheet.create({
   },
   liveStats: {
     flexDirection: 'row',
-    gap: spacing.xl,
+    alignItems: 'center',
   },
-  liveStat: {},
+  liveStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  liveDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: colors.border,
+  },
   liveValue: {
-    fontSize: fontSize.xxl,
+    fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
     color: colors.text,
   },
   liveLabel: {
-    fontSize: fontSize.sm,
+    fontSize: fontSize.xs,
     color: colors.textMuted,
+    marginTop: 2,
   },
   timeSelector: {
     flexDirection: 'row',
@@ -414,15 +482,21 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontWeight: fontWeight.medium,
   },
-  timeButtonTextActive: {
-    color: colors.text,
-  },
+  timeButtonTextActive: { color: colors.text },
   sectionTitle: {
     fontSize: fontSize.lg,
     fontWeight: fontWeight.semibold,
     color: colors.text,
     marginBottom: spacing.md,
     marginTop: spacing.md,
+  },
+  subSectionTitle: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: colors.textMuted,
+    marginBottom: spacing.md,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -461,98 +535,93 @@ const styles = StyleSheet.create({
     marginLeft: spacing.xs,
     fontWeight: fontWeight.medium,
   },
-  summaryCard: {
+  listCard: {
     padding: spacing.lg,
   },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
-  summaryLabel: {
-    fontSize: fontSize.sm,
-    color: colors.textMuted,
-  },
-  summaryValue: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
-    color: colors.text,
-  },
-  trafficCard: {
-    padding: spacing.lg,
-  },
-  trafficRow: {
+  barRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: spacing.md,
   },
-  trafficInfo: {
-    width: 100,
+  barInfo: {
+    width: 110,
   },
-  trafficSource: {
+  barLabel: {
     fontSize: fontSize.sm,
     color: colors.text,
     fontWeight: fontWeight.medium,
   },
-  trafficCount: {
+  barCount: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
   },
-  trafficBarContainer: {
+  barTrack: {
     flex: 1,
-    height: 8,
+    height: 6,
     backgroundColor: colors.surfaceHover,
-    borderRadius: 4,
+    borderRadius: 3,
     marginHorizontal: spacing.md,
     overflow: 'hidden',
   },
-  trafficBar: {
+  barFill: {
     height: '100%',
-    backgroundColor: colors.primary,
-    borderRadius: 4,
+    borderRadius: 3,
   },
-  trafficPercent: {
+  barPct: {
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    width: 40,
+    width: 36,
     textAlign: 'right',
   },
-  productsCard: {
-    padding: 0,
-    overflow: 'hidden',
-  },
-  productRow: {
+  pageRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.lg,
+    paddingVertical: spacing.md,
   },
-  productBorder: {
+  pageBorder: {
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  productRank: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.bold,
+  pageRank: {
+    fontSize: fontSize.sm,
     color: colors.textMuted,
-    width: 30,
+    width: 24,
+    fontWeight: fontWeight.medium,
   },
-  productInfo: {
+  pageInfo: {
     flex: 1,
     marginLeft: spacing.sm,
   },
-  productName: {
-    fontSize: fontSize.md,
-    color: colors.text,
-    fontWeight: fontWeight.medium,
-  },
-  productSales: {
+  pagePath: {
     fontSize: fontSize.sm,
-    color: colors.textMuted,
+    color: colors.text,
+    fontFamily: 'monospace',
+    marginBottom: 4,
   },
-  productRevenue: {
+  pageBarTrack: {
+    height: 3,
+    backgroundColor: colors.surfaceHover,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  pageBarFill: {
+    height: '100%',
+    backgroundColor: colors.primary,
+    borderRadius: 2,
+  },
+  pageRight: {
+    alignItems: 'flex-end',
+    marginLeft: spacing.sm,
+  },
+  pageViews: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
-    color: colors.success,
+    color: colors.text,
+  },
+  pageScroll: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: 2,
   },
   devicesRow: {
     flexDirection: 'row',
