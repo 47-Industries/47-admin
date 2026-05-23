@@ -19,12 +19,9 @@ export default function AnalyticsScreen({ navigation, asTab, hideHeader }: { nav
 
   const fetchAnalytics = async () => {
     try {
-      const [analyticsData, liveData] = await Promise.all([
-        api.getAnalytics(timeRange),
-        api.getLiveAnalytics(),
-      ])
+      const analyticsData = await api.getAnalytics(timeRange)
       setAnalytics(analyticsData)
-      setLiveStats(liveData)
+      setLiveStats({ activeUsers: analyticsData.activeUsers ?? 0 })
     } catch (error) {
       console.error('Failed to fetch analytics:', error)
     } finally {
@@ -37,19 +34,11 @@ export default function AnalyticsScreen({ navigation, asTab, hideHeader }: { nav
     fetchAnalytics()
   }, [timeRange])
 
-  // Auto-refresh live stats every 30 seconds
+  // Auto-refresh every 30 seconds
   useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const liveData = await api.getLiveAnalytics()
-        setLiveStats(liveData)
-      } catch (e) {
-        // Silently fail for background updates
-      }
-    }, 30000)
-
+    const interval = setInterval(fetchAnalytics, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [timeRange])
 
   const onRefresh = () => {
     setRefreshing(true)
@@ -137,10 +126,6 @@ export default function AnalyticsScreen({ navigation, asTab, hideHeader }: { nav
               <View style={styles.liveStat}>
                 <Text style={styles.liveValue}>{liveStats.activeUsers || 0}</Text>
                 <Text style={styles.liveLabel}>Active Users</Text>
-              </View>
-              <View style={styles.liveStat}>
-                <Text style={styles.liveValue}>{liveStats.pageViews || 0}</Text>
-                <Text style={styles.liveLabel}>Page Views (1h)</Text>
               </View>
             </View>
           </Card>
@@ -256,26 +241,85 @@ export default function AnalyticsScreen({ navigation, asTab, hideHeader }: { nav
         )}
 
         {/* Device Breakdown */}
-        {analytics?.devices && (
+        {analytics?.deviceBreakdown && analytics.deviceBreakdown.length > 0 && (
           <>
-            <Text style={styles.sectionTitle}>Device Breakdown</Text>
+            <Text style={styles.sectionTitle}>Devices</Text>
             <View style={styles.devicesRow}>
-              <Card style={styles.deviceCard}>
-                <Ionicons name="phone-portrait-outline" size={24} color={colors.primary} />
-                <Text style={styles.deviceValue}>{analytics.devices.mobile || 0}%</Text>
-                <Text style={styles.deviceLabel}>Mobile</Text>
-              </Card>
-              <Card style={styles.deviceCard}>
-                <Ionicons name="desktop-outline" size={24} color={colors.success} />
-                <Text style={styles.deviceValue}>{analytics.devices.desktop || 0}%</Text>
-                <Text style={styles.deviceLabel}>Desktop</Text>
-              </Card>
-              <Card style={styles.deviceCard}>
-                <Ionicons name="tablet-portrait-outline" size={24} color={colors.warning} />
-                <Text style={styles.deviceValue}>{analytics.devices.tablet || 0}%</Text>
-                <Text style={styles.deviceLabel}>Tablet</Text>
-              </Card>
+              {analytics.deviceBreakdown.map((item: any) => {
+                const iconName = item.device === 'mobile' ? 'phone-portrait-outline' : item.device === 'tablet' ? 'tablet-portrait-outline' : 'desktop-outline'
+                const color = item.device === 'mobile' ? colors.success : item.device === 'tablet' ? colors.warning : colors.primary
+                return (
+                  <Card key={item.device} style={styles.deviceCard}>
+                    <Ionicons name={iconName} size={24} color={color} />
+                    <Text style={styles.deviceValue}>{item.percentage}%</Text>
+                    <Text style={styles.deviceLabel}>{item.device?.charAt(0).toUpperCase() + item.device?.slice(1) || 'Unknown'}</Text>
+                  </Card>
+                )
+              })}
             </View>
+          </>
+        )}
+
+        {/* Browser Breakdown */}
+        {analytics?.browserBreakdown && analytics.browserBreakdown.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>Browsers</Text>
+            <Card style={styles.trafficCard}>
+              {analytics.browserBreakdown.map((item: any, index: number) => (
+                <View key={index} style={styles.trafficRow}>
+                  <View style={styles.trafficInfo}>
+                    <Text style={styles.trafficSource}>{item.browser || 'Unknown'}</Text>
+                    <Text style={styles.trafficCount}>{formatNumber(item.count)} views</Text>
+                  </View>
+                  <View style={styles.trafficBarContainer}>
+                    <View style={[styles.trafficBar, { width: `${item.percentage}%`, backgroundColor: '#f59e0b' }]} />
+                  </View>
+                  <Text style={styles.trafficPercent}>{item.percentage}%</Text>
+                </View>
+              ))}
+            </Card>
+          </>
+        )}
+
+        {/* OS Breakdown */}
+        {analytics?.osBreakdown && analytics.osBreakdown.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>Operating Systems</Text>
+            <Card style={styles.trafficCard}>
+              {analytics.osBreakdown.map((item: any, index: number) => (
+                <View key={index} style={styles.trafficRow}>
+                  <View style={styles.trafficInfo}>
+                    <Text style={styles.trafficSource}>{item.os || 'Unknown'}</Text>
+                    <Text style={styles.trafficCount}>{formatNumber(item.count)} views</Text>
+                  </View>
+                  <View style={styles.trafficBarContainer}>
+                    <View style={[styles.trafficBar, { width: `${item.percentage}%`, backgroundColor: '#ec4899' }]} />
+                  </View>
+                  <Text style={styles.trafficPercent}>{item.percentage}%</Text>
+                </View>
+              ))}
+            </Card>
+          </>
+        )}
+
+        {/* Countries */}
+        {analytics?.countryBreakdown && analytics.countryBreakdown.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>Countries</Text>
+            <Card style={styles.trafficCard}>
+              {analytics.countryBreakdown.slice(0, 8).map((item: any, index: number) => (
+                <View key={index} style={styles.trafficRow}>
+                  <View style={styles.trafficInfo}>
+                    <Text style={styles.trafficSource}>{item.country || 'Unknown'}</Text>
+                    <Text style={styles.trafficCount}>{formatNumber(item.count)} visitors</Text>
+                  </View>
+                  <View style={styles.trafficBarContainer}>
+                    <View style={[styles.trafficBar, { width: `${item.percentage}%`, backgroundColor: '#8b5cf6' }]} />
+                  </View>
+                  <Text style={styles.trafficPercent}>{item.percentage}%</Text>
+                </View>
+              ))}
+            </Card>
           </>
         )}
 
