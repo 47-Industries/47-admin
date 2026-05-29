@@ -40,8 +40,8 @@ interface PartnerInquiry {
   audience: string
   reason: string
   status: string
-  leadchopperId?: string
-  leadchopperOrgId?: string
+  leadslicerId?: string
+  leadslicerOrgId?: string
   reviewedBy?: string
   reviewedAt?: string
   reviewNotes?: string
@@ -269,8 +269,8 @@ export function PartnerInquiriesScreen({ navigation, hideHeader }: PartnerInquir
             <View style={styles.inquiryInfo}>
               <View style={styles.badgeRow}>
                 <Badge text={item.status} variant={statusBadgeVariants[item.status] || 'default'} />
-                {item.leadchopperId && (
-                  <Badge text="LeadChopper" variant="primary" />
+                {item.leadslicerId && (
+                  <Badge text="LeadSlicer" variant="primary" />
                 )}
               </View>
               <Text style={styles.inquiryName} numberOfLines={1}>{item.name}</Text>
@@ -404,8 +404,8 @@ export function PartnerInquiriesScreen({ navigation, hideHeader }: PartnerInquir
                   {/* Status Badge */}
                   <View style={styles.detailBadgeRow}>
                     <Badge text={selectedInquiry.status} variant={statusBadgeVariants[selectedInquiry.status] || 'default'} />
-                    {selectedInquiry.leadchopperId && (
-                      <Badge text="LeadChopper" variant="primary" />
+                    {selectedInquiry.leadslicerId && (
+                      <Badge text="LeadSlicer" variant="primary" />
                     )}
                   </View>
 
@@ -480,19 +480,19 @@ export function PartnerInquiriesScreen({ navigation, hideHeader }: PartnerInquir
                     </View>
                   </View>
 
-                  {/* LeadChopper Tracking */}
-                  {selectedInquiry.leadchopperId && (
+                  {/* LeadSlicer Tracking */}
+                  {selectedInquiry.leadslicerId && (
                     <View style={styles.detailSection}>
-                      <Text style={styles.detailSectionTitle}>LeadChopper Tracking</Text>
-                      <View style={styles.leadchopperInfo}>
+                      <Text style={styles.detailSectionTitle}>LeadSlicer Tracking</Text>
+                      <View style={styles.leadslicerInfo}>
                         <View style={styles.detailRow}>
                           <Text style={styles.detailLabel}>Lead ID</Text>
-                          <Text style={[styles.detailValue, { fontFamily: 'monospace' }]}>{selectedInquiry.leadchopperId}</Text>
+                          <Text style={[styles.detailValue, { fontFamily: 'monospace' }]}>{selectedInquiry.leadslicerId}</Text>
                         </View>
-                        {selectedInquiry.leadchopperOrgId && (
+                        {selectedInquiry.leadslicerOrgId && (
                           <View style={styles.detailRow}>
                             <Text style={styles.detailLabel}>Org ID</Text>
-                            <Text style={[styles.detailValue, { fontFamily: 'monospace' }]}>{selectedInquiry.leadchopperOrgId}</Text>
+                            <Text style={[styles.detailValue, { fontFamily: 'monospace' }]}>{selectedInquiry.leadslicerOrgId}</Text>
                           </View>
                         )}
                       </View>
@@ -838,7 +838,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 22,
   },
-  leadchopperInfo: {
+  leadslicerInfo: {
     backgroundColor: 'rgba(139, 92, 246, 0.1)',
     borderRadius: borderRadius.md,
     padding: spacing.md,

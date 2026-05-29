@@ -131,6 +131,12 @@ export function LearnDashboardScreen({ navigation }: { navigation: any }) {
             onPress={() => navigation.navigate('LearnWaitlist')}
           />
           <NavRow
+            icon="people-outline"
+            label="All Leads (unified inbox)"
+            sub="BMP, Service, Cold Inbound, 3D Print"
+            onPress={() => navigation.navigate('AllLeads')}
+          />
+          <NavRow
             icon="construct-outline"
             label="Build My Pulse Leads"
             count={stats.buildMyPulse.total}

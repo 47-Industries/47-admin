@@ -447,7 +447,7 @@ export function OAuthApplicationsScreen({ navigation, hideHeader }: { navigation
             style={styles.textInput}
             value={formName}
             onChangeText={setFormName}
-            placeholder="e.g. LeadChopper"
+            placeholder="e.g. LeadSlicer"
             placeholderTextColor={colors.textMuted}
             autoCapitalize="words"
           />

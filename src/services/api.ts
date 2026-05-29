@@ -2936,6 +2936,31 @@ class ApiService {
     })
   }
 
+  // Unified Lead model (covers BMP, Service, Custom Print, Cold Inbound, etc.)
+  async getLeads(params?: { leadType?: string; status?: string; search?: string; limit?: number }) {
+    const qs = new URLSearchParams()
+    if (params?.leadType) qs.set('leadType', params.leadType)
+    if (params?.status) qs.set('status', params.status)
+    if (params?.search) qs.set('search', params.search)
+    qs.set('limit', String(params?.limit ?? 100))
+    return this.request<{
+      leads: any[]
+      pagination: { page: number; limit: number; total: number; pages: number }
+      summary: { byType: Record<string, number>; byStatus: Record<string, number> }
+    }>(`/admin/leads?${qs}`)
+  }
+
+  async getLead(id: string) {
+    return this.request<{ lead: any }>(`/admin/leads/${id}`)
+  }
+
+  async updateLead(id: string, data: { status?: string; adminNotes?: string; assignedTo?: string | null; quotedAmount?: number }) {
+    return this.request<{ lead: any }>(`/admin/leads/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
   async getLearnPrompts(params?: { status?: string; tier?: string; search?: string; targetModel?: string }) {
     const qs = new URLSearchParams()
     if (params?.status) qs.set('status', params.status)

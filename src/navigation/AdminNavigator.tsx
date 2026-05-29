@@ -69,6 +69,7 @@ import { LearnDashboardScreen } from '../screens/admin/LearnDashboardScreen'
 import { LearnSubscribersScreen } from '../screens/admin/LearnSubscribersScreen'
 import { LearnWaitlistScreen } from '../screens/admin/LearnWaitlistScreen'
 import { LearnBmpLeadsScreen } from '../screens/admin/LearnBmpLeadsScreen'
+import { AllLeadsScreen } from '../screens/admin/AllLeadsScreen'
 import { MLMConfigScreen } from '../screens/admin/MLMConfigScreen'
 import InventoryScreen from '../screens/InventoryScreen'
 import VariantsBulkEditScreen from '../screens/VariantsBulkEditScreen'
@@ -130,7 +131,7 @@ export default function AdminNavigator() {
     // People: Clients, Partners, Team, Affiliates, User Affiliates, Users
     const peopleScreens = ['AdminClients', 'AdminPartners', 'Team', 'Users', 'UserDetail', 'CustomerDetail', 'ClientDetail', 'PartnerDetail', 'TeamMemberDetail', 'PartnerLeads', 'PartnerLeadDetail', 'Affiliates', 'AffiliateDetail', 'UserAffiliates', 'UserAffiliateDetail', 'PartnerApplications', 'PartnerInquiries', 'MLMConfig']
     // Account: Profile, Email, Settings, Notifications, Marketing, Blog, Learn, Business Cards, Email Signatures, OAuth
-    const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'ShippingSettings', 'TaxSettings', 'SocialSettings', 'Email', 'EmailActivity', 'EmailSignatures', 'Marketing', 'Blog', 'BlogPostDetail', 'Learn', 'LearnSubscribers', 'LearnWaitlist', 'LearnBmpLeads', 'BusinessCards', 'CardGenerator', 'OAuthApplications']
+    const accountScreens = ['ProfileEdit', 'ChangePassword', 'Notifications', 'Settings', 'ShippingSettings', 'TaxSettings', 'SocialSettings', 'Email', 'EmailActivity', 'EmailSignatures', 'Marketing', 'Blog', 'BlogPostDetail', 'Learn', 'LearnSubscribers', 'LearnWaitlist', 'LearnBmpLeads', 'AllLeads', 'BusinessCards', 'CardGenerator', 'OAuthApplications']
 
     if (salesScreens.includes(screenName)) return 'Sales'
     if (businessScreens.includes(screenName)) return 'Business'
@@ -280,6 +281,8 @@ export default function AdminNavigator() {
           return <ScreenWrapper><LearnWaitlistScreen /></ScreenWrapper>
         case 'LearnBmpLeads':
           return <ScreenWrapper><LearnBmpLeadsScreen /></ScreenWrapper>
+        case 'AllLeads':
+          return <ScreenWrapper><AllLeadsScreen /></ScreenWrapper>
         case 'MLMConfig':
           return <ScreenWrapper><MLMConfigScreen navigation={navigation} /></ScreenWrapper>
         case 'OAuthApplications':
