@@ -45,6 +45,8 @@ const TYPE_FILTERS = [
   { value: 'SERVICE_CONSULTING', label: 'Consulting' },
   { value: 'CUSTOM_PRINT', label: 'Print' },
   { value: 'COLD_INBOUND', label: 'Cold' },
+  { value: 'BRAND_DEAL', label: 'Brand' },
+  { value: 'PRESS', label: 'Press' },
 ]
 
 const STATUS_FILTERS = ['ALL', 'NEW', 'CONTACTED', 'QUALIFIED', 'QUOTED', 'BOOKED', 'IN_PROGRESS', 'CLOSED_WON', 'CLOSED_LOST']
@@ -59,6 +61,8 @@ const TYPE_LABEL: Record<string, string> = {
   SERVICE_OTHER: 'SVC',
   CUSTOM_PRINT: 'PRT',
   COLD_INBOUND: 'COLD',
+  BRAND_DEAL: 'BRAND',
+  PRESS: 'PRESS',
   PARTNER: 'PRT',
   GENERAL: 'GEN',
 }
@@ -73,6 +77,8 @@ const TYPE_COLOR: Record<string, string> = {
   SERVICE_OTHER: '#71717a',
   CUSTOM_PRINT: '#f59e0b',
   COLD_INBOUND: '#c084fc',
+  BRAND_DEAL: '#ec4899',
+  PRESS: '#f97316',
   PARTNER: '#10b981',
   GENERAL: '#71717a',
 }
